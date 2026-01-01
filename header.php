@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Event Management</title>
+    <title>Aone hub</title>
     <link rel="stylesheet" href="css/header.css">
 </head>
 <body>
 
 <header class="header">
     <div class="logo">
-        <span>Event</span>Hub
+        <span>Aone</span>Hub
     </div>
 
     <nav class="navbar">
