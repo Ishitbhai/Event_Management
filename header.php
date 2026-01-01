@@ -15,6 +15,7 @@
     <nav class="navbar">
         <a href="#">Home</a>
         <a href="#">Events</a>
+        <a href="#">Services</a>
         <a href="#">Bookings</a>
         <a href="#">Reviews</a>
 
