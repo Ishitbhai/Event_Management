@@ -9,7 +9,6 @@ body {
     background: #f4f6f9;
 }
 
-/* Sticky & Responsive Header */
 .header {
     position: sticky;
     top: 0;
@@ -63,7 +62,6 @@ body {
     border-bottom: 2px solid #7e99c0;
 }
 
-/* Dropdown */
 .dropdown {
     position: relative;
 }
@@ -115,7 +113,6 @@ body {
     display: flex;
 }
 
-/* Auth Buttons */
 .auth-buttons {
     display: flex;
     align-items: center;
@@ -159,7 +156,6 @@ body {
     border-color: #203156;
 }
 
-/* Responsive Styles */
 @media (max-width: 900px) {
     .header {
         padding: 16px 28px;

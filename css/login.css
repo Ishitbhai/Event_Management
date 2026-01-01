@@ -13,23 +13,18 @@ body {
     align-items: center;
 }
 
-/* Container */
-.auth-container {
-    /* No animation */
-}
-
-/* Box */
 .auth-box {
     background: #fafbfc;
     padding: 42px 38px 34px 38px;
+    width: 100%;
     max-width: 400px;
     border-radius: 16px;
     text-align: left;
     box-shadow: 0 12px 36px rgba(44, 50, 70, 0.16);
     border: 1.5px solid #e3e8f0;
+    transition: padding 0.2s, max-width 0.2s;
 }
 
-/* Heading */
 .auth-box h2 {
     color: #203156;
     font-family: 'Merriweather', serif;
@@ -37,6 +32,7 @@ body {
     font-size: 2rem;
     margin-bottom: 8px;
     letter-spacing: 0.5px;
+    transition: font-size 0.2s;
 }
 
 .auth-box p {
@@ -45,9 +41,9 @@ body {
     margin-bottom: 28px;
     line-height: 1.45;
     font-family: 'Segoe UI', sans-serif;
+    transition: font-size 0.2s;
 }
 
-/* Inputs */
 .auth-box input {
     width: 100%;
     padding: 12px 14px;
@@ -57,15 +53,15 @@ body {
     outline: none;
     font-size: 15px;
     background: #f7faff;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, font-size 0.2s, padding 0.2s;
     font-family: 'Segoe UI', sans-serif;
+    box-sizing: border-box;
 }
 
 .auth-box input:focus {
     border-color: #5464a7;
 }
 
-/* Button */
 .auth-box button {
     width: 100%;
     padding: 13px;
@@ -78,7 +74,7 @@ body {
     font-weight: 600;
     letter-spacing: 0.3px;
     box-shadow: 0 5px 14px rgba(44, 50, 70, 0.13);
-    transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.2s, font-size 0.2s, padding 0.2s;
 }
 
 .auth-box button:hover {
@@ -88,11 +84,11 @@ body {
     opacity: 0.97;
 }
 
-/* Links */
 .links {
     margin-top: 18px;
     font-size: 14px;
     text-align: left;
+    transition: font-size 0.2s;
 }
 
 .links a {
@@ -100,6 +96,7 @@ body {
     text-decoration: none;
     font-weight: 600;
     transition: color 0.15s;
+    word-break: break-word;
 }
 
 .links a:hover {
@@ -107,4 +104,80 @@ body {
     color: #203156;
 }
 
-/* No animation */
+/* Responsiveness */
+
+/* For medium screens, reduce padding and font sizes a bit */
+@media (max-width: 600px) {
+    body {
+        padding: 16px;
+    }
+    .auth-box {
+        padding: 28px 6vw 20px 6vw;
+        max-width: 98vw;
+    }
+    .auth-box h2 {
+        font-size: 1.4rem;
+    }
+    .auth-box p {
+        font-size: 15px;
+        margin-bottom: 18px;
+    }
+    .auth-box input {
+        font-size: 14px;
+        padding: 10px 10px;
+    }
+    .auth-box button {
+        font-size: 1rem;
+        padding: 10px;
+    }
+    .links {
+        font-size: 13px;
+    }
+}
+
+/* For small screens, vertical spacing, smaller paddings and reduced radius */
+@media (max-width: 420px) {
+    body {
+        padding: 0;
+    }
+    .auth-box {
+        padding: 18px 2vw 12px 2vw;
+        border-radius: 8px;
+        max-width: 99vw;
+        min-width: 0;
+    }
+    .auth-box h2 {
+        font-size: 1.04rem;
+    }
+    .auth-box p {
+        font-size: 13px;
+    }
+    .auth-box input,
+    .auth-box button {
+        font-size: 0.95rem;
+    }
+    .auth-box input {
+        padding: 8px 4px;
+        margin-bottom: 11px;
+    }
+    .auth-box button {
+        padding: 8px;
+        border-radius: 20px;
+        letter-spacing: 0.05px;
+    }
+    .links {
+        margin-top: 10px;
+        font-size: 12px;
+    }
+}
+
+/* Body fallback to stacking if viewport is very short */
+@media (max-height: 480px) {
+    body {
+        flex-direction: column;
+        padding: 6vw 0;
+    }
+    .auth-box {
+        margin: 0 auto;
+    }
+}
