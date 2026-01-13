@@ -1,0 +1,115 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    height: 100%;
+    width: 100%;
+}
+.sidebar-container {
+    display: flex;
+    height: 100vh;
+    min-height: 100vh;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+}
+.sidebar {
+    width: 240px;
+    background: #232e48;
+    color: #fff;
+    flex-shrink: 0;
+    min-height: 100vh;
+    position: sticky;
+    top: 0;
+    padding-top: 0;
+    margin: 0;
+    box-shadow: 2px 0 18px rgba(44,50,70,0.13);
+    display: flex;
+    flex-direction: column;
+    z-index: 200;
+}
+.sidebar .sidebar-logo {
+    font-family: 'Merriweather', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    padding: 0 28px 22px 28px;
+    letter-spacing: 1.4px;
+    color: #aac8ff;
+    margin: 0;
+    padding-top: 20px;
+}
+.sidebar nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+}
+.sidebar nav a {
+    padding: 15px 32px;
+    color: #c6d3ee;
+    text-decoration: none;
+    font-size: 1.07rem;
+    font-weight: 500;
+    border-left: 4px solid transparent;
+    transition: background 0.16s, color 0.16s, border-left 0.16s;
+    letter-spacing: 0.1px;
+    margin: 0;
+}
+.sidebar nav a:hover, .sidebar nav a.active {
+    background: #313f5c;
+    color: #fff;
+    border-left: 4px solid #699cff;
+}
+.sidebar .sidebar-footer {
+    padding: 18px 28px;
+    font-size: 0.92rem;
+    color: #adb6cc;
+    border-top: 1px solid #314066;
+    margin: 0;
+}
+.main-content {
+    flex: 1;
+    background: #f4f6f9;
+    min-height: 100vh;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+}
+.page-header {
+    background: #fff;
+    border-bottom: 1px solid #e3e8f0;
+    font-family: 'Segoe UI', sans-serif;
+    padding: 28px 38px 18px 38px;
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: #203156;
+    letter-spacing: 1px;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    box-shadow: 0 4px 20px rgba(44, 50, 70, 0.05);
+    margin: 0;
+}
+
+@media (max-width: 700px) {
+    .sidebar {
+        width: 70px;
+        min-width: 70px;
+        padding-top: 0;
+    }
+    .sidebar .sidebar-logo, .sidebar .sidebar-footer {
+        display: none;
+    }
+    .sidebar nav a {
+        padding: 14px 10px;
+        font-size: 0.82rem;
+        text-align: center;
+    }
+    .main-content .page-header {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+}
