@@ -29,7 +29,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $confirm_user_password = $_POST['confirm_user_password'];
     $user_token = bin2hex(random_bytes(16)); // secure token
 
-    // Check if email already exists
+    // Check if email already exists 
     $check_email_sql = "SELECT user_id FROM users WHERE user_email = '$user_email' LIMIT 1";
     $check_email_result = mysqli_query($conn, $check_email_sql);
 
@@ -121,7 +121,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
         </div>
 
-        <textarea name="user_address" placeholder="Address" id="user_address" rows="2" style="width:100%; margin-bottom:16px; border-radius:8px; border:1.3px solid #bfc9dc; padding:12px 14px; background:#f7faff; font-size:15px; font-family: 'Segoe UI', sans-serif;" required></textarea>
+        <textarea
+            name="user_address"
+            placeholder="Address"
+            id="user_address"
+            rows="2"
+            style="width:100%; margin-bottom:16px; border-radius:8px; border:1.3px solid #bfc9dc; padding:12px 14px; background:#f7faff; font-size:15px; font-family: 'Segoe UI', sans-serif; resize: vertical; min-height: 52px; max-height: 160px;"
+            required
+        ></textarea>
 
         <div class="input-row">
             <div class="input-half">

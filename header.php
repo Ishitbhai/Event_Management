@@ -19,7 +19,7 @@ if (session_status() == PHP_SESSION_NONE) {
     </div>
 
     <nav class="navbar">
-        <a href="#">Home</a>
+        <a href="index.php">Home</a>
         <a href="#">Events</a>
         <a href="#">Services</a>
         <a href="#">Bookings</a>
@@ -37,7 +37,7 @@ if (session_status() == PHP_SESSION_NONE) {
 
     <div class="auth-buttons">
         <?php if (isset($_SESSION['user_id'])): ?>
-            <a href="#" class="auth-btn profile-btn" title="Profile">
+            <a href="profile.php" class="auth-btn profile-btn" title="Profile">
                 <img src="images/user.png" alt="Profile" />
                 <span>Profile</span>
             </a>
