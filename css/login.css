@@ -214,7 +214,7 @@ body {
         gap: 0;
         margin-bottom: 4px;
     }
-}
+} 
 
 /* Body fallback to stacking if viewport is very short */
 @media (max-height: 480px) {
@@ -237,3 +237,4 @@ body {
 input.error, textarea.error {
     border-color: #d82c2c !important;
 }
+

@@ -1,3 +1,8 @@
+<?php
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,8 +36,19 @@
     </nav>
 
     <div class="auth-buttons">
-        <a href="login.php" class="login">Login</a>
-        <a href="register.php" class="register">Register</a>
+        <?php if (isset($_SESSION['user_id'])): ?>
+            <a href="#" class="auth-btn profile-btn" title="Profile">
+                <img src="images/user.png" alt="Profile" />
+                <span>Profile</span>
+            </a>
+            <a href="logout.php" class="auth-btn logout-btn" title="Logout">
+                <img src="images/logout.png" alt="Logout" />
+                <span>Logout</span>
+            </a>
+        <?php else: ?>
+            <a href="login.php" class="login">Login</a>
+            <a href="register.php" class="register">Register</a>
+        <?php endif; ?>
     </div>
 </header>
 

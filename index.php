@@ -65,6 +65,7 @@
         </div>
     </section>
 
+    <?php if (!isset($_SESSION['user_id'])): ?>
     <section class="cta">
         <h2>Ready to Create Unforgettable Memories?</h2>
         <p>Register now or log in to organize, manage, and enjoy exclusive events with Aone Hub.</p>
@@ -73,6 +74,7 @@
             <a href="login.php" class="login-btn">Login</a>
         </div>
     </section>
+    <?php endif; ?>
 </main>
 
 <?php
