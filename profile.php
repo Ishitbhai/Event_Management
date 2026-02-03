@@ -21,11 +21,11 @@ function h($str) {
 // Get all user details except sensitive ones (password, token, etc.)
 $user_id = $_SESSION['user_id'];
 
-// Remove user_id, user_status, user_type/type from editable/displayed fields list
-$excluded_fields = ['user_id', 'user_status', 'user_type', 'type'];
+// Remove user_id, user_status from editable/displayed fields list (but we WANT to display user_type!)
+$excluded_fields = ['user_id', 'user_status', 'type']; // allow user_type
 
 // Add fields that should NOT be editable, even if shown
-$readonly_fields = ['user_email', 'registered_at', 'last_login'];
+$readonly_fields = ['user_email', 'registered_at', 'last_login', 'user_type'];
 
 // Build dynamic SQL for fetching all columns except password/token and excluded fields
 $all_fields_sql = "SHOW COLUMNS FROM users";
@@ -60,7 +60,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['profile_update'])) {
     $params = [];
     $param_types = '';
     foreach ($db_fields as $field) {
-        // Don't allow update for read-only fields: registered_at, user_email, last_login
+        // Don't allow update for read-only fields: registered_at, user_email, last_login, user_type
         if (in_array($field, $readonly_fields)) continue;
         $val = trim($_POST[$field] ?? '');
 
@@ -111,8 +111,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['profile_update'])) {
 <div class="profile-container">
     <div class="profile-header">
         <h2><?php echo h($user['user_name']) ?: 'Your'; ?> Profile</h2>
-    </div>
-    <?php if ($update_msg) echo $update_msg; ?>
+        <!-- <div class="user-type-label" style="font-size:1em;color:#444;margin-top:6px;">
+            User Type: <span style="font-weight:bold;"><?php echo isset($user['user_type']) ? h(ucfirst($user['user_type'])) : "N/A"; ?></span>
+        </div> -->
+        </div>
+        <?php if ($update_msg) echo $update_msg; ?>
     <form method="post" autocomplete="off">
         <?php foreach ($db_fields as $field): ?>
             <div class="profile-row">
@@ -120,6 +123,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['profile_update'])) {
                     $label = ucwords(str_replace(['user_', '_'], ['', ' '], $field));
                     if ($field == 'registered_at') $label = "Account Created";
                     if ($field == 'last_login') $label = "Last Login";
+                    if ($field == 'user_type') $label = "User Type";
                 ?>
                 <span class="profile-label"><?php echo $label; ?>:</span>
                 <span class="profile-value">
@@ -129,6 +133,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['profile_update'])) {
                     <input type="text" name="<?php echo h($field); ?>" value="<?php echo h($user[$field]); ?>" readonly />
                 <?php elseif ($field == 'last_login'): ?>
                     <input type="text" name="<?php echo h($field); ?>" value="<?php echo (!empty($user[$field]) ? date('M d, Y H:i', strtotime($user[$field])) : '') ?>" readonly />
+                <?php elseif ($field == 'user_type'): ?>
+                    <input type="text" name="<?php echo h($field); ?>" value="<?php echo h(ucfirst($user[$field])); ?>" readonly />
                 <?php elseif (strpos($field, 'address') !== false): ?>
                     <textarea name="<?php echo h($field); ?>"><?php echo h($user[$field]); ?></textarea>
                 <?php else: ?>

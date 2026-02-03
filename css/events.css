@@ -1,0 +1,179 @@
+body {
+    font-family: 'Montserrat', sans-serif;
+    margin: 0; background: linear-gradient(130deg,#f9efff 0%,#edeffb 100%);
+}
+.event-header-main {
+    background: linear-gradient(100deg,#5a60ea 60%,#7ecfeb 100%);
+    color: #fff;
+    padding: 40px 0 15px 0;
+    text-align: center;
+    border-radius: 0 0 40px 40px;
+    box-shadow: 0px 6px 30px #baa7ff42;
+    margin-bottom: 35px;
+}
+.main-btn-row {
+    width:100%;
+    text-align: right;
+    margin:0 0 20px 0;
+    padding:0 30px;
+}
+.create-event-btn {
+    display: inline-block;
+    background: linear-gradient(90deg,#8134af 0,#3498db 80%);
+    color: #fff;
+    padding: 12px 32px;
+    margin: 0 0 15px 0;
+    border: none;
+    border-radius: 50px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 2px 8px #8134af33;
+    transition: background .2s,box-shadow .15s;
+    letter-spacing: 0.5px;
+}
+.create-event-btn:hover {
+    background: linear-gradient(90deg,#6d27a8 0,#2471a3 85%);
+    box-shadow: 0 6px 16px #6d27a842;
+}
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 35px;
+}
+.container {
+    width: 48%;
+    min-width: 320px;
+    background: #fff;
+    margin: 1.5% 1%;
+    padding: 28px 23px 23px 23px;
+    border-radius: 12px;
+    box-shadow: 0px 3px 24px #d0e0f96e;
+    transition: box-shadow .2s;
+}
+.container:hover {
+    box-shadow: 0px 6px 48px #b7d4f0a6;
+}
+.events-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.event-item {
+    background: rgba(244,245,250,0.97);
+    border-radius: 11px;
+    margin-bottom: 17px; 
+    box-shadow: 0 1px 10px #e2d7ff50;
+    display:flex;
+    align-items: flex-start;
+    gap:18px;
+    padding: 17px 19px 17px 17px;
+    border-left: 7px solid #c3b5e8;
+    position: relative;
+    overflow: hidden;
+}
+.event-banner-thumb {
+    width: 98px;
+    min-width: 98px;
+    height: 98px;
+    object-fit: cover;
+    border-radius: 9px;
+    box-shadow: 0px 2px 13px #bab7c773;
+    background: #f1ebff;
+    border:2px solid #f0e8ff;
+    transition: transform .18s;
+    margin-right: 8px;
+}
+.event-item:hover .event-banner-thumb {
+    transform: scale(1.07) rotate(-2deg);
+}
+.event-main-content {
+    flex: 1 1 0px;
+    min-width: 0;
+}
+.event-title-bar {
+    display:flex;
+    align-items:center;
+    margin-bottom:5px;
+}
+.event-title-bar strong {
+    font-size: 22px;
+    font-weight: bold;
+    color: #542472;
+    margin-right:10px;
+    letter-spacing:.2px;
+}
+.event-badge {
+    display:inline-block;
+    padding:2px 11px;
+    font-size:13px;
+    border-radius: 20px;
+    font-weight:600;
+    margin-left: 7px;
+    background: #fdeeee;
+    color: #9f2020;
+}
+.event-badge.ongoing {
+    background: #ffe49c;
+    color: #ff9505;
+}
+.event-badge.upcoming {
+    background: #c7ffdb;
+    color: #067b26;
+}
+.event-badge.past {
+    background: #eee; color: #727272;
+}
+.event-description {
+    margin-bottom:10px;
+    color:#33394c;
+    font-size: 15px;
+}
+.status-row {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 1px;
+}
+.event-gallery-slider {
+    margin-top: 4px;
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    scrollbar-width: thin;
+}
+.event-gallery-slider::-webkit-scrollbar {
+    height: 5px;
+    background: #efe6f3;
+}
+.gallery-img {
+    width:54px;
+    height:54px;
+    object-fit: cover;
+    border-radius: 6px;
+    border:2px solid #eee7fa;
+    box-shadow: 0px 1.5px 7px #bda7e133;
+    margin-right:2px;
+}
+.event-date-row {
+    font-size: 13px; color: #524682; margin:3px 0 7px 0; display:block;
+}
+@media (max-width: 1000px) {
+    .container {
+        width: 92%;
+        margin: 2% auto;
+    }
+    .row {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+@media (max-width:600px) {
+    .event-title-bar strong { font-size: 17px; }
+    .event-badge { font-size: 11px;}
+    .event-item {padding:11px 6px;}
+    .event-banner-thumb {width:68px;height:68px;}
+    .gallery-img {width:36px;height:36px;}
+}

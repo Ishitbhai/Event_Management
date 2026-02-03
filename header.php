@@ -20,7 +20,7 @@ if (session_status() == PHP_SESSION_NONE) {
 
     <nav class="navbar">
         <a href="index.php">Home</a>
-        <a href="#">Events</a>
+        <a href="events.php">Events</a>
         <a href="#">Services</a>
         <a href="#">Bookings</a>
         <a href="#">Reviews</a>

@@ -1,5 +1,17 @@
 <?php
     require('header.php');
+    require_once('database/db_connect.php');
+
+    // Fetch banner images from the 'events' table
+    $gallery_images = [];
+    $sql = "SELECT event_banner_image FROM events WHERE event_banner_image IS NOT NULL AND event_banner_image <> '' LIMIT 4";
+    $result = mysqli_query($conn, $sql);
+    if ($result && mysqli_num_rows($result) > 0) {
+        while($row = mysqli_fetch_assoc($result)) {
+            $gallery_images[] = $row['event_banner_image'];
+        }
+    }
+
 ?>
 
 <link rel="stylesheet" href="css/index.css">
@@ -58,10 +70,9 @@
     <section class="gallery-section">
         <h2>Event Moments Gallery</h2>
         <div class="event-gallery">
-            <img src="images/logo.jpg" class="gallery-photo" alt="Event Moment 1">
-            <img src="images/logo.jpg" class="gallery-photo" alt="Event Moment 2">
-            <img src="images/logo.jpg" class="gallery-photo" alt="Event Moment 3">
-            <img src="images/logo.jpg" class="gallery-photo" alt="Event Moment 4">
+            <?php foreach ($gallery_images as $idx => $img): ?>
+                <img src="<?php echo htmlspecialchars($img); ?>" class="gallery-photo" alt="Event Moment <?php echo $idx+1; ?>">
+            <?php endforeach; ?>
         </div>
     </section>
 
