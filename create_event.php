@@ -157,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-
+ 
     $gallery_csv = implode(',', $gallery_paths);
 
     /* INSERT EVENT */
