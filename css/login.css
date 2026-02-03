@@ -25,6 +25,37 @@ body {
     transition: padding 0.2s, max-width 0.2s;
 }
 
+/* --- Two-inputs-in-row styling --- */
+.input-row {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    margin-bottom: 18px;
+}
+.input-row .input-half {
+    flex: 1 1 0;
+    min-width: 0;
+    /* Ensure both inputs use the same field styling */
+}
+.input-row .input-half input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1.3px solid #bfc9dc;
+    outline: none;
+    font-size: 15px;
+    background: #f7faff;
+    transition: border-color 0.2s, font-size 0.2s, padding 0.2s;
+    font-family: 'Segoe UI', sans-serif;
+    box-sizing: border-box;
+    margin-bottom: 0;
+}
+/* Remove the standard margin for .auth-box input if it's within a row */
+.input-row .input-half input:focus {
+    border-color: #5464a7;
+}
+/* --- End two-inputs-in-row styling --- */
+
 .auth-box h2 {
     color: #203156;
     font-family: 'Merriweather', serif;
@@ -56,6 +87,11 @@ body {
     transition: border-color 0.2s, font-size 0.2s, padding 0.2s;
     font-family: 'Segoe UI', sans-serif;
     box-sizing: border-box;
+}
+
+/* Remove bottom margin for inputs inside .input-row */
+.input-row .input-half input {
+    margin-bottom: 0;
 }
 
 .auth-box input:focus {
@@ -106,7 +142,6 @@ body {
 
 /* Responsiveness */
 
-/* For medium screens, reduce padding and font sizes a bit */
 @media (max-width: 600px) {
     body {
         padding: 16px;
@@ -133,9 +168,14 @@ body {
     .links {
         font-size: 13px;
     }
+    /* Two inputs in row should stack on mobile */
+    .input-row {
+        flex-direction: column;
+        gap: 0;
+        margin-bottom: 6px;
+    }
 }
 
-/* For small screens, vertical spacing, smaller paddings and reduced radius */
 @media (max-width: 420px) {
     body {
         padding: 0;
@@ -169,7 +209,12 @@ body {
         margin-top: 10px;
         font-size: 12px;
     }
-}
+    .input-row {
+        flex-direction: column;
+        gap: 0;
+        margin-bottom: 4px;
+    }
+} 
 
 /* Body fallback to stacking if viewport is very short */
 @media (max-height: 480px) {
@@ -181,3 +226,16 @@ body {
         margin: 0 auto;
     }
 }
+
+.error {
+    color: #d82c2c;
+    font-size: 0.95rem;
+    margin-top: 3px;
+    margin-bottom: 6px;
+    display: block;
+}
+input.error, textarea.error {
+    border-color: #d82c2c !important;
+}
+
+ 

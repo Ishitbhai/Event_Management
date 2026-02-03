@@ -1,0 +1,29 @@
+.footer {
+    background: #181a22;
+    color: #fff;
+    padding: 26px 0;
+    text-align: center;
+    position: relative;
+    width: 100%;
+    margin-top: 40px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 16px;
+    letter-spacing: .02em;
+}
+.footer-content {
+    max-width: 900px;
+    margin: 0 auto;
+}
+.footer-nav {
+    margin-top: 8px;
+}
+.footer-nav a {
+    color: #85b3f9;
+    text-decoration: none;
+    margin: 0 7px;
+    transition: color 0.2s;
+}
+.footer-nav a:hover {
+    color: #fff657;
+    text-decoration: underline;
+}

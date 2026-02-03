@@ -1,0 +1,110 @@
+.event-details-main {
+    max-width: 800px;
+    margin: 45px auto 50px auto;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 6px 26px -7px #1e7aa540;
+    padding: 0 0 40px 0;
+    font-family: 'Montserrat',sans-serif;
+}
+.event-banner {
+    width: 100%; height:320px;
+    object-fit: cover;
+    border-radius: 20px 20px 0 0;
+    background: #efefef;
+}
+.event-content-wrap {
+    padding: 35px 32px 0 32px;
+}
+.event-meta-row {
+    display:flex; flex-wrap:wrap; gap:28px;
+    margin-bottom:24px;
+    font-size: 1.02em;
+    color:#555;
+}
+.event-meta-row span {
+    display:inline-block;
+    margin-right:14px;
+}
+.event-title-main {
+    font-size:2.2em;
+    color:#197655;
+    font-weight:800;
+    letter-spacing:.5px;
+    margin-bottom:9px;
+}
+.event-category {
+    display:inline-block;
+    background:#e5f9fb;
+    color:#188490;
+    padding:3px 12px 3px 10px;
+    font-weight:600;
+    border-radius:999px;
+    font-size:.97em;
+    margin-bottom:12px;
+    margin-right:8px;
+}
+.event-info-table {
+    width:100%;
+    border-collapse:collapse;
+    margin-bottom:18px;
+}
+.event-info-table td {
+    padding:6px 7px 6px 0;
+    font-size:1.03em;
+    border:none;
+}
+.event-gallery-row {
+    margin:18px 0 26px 0;
+    text-align:left;
+}
+.gallery-thumb {
+    width:64px; height:64px; object-fit:cover;
+    border-radius:10px;
+    margin-right:7px;
+    margin-bottom:6px;
+    box-shadow:0 2px 8px #0001;
+    border:1px solid #f4f4f4;
+}
+.event-desc-main {
+    font-size:1.14em;
+    line-height:1.7;
+    margin-bottom:18px;
+    color:#393e46;
+}
+.event-action-row {
+    text-align:center; 
+    margin:36px 0 0 0;
+}
+.book-event-btn {
+    background: linear-gradient(90deg,#20D46C 0,#28b3e2 100%);
+    color:#fff;
+    font-size:1.16em;
+    font-weight:700;
+    border:none;
+    border-radius:99px;
+    padding:16px 66px;
+    box-shadow:0 5px 22px -7px #28b3e2a0;
+    transition: background .16s, box-shadow .13s;
+    cursor:pointer;
+    margin-top:7px;
+}
+.book-event-btn:hover, .book-event-btn:focus {
+    background: linear-gradient(90deg,#28b3e2 0,#20D46C 100%);
+    box-shadow:0 8px 28px -2px #1ebfa630;
+}
+@media (max-width:700px) {
+    .event-details-main { max-width:99vw;}
+    .event-content-wrap { padding:19px 5vw 0 5vw;}
+    .event-banner {height:165px;}
+}
+.err-msg {
+    font-family:sans-serif;
+    background:#ffdede;
+    color:#b2181e;
+    padding:16px 23px;
+    max-width:430px;
+    margin:55px auto 0 auto;
+    border-radius:12px;
+    text-align:center;
+}
