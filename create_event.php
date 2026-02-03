@@ -160,8 +160,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
  
     $gallery_csv = implode(',', $gallery_paths);
 
-    /* INSERT EVENT */
+    /* INSERT EVENT AND OWNER'S BOOKINGS */
     if (empty($errors)) {
+        $conn->autocommit(false); // Start transaction
+
+        // 1. Insert into events
         $stmt = mysqli_prepare(
             $conn,
             "INSERT INTO events (
@@ -197,17 +200,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $event_reg_deadline
         );
 
-//         echo '<pre>';
-// var_dump($_POST['end_datetime']);
-// var_dump($event_end_datetime);
-// exit;
+        $event_ok = false;
+        $booking_ok = false;
 
         if (mysqli_stmt_execute($stmt)) {
-            $success = true;
+            $event_ok = true;
+            $event_id = mysqli_insert_id($conn);
+
+            // 2. Insert booking records (for the owner and family persons)
+            $booking_stmt = mysqli_prepare(
+                $conn,
+                "INSERT INTO bookings (event_id, user_id, persons) VALUES (?, ?, ?)"
+            );
+            mysqli_stmt_bind_param($booking_stmt, "iii", $event_id, $owner_id, $persons);
+
+            if (mysqli_stmt_execute($booking_stmt)) {
+                $booking_ok = true;
+            } else {
+                $errors[] = "Booking insertion failed: " . mysqli_error($conn);
+            }
+            mysqli_stmt_close($booking_stmt);
         } else {
             $errors[] = "Database error: " . mysqli_error($conn);
         }
         mysqli_stmt_close($stmt);
+
+        if ($event_ok && $booking_ok) {
+            $conn->commit();
+            $success = true;
+        } else {
+            $conn->rollback();
+        }
+        $conn->autocommit(true);
     }
 }
 ?>
