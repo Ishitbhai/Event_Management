@@ -182,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         mysqli_stmt_bind_param(
             $stmt,
-            "issssssiiiss",   // <-- change 'ississiiisss' to 'issssssiiiss'
+            "issssssiisss",
             $owner_id,
             $title,
             $description,
