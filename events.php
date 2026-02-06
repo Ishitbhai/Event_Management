@@ -38,7 +38,7 @@ function render_gallery($event_gallery_images) {
     return $out;
 }
 ?>
-    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="css/events.css">
     <script src="js/events.js"></script>
     <div class="event-header-main">
@@ -133,7 +133,8 @@ function render_gallery($event_gallery_images) {
                     <li style="text-align:center;opacity:.66;">No past events.</li>
                 <?php else: ?>
                     <?php foreach($past_events as $event): ?>
-                        <li class="event-item">
+                        <li class="event-item event-link" style="cursor:pointer;">
+                            <a href="single_event.php?event_id=<?php echo (int)$event['event_id']; ?>" style="text-decoration:none;color:inherit;display:block;">
                             <?php if (!empty($event['event_banner_image'])): ?>
                                 <img src="<?php echo htmlspecialchars($event['event_banner_image']); ?>" class="event-banner-thumb" alt="Banner">
                             <?php else: ?>
@@ -159,6 +160,7 @@ function render_gallery($event_gallery_images) {
                                     }
                                 ?>
                             </div>
+                            </a>
                         </li>
                     <?php endforeach; ?>
                 <?php endif; ?>

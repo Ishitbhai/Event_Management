@@ -108,3 +108,36 @@
     border-radius:12px;
     text-align:center;
 }
+
+.stars-row { display:flex; gap:2px; align-items:center; }
+.star-input { display:none; }
+.star-label { font-size:1.7em; color:#e2e2e2; cursor:pointer; transition:color .2s; }
+.star-label.checked { color:#FFC107; }
+
+.star { position:relative; display:inline-block; font-size:1.2em; color:#ddd; }
+.star.full { color:#FFC107; }
+.star.half::before {
+    content:"★";
+    position:absolute;
+    left:0;
+    width:50%;
+    overflow:hidden;
+    color:#FFC107;
+}
+
+.review-box {
+    border:1px solid #ededed;
+    background:#fafafa;
+    border-radius:8px;
+    padding:13px 15px;
+    margin-bottom:18px;
+}
+
+.review-username {
+    font-weight:bold;
+    color:#218a5a;
+}
+.event-info-table {
+    margin: 18px 0 0 0; border-collapse: collapse; width:100%; max-width:470px; font-size: 1.01em;}
+.event-info-table th, .event-info-table td {padding: 5px 10px;}
+.event-info-table th {text-align:left; color: #205c35; width: 145px;}

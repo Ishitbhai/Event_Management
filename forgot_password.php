@@ -135,22 +135,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <title>Forgot Password - AOne Hub</title>
     <link rel="stylesheet" href="css/login.css">
+    
 </head>
 <body>
 <div class="auth-container">
     <div class="auth-box">
         <h2>Forgot Password</h2>
         <?php if (!empty($error)) { ?>
-            <p style="color:red;"><?php echo $error; ?></p>
+            <p class="fp-error"><?php echo $error; ?></p>
         <?php } elseif (!empty($success)) { ?>
-            <p style="color:green;"><?php echo $success; ?></p>
+            <p class="fp-success"><?php echo $success; ?></p>
         <?php } ?>
 
         <?php if ($step == 1 && empty($success)) { ?>
             <form method="POST" action="">
                 <label for="forgot_email">Enter your email address:</label><br>
-                <input type="email" name="forgot_email" id="forgot_email" required style="margin-top:10px;padding:10px;width:95%;margin-bottom:18px;" /><br>
-                <button type="submit" style="width:100%;padding:10px;">Send Reset Link</button>
+                <input type="email" name="forgot_email" id="forgot_email" required class="fp-input" /><br>
+                <button type="submit" class="fp-btn">Send Reset Link</button>
             </form>
             <div class="links">
                 <a href="login.php">Back to Login</a>
@@ -162,10 +163,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <input type="hidden" name="reset_email" value="<?php echo isset($email) ? htmlspecialchars($email) : ''; ?>">
                 <input type="hidden" name="user_token" value="<?php echo isset($token) ? htmlspecialchars($token) : ''; ?>">
                 <label for="new_password">New Password:</label><br>
-                <input type="password" name="new_password" id="new_password" required style="margin-top:10px;padding:10px;width:95%;margin-bottom:12px;" /><br>
+                <input type="password" name="new_password" id="new_password" required class="fp-input-reset" /><br>
                 <label for="confirm_password">Confirm New Password:</label><br>
-                <input type="password" name="confirm_password" id="confirm_password" required style="margin-top:3px;padding:10px;width:95%;margin-bottom:15px;" /><br>
-                <button type="submit" style="width:100%;padding:10px;">Reset Password</button>
+                <input type="password" name="confirm_password" id="confirm_password" required class="fp-input-reset-confirm" /><br>
+                <button type="submit" class="fp-btn">Reset Password</button>
             </form>
             <div class="links">
                 <a href="login.php">Back to Login</a>
@@ -173,7 +174,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <?php } ?>
 
         <?php if ($step == 3 && !empty($success)) { ?>
-            <div style="margin-top:20px;">
+            <div class="fp-mt20">
                 <a href="login.php" class="login-btn">Return to Login</a>
             </div>
         <?php } ?>

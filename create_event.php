@@ -207,12 +207,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $event_ok = true;
             $event_id = mysqli_insert_id($conn);
 
-            // 2. Insert booking records (for the owner and family persons)
+            // 2. Insert booking record (for the owner and family persons) with booking_status='approved'
             $booking_stmt = mysqli_prepare(
                 $conn,
-                "INSERT INTO bookings (event_id, user_id, persons) VALUES (?, ?, ?)"
+                "INSERT INTO bookings (event_id, user_id, persons, booking_status) VALUES (?, ?, ?, ?)"
             );
-            mysqli_stmt_bind_param($booking_stmt, "iii", $event_id, $owner_id, $persons);
+            $booking_status = 'approved';
+            mysqli_stmt_bind_param($booking_stmt, "iiis", $event_id, $owner_id, $persons, $booking_status);
 
             if (mysqli_stmt_execute($booking_stmt)) {
                 $booking_ok = true;
@@ -394,7 +395,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="js/jquery-4.0.0.min.js"></script>
 <script>
     function updateMaxSeats() {
         var sel = document.getElementById('category_id');

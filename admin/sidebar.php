@@ -3,27 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Admin Panel</title>
     <link rel="stylesheet" href="css/sidebar.css">
+    <script src="js/sidebar.js"></script>
 
 </head>
-<body style="margin:0; padding:0;">
-    
+<body>
     <div class="sidebar-container">
         <aside class="sidebar">
             <div class="sidebar-logo">
                 Aone hub
             </div>
             <nav>
-                <a href="#" class="active">Dashboard</a>
+                <a href="index.php" class="active">Dashboard</a>
                 <a href="#">Events</a>
-                <a href="#">Create Event</a>
                 <a href="#">Bookings</a>
                 <a href="#">Users</a>
+                <a href="#">Servives</a>
                 <a href="#">Reviews</a>
-                <a href="#">Reports</a>
-                <a href="#">Settings</a>
-                <a href="#">Logout</a>
+                <a href="logout.php">Logout</a>
             </nav>
             <div class="sidebar-footer">
                 &copy; <?php echo date("Y"); ?> Event Management
@@ -39,9 +37,7 @@
                     echo "Admin Panel";
                 }
                 ?>
+                <button class="profile-btn" title="Profile" onclick="window.location.href='profile.php'">
+                    <span class="profile-icon">&#128100;</span>
+                </button>
             </div>
-            <!-- Your page content goes here -->
-        </div>
-    </div>
-</body>
-</html>

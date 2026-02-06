@@ -36,7 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } else {
         // Use prepared statement to avoid SQL injection
         // Also select 'user_status' field to check if account is active
-        $stmt = $conn->prepare("SELECT user_id, user_name, user_email, user_password, user_status FROM users WHERE user_email = ? LIMIT 1");
+        $stmt = $conn->prepare("SELECT user_id, user_name,user_type, user_email, user_password, user_status FROM users WHERE user_email = ? LIMIT 1");
         $stmt->bind_param("s", $user_email);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -59,6 +59,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $_SESSION['user_id'] = $user['user_id'];
                     $_SESSION['user_name'] = $user['user_name'];
                     $_SESSION['user_email'] = $user['user_email'];
+                    $_SESSION['user_type'] = $user['user_type'];
+
                     // Redirect to main page or dashboard
                     header("Location: index.php");
                     exit;

@@ -1,0 +1,84 @@
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #f4f6fb;
+}
+
+.dashboard-main {
+    padding: 40px;
+}
+
+.dashboard-header {
+    margin-bottom: 30px;
+}
+
+.dashboard-header h2 {
+    margin: 0;
+    color: #322053;
+}
+
+.dashboard-header p {
+    color: #6c757d;
+    margin-top: 8px;
+}
+
+.dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+}
+
+@media (max-width: 980px) {
+    .dashboard-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 700px) {
+    .dashboard-cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+.dashboard-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.1);
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.card-number {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.card-link {
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.events { border-left: 6px solid #5236d6; }
+.bookings { border-left: 6px solid #197655; }
+.users { border-left: 6px solid #c82f2f; }
+.services { border-left: 6px solid #197655; }
+.reviews { border-left: 6px solid #c82f2f; }
+
+.events .card-title { color: #5236d6; }
+.bookings .card-title { color: #197655; }
+.users .card-title { color: #c82f2f; }
+.services .card-title { color: #197655; }
+.reviews .card-title { color: #c82f2f; }

@@ -1,0 +1,189 @@
+.bookings-container {
+    max-width: 1100px;
+    margin: 36px auto 36px auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 24px 0 rgba(50,50,100,0.07), 0 6px 36px 0 rgba(20,30,48,0.09);
+    padding: 60px 48px 54px 48px; /* Increased padding */
+    font-family: "Segoe UI", "Roboto", Arial, sans-serif;
+}
+.section-title {
+    margin: 32px 0 22px 0;
+    font-size: 1.3em;
+    color: #4242a0;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+.events-subsection-title {
+    margin: 16px 0 10px 0;
+    font-size: 1.08em;
+    color: #2672c8;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+/* Increase the gap and padding between event cards for more visual spacing */
+.events-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 44px 40px;
+    justify-content: flex-start;
+    margin-bottom: 12px;
+}
+.event-card {
+    flex: 1 1 calc(33.333% - 40px);
+    max-width: calc(33.333% - 40px);
+    background: #f7f8fa;
+    border-radius: 9px;
+    box-shadow: 0 2px 8px 0 rgba(43,43,72,0.06);
+    padding: 16px 0 38px 0;
+    transition: box-shadow 0.22s, top 0.22s, border 0.18s;
+    cursor: pointer;
+    text-decoration: none;
+    color: #303048;
+    position: relative;
+    top:0;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+.event-card:hover {
+    box-shadow: 0 6px 14px 0 rgba(64,64,112,0.15);
+    top:-2px;
+    background: #f2f3ff;
+    border: 1px solid #cfdcff;
+}
+.event-card-banner {
+    width: 95%;
+    min-height: 155px;
+    max-height: 185px;
+    object-fit: cover;
+    border-radius: 9px 9px 0 0;
+    margin: 0 auto 27px auto;
+    background: #eee;
+    display: block;
+    box-shadow: 0 1px 5px 0 rgba(30,30,50,0.03);
+}
+.event-content {
+    flex: 1;
+    padding: 32px 28px 0 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+.event-date {
+    color: #6363ba;
+    font-size: 1.09em;
+    margin-bottom: 14px;
+    font-weight: 500;
+}
+.event-title {
+    font-size: 1.22em;
+    font-weight: 600;
+    color: #263280;
+    margin-bottom: 12px;
+}
+.event-detail {
+    font-size: 1.03em;
+    color: #646480;
+    margin-bottom: 13px;
+    line-height: 1.5;
+}
+.persons-info {
+    color: #5f56a6;
+    font-size: 1.025em;
+    font-weight: 500;
+    margin-top: 12px;
+    margin-bottom: 6px;
+}
+.booking-status {
+    display: inline-block;
+    margin-top: 16px;
+    font-size: 1.04em;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 5px 14px;
+}
+.status-approved {
+    color: #22813d;
+    background: #e5fbe9;
+    border: 1.5px solid #c7f4d0;
+}
+.status-pending {
+    color: #9e8702;
+    background: #fcfacf;
+    border: 1.5px solid #e4d958;
+}
+.status-rejected {
+    color: #bb2424;
+    background: #ffeaea;
+    border: 1.5px solid #fac0c0;
+}
+@media(max-width:1300px) {
+    .bookings-container { max-width:98vw; }
+}
+@media(max-width:980px) {
+    .event-card, .event-card[style] {
+        flex: 1 1 48%;
+        max-width: 48%;
+    }
+    .events-list {
+        gap: 28px 18px;
+    }
+}
+@media(max-width:900px) {
+    .bookings-container { padding: 34px 5vw 26px 5vw;}
+}
+@media(max-width:650px) {
+    .bookings-container { padding:18px 4vw 13px 4vw; }
+    .events-list { gap:16px 0; }
+    .event-card, .event-card[style] { flex:1 1 98vw; max-width:98vw; min-width:190px;}
+    .event-card-banner { height: 96px; min-height:80px; }
+    .event-content { padding:19px 7px 0 10px; }
+}
+
+
+.bookings-title {
+    text-align:center;
+    color:#35356e;
+    letter-spacing:1px;
+}
+.bookings-empty-message,
+.owner-empty-message,
+.cancelled-empty-message {
+    padding:16px 0 18px 5px;
+    font-size:1.01em;
+}
+.bookings-empty-message { color: #999; }
+.owner-empty-message { color: #9ca; }
+.cancelled-empty-message { color: #db7a7a; }
+.event-date .event-time {
+    color: #888;
+    font-size: 0.97em;
+}
+.persons-info-owner-draft,
+.persons-info-owner-published,
+.persons-info-owner-ongoing,
+.persons-info-owner-completed {
+    color: #417b36;
+    margin-bottom: 7px;
+}
+.persons-info-owner-cancelled {
+    color: #9e2323;
+    margin-bottom: 9px;
+}
+.persons-info-available-seats {
+    color: #2d4599;
+    margin-bottom: 5px;
+}
+.persons-info-available-seats .total-seats {
+    color: #888;
+    font-size:0.95em;
+    margin-left:5px;
+}
+.event-title-cancelled { color:#be2929; }
+.cancelled-section-title { color: #c25; }
+.event-card-cancelled {
+    border:1.5px solid #f66;
+    background:#fff7f7;
+}

@@ -1,0 +1,84 @@
+/* Error message styling */
+.err-msg {
+    max-width:430px;
+    margin:55px auto 0 auto;
+    padding:16px 23px;
+    border-radius:12px;
+    background:#ffdede;
+    color:#b2181e;
+    text-align:center;
+    font-family:sans-serif;
+}
+
+/* Main event booking container */
+.event-details-main.book-custom {
+    max-width:430px;
+    padding:40px 32px;
+    margin:55px auto 0 auto;
+    text-align:center;
+}
+
+/* Event title */
+.event-title-main.book-custom {
+    margin-bottom:18px;
+    text-align:center;
+}
+.event-title-main.book-custom.booking, 
+.event-title-main.book-custom.already,
+.event-title-main.book-custom.submitted
+{
+    margin-bottom:25px;
+}
+
+/* Form styling */
+.book-custom-form {
+    text-align:center;
+}
+.book-custom-label {
+    font-weight:600;
+    font-size:1.09em;
+}
+.book-custom-input {
+    padding:7px 15px;
+    font-size:1.09em;
+    margin:14px 0 26px 0;
+    width:90px;
+    border-radius:7px;
+    border:1px solid #bbb;
+}
+.book-event-btn {
+    min-width:155px;
+}
+
+/* Messages and note styles */
+.book-custom-msg {
+    font-size:1.15em;
+    margin-bottom:18px;
+}
+.book-custom-total {
+    display:inline-block;
+    margin:19px 0 6px 0;
+}
+.book-custom-note {
+    background:#e5f9fb;
+    padding:15px 14px 14px 14px;
+    border-radius:8px;
+    color:#197655;
+    max-width:340px;
+    margin:0 auto;
+    font-size:1.02em;
+}
+.book-custom-link {
+    margin-top:28px;
+    text-align:center;
+}
+.create-event-btn.book-custom-link {
+    background:#6b59c3;
+    color:#fff;
+    border:none;
+    border-radius:7px;
+    padding:11px 25px;
+    font-size:1.1em;
+    cursor:pointer;
+    text-decoration:none;
+}
