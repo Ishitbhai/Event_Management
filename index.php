@@ -2,16 +2,37 @@
     require('header.php');
     require_once('database/db_connect.php');
 
-    // Fetch banner images from the 'events' table
-    $gallery_images = [];
-    $sql = "SELECT event_banner_image FROM events WHERE event_banner_image IS NOT NULL AND event_banner_image <> '' LIMIT 4";
+    // Fetch completed (past) event banner images with their IDs from the 'events' table
+    $gallery_events = [];
+    $sql = "SELECT event_id, event_banner_image FROM events 
+            WHERE event_banner_image IS NOT NULL 
+              AND event_banner_image <> '' 
+              AND event_status = 'completed'
+            LIMIT 8";
     $result = mysqli_query($conn, $sql);
     if ($result && mysqli_num_rows($result) > 0) {
         while($row = mysqli_fetch_assoc($result)) {
-            $gallery_images[] = $row['event_banner_image'];
+            $gallery_events[] = [
+                'event_id' => $row['event_id'],
+                'event_banner_image' => $row['event_banner_image']
+            ];
+        }
+    } 
+
+    // Fetch services dynamically from the 'services' table
+    $services = [];
+    $service_sql = "SELECT service_id, service_title, service_description, service_image FROM services LIMIT 8";
+    $service_result = mysqli_query($conn, $service_sql);
+    if ($service_result && mysqli_num_rows($service_result) > 0) {
+        while($service_row = mysqli_fetch_assoc($service_result)) {
+            $services[] = [
+                'service_id' => $service_row['service_id'],
+                'service_title' => $service_row['service_title'],
+                'service_description' => $service_row['service_description'],
+                'service_image' => $service_row['service_image']
+            ];
         }
     }
-
 ?>
 
 <link rel="stylesheet" href="css/index.css">
@@ -27,7 +48,7 @@
                 Experience unforgettable moments and seamless event management.<br>
                 Whether you want to plan, join, or showcase - we bring your events to life!
             </p>
-            <a href="#" class="hero-btn">Explore Events</a>
+            <a href="events.php" class="hero-btn">Explore Events</a>
         </div>
     </section>
 
@@ -35,34 +56,23 @@
     <section class="services-section">
         <h2>Our Services</h2>
         <div class="services-list">
-            <div class="service-card">
-                <img src="images/logo.jpg" alt="Event Planning" />
-                <h3>Event Planning</h3>
-                <p>
-                    From concept to execution, our expert team helps you plan every detail for birthdays, weddings, conferences, & more.
-                </p>
-            </div>
-            <div class="service-card">
-                <img src="images/logo.jpg" alt="Venue Booking" />
-                <h3>Venue Booking</h3>
-                <p>
-                    Easily search and book the perfect venue for your special occasion, tailored to your needs and style.
-                </p>
-            </div>
-            <div class="service-card">
-                <img src="images/logo.jpg" alt="Event Management" />
-                <h3>Event Management</h3>
-                <p>
-                    We handle logistics, registrations, and coordination—so you can enjoy a smooth, hassle-free event.
-                </p>
-            </div>
-            <div class="service-card">
-                <img src="images/logo.jpg" alt="24/7 Support" />
-                <h3>24/7 Support</h3>
-                <p>
-                    Our dedicated support team is always available to address queries and ensure your event success.
-                </p>
-            </div>
+            <?php if (!empty($services)): ?>
+                <?php foreach($services as $service): ?>
+                    <div class="service-card">
+                        <?php if (!empty($service['service_image'])): ?>
+                            <img src="<?php echo htmlspecialchars($service['service_image']); ?>" alt="<?php echo htmlspecialchars($service['service_title']); ?>" />
+                        <?php else: ?>
+                            <img src="images/logo.jpg" alt="<?php echo htmlspecialchars($service['service_title']); ?>" />
+                        <?php endif; ?>
+                        <h3><?php echo htmlspecialchars($service['service_title']); ?></h3>
+                        <p>
+                            <?php echo nl2br(htmlspecialchars($service['service_description'])); ?>
+                        </p>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p>No services available at this time.</p>
+            <?php endif; ?>
         </div>
     </section>
 
@@ -70,8 +80,10 @@
     <section class="gallery-section">
         <h2>Event Moments Gallery</h2>
         <div class="event-gallery">
-            <?php foreach ($gallery_images as $idx => $img): ?>
-                <img src="<?php echo htmlspecialchars($img); ?>" class="gallery-photo" alt="Event Moment <?php echo $idx+1; ?>">
+            <?php foreach ($gallery_events as $idx => $event): ?>
+                <a href="single_event.php?event_id=<?php echo (int)$event['event_id']; ?>">
+                    <img src="<?php echo htmlspecialchars($event['event_banner_image']); ?>" class="gallery-photo" alt="Event Moment <?php echo $idx+1; ?>">
+                </a>
             <?php endforeach; ?>
         </div>
     </section>

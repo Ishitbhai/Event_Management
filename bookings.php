@@ -4,9 +4,19 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
+
 $user_id = $_SESSION['user_id'];
+$is_admin = isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1;
+
+// Admins can access event_requests.php, but only their own events as "owner"
+// If admin (or any user), redirect directly to event_requests.php for all events (only from the main bookings page, not for owner's event links anymore)
+if ($is_admin && !isset($_GET['event_id'])) {
+    header("Location: event_requests.php");
+    exit();
+}
+
 require_once('header.php');
-require_once('database/db_connect.php'); // make sure you have database connection
+require_once('database/db_connect.php');
 
 // Fetch events where user booked, including booking status and event_status
 $booked_sql = "SELECT events.*, bookings.persons, bookings.booking_status 
@@ -20,25 +30,24 @@ $stmt->execute();
 $booked_events = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// Categorize events into Past (Completed), Ongoing, Upcoming (Approved but not started)
-$past_events = [];
-$ongoing_events = [];
-$upcoming_events = [];
+// For bookings, NO draft or cancelled events: only published, ongoing, completed
+$booked_categorized = [
+    'published'  => [], // Upcoming
+    'ongoing'    => [], // Ongoing
+    'completed'  => []  // Completed
+];
 foreach ($booked_events as $event) {
     $status = isset($event['event_status']) ? strtolower($event['event_status']) : '';
-    if ($status === 'completed') {
-        $past_events[] = $event;
-    } elseif ($status === 'ongoing') {
-        $ongoing_events[] = $event;
-    } elseif ($status === 'approved') {
-        $upcoming_events[] = $event;
+    if ($status === 'cancelled' || $status === 'draft') continue; // Not for this section
+    if (isset($booked_categorized[$status])) {
+        $booked_categorized[$status][] = $event;
     } else {
-        // Optionally place unknown statuses as upcoming for safety
-        $upcoming_events[] = $event;
+        // Unknown status, treat as upcoming
+        $booked_categorized['published'][] = $event;
     }
 }
 
-// Fetch events owned by the user ("My Events") and calculate available seats
+// Fetch events owned by this user (admin can view/manage their own events too)
 $my_events_sql = "SELECT * FROM events WHERE owner_id = ? ORDER BY event_date DESC";
 $stmt = $conn->prepare($my_events_sql);
 $stmt->bind_param('i', $user_id);
@@ -46,7 +55,7 @@ $stmt->execute();
 $my_events = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// For all user-owned events, get the number of approved bookings for each event
+// For all user-owned events, get the number of approved bookings (optional, can be used if you need total participants)
 $event_ids = array_column($my_events, 'event_id');
 $booked_seats = [];
 if (!empty($event_ids)) {
@@ -64,6 +73,60 @@ if (!empty($event_ids)) {
         $booked_seats[$row['event_id']] = intval($row['booked']);
     }
     $stmt->close();
+}
+
+// For MY EVENTS (As Owner), group all: must include draft and cancelled
+$owner_events = [
+    'draft'      => [],
+    'published'  => [],
+    'ongoing'    => [],
+    'completed'  => [],
+    'cancelled'  => []
+];
+foreach ($my_events as $event) {
+    $status = isset($event['event_status']) ? strtolower($event['event_status']) : '';
+    if (isset($owner_events[$status])) {
+        $owner_events[$status][] = $event;
+    } else {
+        $owner_events['draft'][] = $event; // unknown as draft
+    }
+}
+
+function echo_booked_cards($events, $label)
+{
+    foreach ($events as $event) {
+        $status = strtolower($event['booking_status']);
+        $status_text = ucfirst($status);
+        $status_class = '';
+        if ($status == "approved") $status_class = 'status-approved';
+        elseif ($status == "pending") $status_class = 'status-pending';
+        elseif ($status == "rejected") $status_class = 'status-rejected';
+        else $status_class = 'status-pending';
+        $banner = (!empty($event['event_banner_image'])) ? htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
+        $event_url = 'single_event.php?event_id=' . urlencode($event['event_id']);
+        ?>
+        <a href="<?php echo $event_url; ?>" class="event-card">
+            <img class="event-card-banner" src="<?php echo $banner; ?>" alt="Event Banner" loading="lazy" />
+            <div class="event-content">
+                <div class="event-date">
+                    <?php echo htmlspecialchars(date("D, M d, Y", strtotime($event['event_date']))); ?>
+                    <?php if(!empty($event['event_start_time'])): ?>
+                        <span style="color:#888; font-size:0.97em;">
+                            &middot;
+                            <?php echo htmlspecialchars(date("g:i a", strtotime($event['event_start_time']))); ?>
+                        </span>
+                    <?php endif; ?>
+                </div>
+                <div class="event-title"><?php echo htmlspecialchars($event['event_title']); ?></div>
+                <div class="event-detail"><?php echo nl2br(htmlspecialchars(mb_strimwidth($event['event_description'], 0, 96, "..."))); ?></div>
+                <div class="persons-info">Booked for: <b><?php echo intval($event['persons']); ?></b> <?php echo (intval($event['persons']) > 1) ? "persons" : "person"; ?></div>
+                <span class="booking-status <?php echo $status_class; ?>">
+                    <?php echo $status_text; ?> (<?php echo $label; ?>)
+                </span>
+            </div>
+        </a>
+        <?php
+    }
 }
 ?>
 
@@ -95,7 +158,7 @@ if (!empty($event_ids)) {
 .events-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 44px 40px; /* vertical and then horizontal gap between event cards */
+    gap: 44px 40px;
     justify-content: flex-start;
     margin-bottom: 12px;
 }
@@ -115,9 +178,6 @@ if (!empty($event_ids)) {
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-}
-.event-card:not(:last-child) {
-    /* See note in original */
 }
 .event-card:hover {
     box-shadow: 0 6px 14px 0 rgba(64,64,112,0.15);
@@ -220,140 +280,45 @@ if (!empty($event_ids)) {
 
     <div class="section-title"><span>&#128197;</span> Booked Events</div>
 
-    <div class="events-subsection-title">&#128338; Ongoing Events</div>
-    <div class="events-list">
-    <?php if (count($ongoing_events)): ?>
-        <?php foreach ($ongoing_events as $event): ?>
-            <?php
-                $status = strtolower($event['booking_status']);
-                $status_text = ucfirst($status);
-                $status_class = '';
-                if ($status == "approved") $status_class = 'status-approved';
-                elseif ($status == "pending") $status_class = 'status-pending';
-                elseif ($status == "rejected") $status_class = 'status-rejected';
-                else $status_class = 'status-pending';
-                $banner = (!empty($event['event_banner_image'])) ? htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
-                $event_url = 'single_event.php?event_id=' . urlencode($event['event_id']);
-            ?>
-            <a href="<?php echo $event_url; ?>" class="event-card">
-                <img class="event-card-banner" src="<?php echo $banner; ?>" alt="Event Banner" loading="lazy" />
-                <div class="event-content">
-                    <div class="event-date">
-                        <?php echo htmlspecialchars(date("D, M d, Y", strtotime($event['event_date']))); ?>
-                        <?php if(!empty($event['event_start_time'])): ?>
-                            <span style="color:#888; font-size:0.97em;">
-                                &middot;
-                                <?php echo htmlspecialchars(date("g:i a", strtotime($event['event_start_time']))); ?>
-                            </span>
-                        <?php endif; ?>
-                    </div>
-                    <div class="event-title"><?php echo htmlspecialchars($event['event_title']); ?></div>
-                    <div class="event-detail"><?php echo nl2br(htmlspecialchars(mb_strimwidth($event['event_description'], 0, 96, "..."))); ?></div>
-                    <div class="persons-info">Booked for: <b><?php echo intval($event['persons']); ?></b> <?php echo (intval($event['persons']) > 1) ? "persons" : "person"; ?></div>
-                    <span class="booking-status <?php echo $status_class; ?>">
-                        <?php echo $status_text; ?> (Ongoing)
-                    </span>
-                </div>
-            </a>
-        <?php endforeach; ?>
-    <?php else: ?>
-        <div style="padding:16px 0 18px 5px;color:#999;font-size:1.01em;">No ongoing events.</div>
-    <?php endif; ?>
-    </div>
-
     <div class="events-subsection-title">&#128197; Upcoming Events</div>
     <div class="events-list">
-    <?php if (count($upcoming_events)): ?>
-        <?php foreach ($upcoming_events as $event): ?>
-            <?php
-                $status = strtolower($event['booking_status']);
-                $status_text = ucfirst($status);
-                $status_class = '';
-                if ($status == "approved") $status_class = 'status-approved';
-                elseif ($status == "pending") $status_class = 'status-pending';
-                elseif ($status == "rejected") $status_class = 'status-rejected';
-                else $status_class = 'status-pending';
-                $banner = (!empty($event['event_banner_image'])) ? htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
-                $event_url = 'single_event.php?event_id=' . urlencode($event['event_id']);
-            ?>
-            <a href="<?php echo $event_url; ?>" class="event-card">
-                <img class="event-card-banner" src="<?php echo $banner; ?>" alt="Event Banner" loading="lazy" />
-                <div class="event-content">
-                    <div class="event-date">
-                        <?php echo htmlspecialchars(date("D, M d, Y", strtotime($event['event_date']))); ?>
-                        <?php if(!empty($event['event_start_time'])): ?>
-                            <span style="color:#888; font-size:0.97em;">
-                                &middot;
-                                <?php echo htmlspecialchars(date("g:i a", strtotime($event['event_start_time']))); ?>
-                            </span>
-                        <?php endif; ?>
-                    </div>
-                    <div class="event-title"><?php echo htmlspecialchars($event['event_title']); ?></div>
-                    <div class="event-detail"><?php echo nl2br(htmlspecialchars(mb_strimwidth($event['event_description'], 0, 96, "..."))); ?></div>
-                    <div class="persons-info">Booked for: <b><?php echo intval($event['persons']); ?></b> <?php echo (intval($event['persons']) > 1) ? "persons" : "person"; ?></div>
-                    <span class="booking-status <?php echo $status_class; ?>">
-                        <?php echo $status_text; ?> (Upcoming)
-                    </span>
-                </div>
-            </a>
-        <?php endforeach; ?>
+    <?php if (count($booked_categorized['published'])): ?>
+        <?php echo_booked_cards($booked_categorized['published'], "Upcoming"); ?>
     <?php else: ?>
         <div style="padding:16px 0 18px 5px;color:#999;font-size:1.01em;">No upcoming events.</div>
     <?php endif; ?>
     </div>
 
-    <div class="events-subsection-title">&#9200; Past Events</div>
+    <div class="events-subsection-title">&#128338; Ongoing Events</div>
     <div class="events-list">
-    <?php if (count($past_events)): ?>
-        <?php foreach ($past_events as $event): ?>
-            <?php
-                $status = strtolower($event['booking_status']);
-                $status_text = ucfirst($status);
-                $status_class = '';
-                if ($status == "approved") $status_class = 'status-approved';
-                elseif ($status == "pending") $status_class = 'status-pending';
-                elseif ($status == "rejected") $status_class = 'status-rejected';
-                else $status_class = 'status-pending';
-                $banner = (!empty($event['event_banner_image'])) ? htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
-                $event_url = 'single_event.php?event_id=' . urlencode($event['event_id']);
-            ?>
-            <a href="<?php echo $event_url; ?>" class="event-card">
-                <img class="event-card-banner" src="<?php echo $banner; ?>" alt="Event Banner" loading="lazy" />
-                <div class="event-content">
-                    <div class="event-date">
-                        <?php echo htmlspecialchars(date("D, M d, Y", strtotime($event['event_date']))); ?>
-                        <?php if(!empty($event['event_start_time'])): ?>
-                            <span style="color:#888; font-size:0.97em;">
-                                &middot;
-                                <?php echo htmlspecialchars(date("g:i a", strtotime($event['event_start_time']))); ?>
-                            </span>
-                        <?php endif; ?>
-                    </div>
-                    <div class="event-title"><?php echo htmlspecialchars($event['event_title']); ?></div>
-                    <div class="event-detail"><?php echo nl2br(htmlspecialchars(mb_strimwidth($event['event_description'], 0, 96, "..."))); ?></div>
-                    <div class="persons-info">Booked for: <b><?php echo intval($event['persons']); ?></b> <?php echo (intval($event['persons']) > 1) ? "persons" : "person"; ?></div>
-                    <span class="booking-status <?php echo $status_class; ?>">
-                        <?php echo $status_text; ?> (Past)
-                    </span>
-                </div>
-            </a>
-        <?php endforeach; ?>
+    <?php if (count($booked_categorized['ongoing'])): ?>
+        <?php echo_booked_cards($booked_categorized['ongoing'], "Ongoing"); ?>
     <?php else: ?>
-        <div style="padding:16px 0 18px 5px;color:#999;font-size:1.01em;">No past events.</div>
+        <div style="padding:16px 0 18px 5px;color:#999;font-size:1.01em;">No ongoing events.</div>
+    <?php endif; ?>
+    </div>
+
+    <div class="events-subsection-title">&#9200; Completed Events</div>
+    <div class="events-list">
+    <?php if (count($booked_categorized['completed'])): ?>
+        <?php echo_booked_cards($booked_categorized['completed'], "Completed"); ?>
+    <?php else: ?>
+        <div style="padding:16px 0 18px 5px;color:#999;font-size:1.01em;">No completed events.</div>
     <?php endif; ?>
     </div>
 
     <div class="section-title"><span>&#127881;</span> My Events (As Owner)</div>
+
+    <div class="events-subsection-title">&#128195; Draft (Pending) Events</div>
     <div class="events-list">
-    <?php if (count($my_events)): ?>
-        <?php foreach ($my_events as $event): ?>
+    <?php if (count($owner_events['draft'])): ?>
+        <?php foreach ($owner_events['draft'] as $event): ?>
             <?php
                 $banner = (!empty($event['event_banner_image'])) ? htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
+                // Only allow "event_requests.php" links if the user is the owner (including admin for their own events)
                 $event_requests_url = 'event_requests.php?event_id=' . urlencode($event['event_id']);
-                // compute available seats
-                $capacity = isset($event['event_capacity']) ? intval($event['event_capacity']) : 0;
-                $booked = isset($booked_seats[$event['event_id']]) ? $booked_seats[$event['event_id']] : 0;
-                $available = ($capacity > 0) ? max(0, $capacity - $booked) : "-";
+                $seats = isset($event['event_seats']) ? intval($event['event_seats']) : 0;
+                $available = isset($event['event_available_seats']) ? intval($event['event_available_seats']) : "-";
             ?>
             <a href="<?php echo $event_requests_url; ?>" class="event-card">
                 <img class="event-card-banner" src="<?php echo $banner; ?>" alt="Event Banner" loading="lazy" />
@@ -362,37 +327,223 @@ if (!empty($event_ids)) {
                         <?php echo htmlspecialchars(date("D, M d, Y", strtotime($event['event_date']))); ?>
                         <?php if(!empty($event['event_start_time'])): ?>
                             <span style="color:#888; font-size:0.97em;">
-                                &middot;
-                                <?php echo htmlspecialchars(date("g:i a", strtotime($event['event_start_time']))); ?>
+                                &middot; <?php echo htmlspecialchars(date("g:i a", strtotime($event['event_start_time']))); ?>
                             </span>
                         <?php endif; ?>
                     </div>
                     <div class="event-title"><?php echo htmlspecialchars($event['event_title']); ?></div>
                     <div class="event-detail"><?php echo nl2br(htmlspecialchars(mb_strimwidth($event['event_description'], 0, 96, "..."))); ?></div>
-                    <div class="persons-info" style="color:#417b36; margin-bottom:7px;">Owner</div>
+                    <div class="persons-info" style="color:#417b36; margin-bottom:7px;">Owner (Draft/Pending)</div>
                     <div class="persons-info" style="color:#2d4599; margin-bottom:5px;">
                         Available seats: 
                         <b>
                         <?php 
-                            if ($available === "-") {
+                            if ($available === "-" || $available === null) {
                                 echo "Unlimited"; 
                             } else {
                                 echo $available;
                             }
                         ?>
                         </b>
-                        <?php if($capacity > 0): ?>
-                            <span style="color:#888; font-size:0.95em; margin-left:5px;">/ <?php echo $capacity; ?></span>
+                        <?php if($seats > 0): ?>
+                            <span style="color:#888; font-size:0.95em; margin-left:5px;">/ <?php echo $seats; ?></span>
                         <?php endif; ?>
                     </div>
                 </div>
             </a>
         <?php endforeach; ?>
     <?php else: ?>
-        <div style="padding:16px 0 18px 5px;color:#9ca;font-size:1.01em;">You have not created any events yet.</div>
+        <div style="padding:16px 0 18px 5px;color:#9ca;font-size:1.01em;">You have no draft (pending) events.</div>
     <?php endif; ?>
     </div>
 
+    <div class="events-subsection-title">&#128197; Published (Upcoming) Events</div>
+    <div class="events-list">
+    <?php if (count($owner_events['published'])): ?>
+        <?php foreach ($owner_events['published'] as $event): ?>
+            <?php
+                $banner = (!empty($event['event_banner_image'])) ? htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
+                $event_requests_url = 'event_requests.php?event_id=' . urlencode($event['event_id']);
+                $seats = isset($event['event_seats']) ? intval($event['event_seats']) : 0;
+                $available = isset($event['event_available_seats']) ? intval($event['event_available_seats']) : "-";
+            ?>
+            <a href="<?php echo $event_requests_url; ?>" class="event-card">
+                <img class="event-card-banner" src="<?php echo $banner; ?>" alt="Event Banner" loading="lazy" />
+                <div class="event-content">
+                    <div class="event-date">
+                        <?php echo htmlspecialchars(date("D, M d, Y", strtotime($event['event_date']))); ?>
+                        <?php if(!empty($event['event_start_time'])): ?>
+                            <span style="color:#888; font-size:0.97em;">
+                                &middot; <?php echo htmlspecialchars(date("g:i a", strtotime($event['event_start_time']))); ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="event-title"><?php echo htmlspecialchars($event['event_title']); ?></div>
+                    <div class="event-detail"><?php echo nl2br(htmlspecialchars(mb_strimwidth($event['event_description'], 0, 96, "..."))); ?></div>
+                    <div class="persons-info" style="color:#417b36; margin-bottom:7px;">Owner (Published/Upcoming)</div>
+                    <div class="persons-info" style="color:#2d4599; margin-bottom:5px;">
+                        Available seats: 
+                        <b>
+                        <?php 
+                            if ($available === "-" || $available === null) {
+                                echo "Unlimited"; 
+                            } else {
+                                echo $available;
+                            }
+                        ?>
+                        </b>
+                        <?php if($seats > 0): ?>
+                            <span style="color:#888; font-size:0.95em; margin-left:5px;">/ <?php echo $seats; ?></span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </a>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <div style="padding:16px 0 18px 5px;color:#9ca;font-size:1.01em;">You have no published (upcoming) events yet.</div>
+    <?php endif; ?>
+    </div>
+
+    <div class="events-subsection-title">&#128338; Ongoing Events</div>
+    <div class="events-list">
+    <?php if (count($owner_events['ongoing'])): ?>
+        <?php foreach ($owner_events['ongoing'] as $event): ?>
+            <?php
+                $banner = (!empty($event['event_banner_image'])) ? htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
+                $event_requests_url = 'event_requests.php?event_id=' . urlencode($event['event_id']);
+                $seats = isset($event['event_seats']) ? intval($event['event_seats']) : 0;
+                $available = isset($event['event_available_seats']) ? intval($event['event_available_seats']) : "-";
+            ?>
+            <a href="<?php echo $event_requests_url; ?>" class="event-card">
+                <img class="event-card-banner" src="<?php echo $banner; ?>" alt="Event Banner" loading="lazy" />
+                <div class="event-content">
+                    <div class="event-date">
+                        <?php echo htmlspecialchars(date("D, M d, Y", strtotime($event['event_date']))); ?>
+                        <?php if(!empty($event['event_start_time'])): ?>
+                            <span style="color:#888; font-size:0.97em;">
+                                &middot; <?php echo htmlspecialchars(date("g:i a", strtotime($event['event_start_time']))); ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="event-title"><?php echo htmlspecialchars($event['event_title']); ?></div>
+                    <div class="event-detail"><?php echo nl2br(htmlspecialchars(mb_strimwidth($event['event_description'], 0, 96, "..."))); ?></div>
+                    <div class="persons-info" style="color:#417b36; margin-bottom:7px;">Owner (Ongoing)</div>
+                    <div class="persons-info" style="color:#2d4599; margin-bottom:5px;">
+                        Available seats: 
+                        <b>
+                        <?php 
+                            if ($available === "-" || $available === null) {
+                                echo "Unlimited"; 
+                            } else {
+                                echo $available;
+                            }
+                        ?>
+                        </b>
+                        <?php if($seats > 0): ?>
+                            <span style="color:#888; font-size:0.95em; margin-left:5px;">/ <?php echo $seats; ?></span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </a>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <div style="padding:16px 0 18px 5px;color:#9ca;font-size:1.01em;">You have no ongoing events.</div>
+    <?php endif; ?>
+    </div>
+
+    <div class="events-subsection-title">&#9200; Completed Events</div>
+    <div class="events-list">
+    <?php if (count($owner_events['completed'])): ?>
+        <?php foreach ($owner_events['completed'] as $event): ?>
+            <?php
+                $banner = (!empty($event['event_banner_image'])) ? htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
+                $event_requests_url = 'event_requests.php?event_id=' . urlencode($event['event_id']);
+                $seats = isset($event['event_seats']) ? intval($event['event_seats']) : 0;
+                $available = isset($event['event_available_seats']) ? intval($event['event_available_seats']) : "-";
+            ?>
+            <a href="<?php echo $event_requests_url; ?>" class="event-card">
+                <img class="event-card-banner" src="<?php echo $banner; ?>" alt="Event Banner" loading="lazy" />
+                <div class="event-content">
+                    <div class="event-date">
+                        <?php echo htmlspecialchars(date("D, M d, Y", strtotime($event['event_date']))); ?>
+                        <?php if(!empty($event['event_start_time'])): ?>
+                            <span style="color:#888; font-size:0.97em;">
+                                &middot; <?php echo htmlspecialchars(date("g:i a", strtotime($event['event_start_time']))); ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="event-title"><?php echo htmlspecialchars($event['event_title']); ?></div>
+                    <div class="event-detail"><?php echo nl2br(htmlspecialchars(mb_strimwidth($event['event_description'], 0, 96, "..."))); ?></div>
+                    <div class="persons-info" style="color:#417b36; margin-bottom:7px;">Owner (Completed)</div>
+                    <div class="persons-info" style="color:#2d4599; margin-bottom:5px;">
+                        Available seats: 
+                        <b>
+                        <?php 
+                            if ($available === "-" || $available === null) {
+                                echo "Unlimited"; 
+                            } else {
+                                echo $available;
+                            }
+                        ?>
+                        </b>
+                        <?php if($seats > 0): ?>
+                            <span style="color:#888; font-size:0.95em; margin-left:5px;">/ <?php echo $seats; ?></span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </a>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <div style="padding:16px 0 18px 5px;color:#9ca;font-size:1.01em;">You have not completed any events yet.</div>
+    <?php endif; ?>
+    </div>
+
+    <div class="events-subsection-title" style="color:#c25;">&#10060; Cancelled Events</div>
+    <div class="events-list">
+    <?php if (count($owner_events['cancelled'])): ?>
+        <?php foreach ($owner_events['cancelled'] as $event): ?>
+            <?php
+                $banner = (!empty($event['event_banner_image'])) ? htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
+                $event_requests_url = 'event_requests.php?event_id=' . urlencode($event['event_id']);
+                $seats = isset($event['event_seats']) ? intval($event['event_seats']) : 0;
+                $available = isset($event['event_available_seats']) ? intval($event['event_available_seats']) : "-";
+            ?>
+            <a href="<?php echo $event_requests_url; ?>" class="event-card" style="border:1.5px solid #f66;background:#fff7f7;">
+                <img class="event-card-banner" src="<?php echo $banner; ?>" alt="Event Banner" loading="lazy" />
+                <div class="event-content">
+                    <div class="event-date">
+                        <?php echo htmlspecialchars(date("D, M d, Y", strtotime($event['event_date']))); ?>
+                        <?php if(!empty($event['event_start_time'])): ?>
+                            <span style="color:#888; font-size:0.97em;">
+                                &middot; <?php echo htmlspecialchars(date("g:i a", strtotime($event['event_start_time']))); ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="event-title" style="color:#be2929;"><?php echo htmlspecialchars($event['event_title']); ?></div>
+                    <div class="event-detail"><?php echo nl2br(htmlspecialchars(mb_strimwidth($event['event_description'], 0, 96, "..."))); ?></div>
+                    <div class="persons-info" style="color:#9e2323; margin-bottom:9px;">This event was cancelled.</div>
+                    <div class="persons-info" style="color:#2d4599; margin-bottom:5px;">
+                        Available seats: 
+                        <b>
+                        <?php 
+                            if ($available === "-" || $available === null) {
+                                echo "Unlimited"; 
+                            } else {
+                                echo $available;
+                            }
+                        ?>
+                        </b>
+                        <?php if($seats > 0): ?>
+                            <span style="color:#888; font-size:0.95em; margin-left:5px;">/ <?php echo $seats; ?></span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </a>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <div style="padding:16px 0 18px 5px;color:#db7a7a;font-size:1.01em;">You have no cancelled events.</div>
+    <?php endif; ?>
+    </div>
 </div>
 
 <?php require_once('footer.php'); ?>

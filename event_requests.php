@@ -3,13 +3,14 @@ session_start();
 require_once('header.php');
 require_once('database/db_connect.php');
 
-// Check if user is logged in and retrieve user_type from database to make sure it's owner
+// Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
 $user_id = $_SESSION['user_id'];
 
+// Get user_type from database
 $user_q = $conn->prepare("SELECT user_type FROM users WHERE user_id = ?");
 $user_q->bind_param('i', $user_id);
 $user_q->execute();
@@ -17,10 +18,12 @@ $user_rs = $user_q->get_result();
 $user_row = $user_rs->fetch_assoc();
 $user_q->close();
 
-if (!$user_row || $user_row['user_type'] !== 'owner') {
+if (!$user_row || !in_array($user_row['user_type'], ['owner', 'admin'])) {
     header("Location: events.php");
     exit();
 }
+$user_type = $user_row['user_type'];
+
 
 $event_id = isset($_GET['event_id']) ? intval($_GET['event_id']) : 0;
 if (!$event_id) {
@@ -28,7 +31,7 @@ if (!$event_id) {
     exit();
 }
 
-// Get the event (you may have a user_id column in events as the owner)
+// Get the event
 $event_q = $conn->prepare("SELECT * FROM events WHERE event_id = ?");
 $event_q->bind_param('i', $event_id);
 $event_q->execute();
@@ -40,6 +43,47 @@ if (!$event) {
     header("Location: events.php");
     exit();
 }
+
+// --- Ownership Restriction Logic ---
+// Only owner of an event can access it, and only admin of an "admin-created" event can access their own (and not owner events).
+// Assume: 
+//   - owner_id on events is the user who created it.
+//   - if owner_id's user_type is 'owner', it's an owner event; if 'admin', it's an admin event
+//   - An admin cannot access owner events and vice versa.
+
+$event_owner_id = isset($event['owner_id']) ? intval($event['owner_id']) : 0;
+
+// Get event owner's type
+$owner_type = "";
+if ($event_owner_id) {
+    $owner_q = $conn->prepare("SELECT user_type FROM users WHERE user_id = ?");
+    $owner_q->bind_param('i', $event_owner_id);
+    $owner_q->execute();
+    $owner_rs = $owner_q->get_result();
+    $owner_row = $owner_rs->fetch_assoc();
+    $owner_q->close();
+    $owner_type = $owner_row ? $owner_row['user_type'] : "";
+}
+
+$forbidden = false;
+
+// If user is owner, only allow events where owner is owner and owner_id matches user_id
+if ($user_type === 'owner') {
+    if ($owner_type !== 'owner' || $event_owner_id !== $user_id) {
+        $forbidden = true;
+    }
+} elseif ($user_type === 'admin') {
+    // If user is admin, only allow events where owner is admin and owner_id matches user_id
+    if ($owner_type !== 'admin' || $event_owner_id !== $user_id) {
+        $forbidden = true;
+    }
+}
+if ($forbidden) {
+    header("Location: events.php");
+    exit();
+}
+
+// -------- REST OF ORIGINAL LOGIC --------
 
 // Actions: Approve/Reject booking
 $msg = '';
@@ -104,8 +148,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['boo
     }
 }
 
-// Get all bookings for this event, joined with user for name
-$sql = "SELECT b.*, u.user_name as user_name
+// Get all bookings for this event, joined with user for name and email
+$sql = "SELECT b.*, u.user_name as user_name, u.user_email as user_email
         FROM bookings b
         LEFT JOIN users u ON b.user_id = u.user_id
         WHERE b.event_id = ?
@@ -209,6 +253,7 @@ $event_title = isset($event['event_title']) ? htmlspecialchars($event['event_tit
         <tr>
             <th>#</th>
             <th>User Name</th>
+            <th>Email</th>
             <th>Persons</th>
             <th>Status</th>
             <th>Actions</th>
@@ -219,6 +264,15 @@ $event_title = isset($event['event_title']) ? htmlspecialchars($event['event_tit
         <tr>
             <td><?php echo $i+1; ?></td>
             <td><?php echo htmlspecialchars($b['user_name'] ?? 'User #'.$b['user_id']); ?></td>
+            <td>
+                <?php 
+                    if (!empty($b['user_email'])) {
+                        echo htmlspecialchars($b['user_email']);
+                    } else {
+                        echo '<span style="color:#999;">(no email)</span>';
+                    }
+                ?>
+            </td>
             <td><?php echo intval($b['persons']); ?></td>
             <td>
                 <span class="status-pill <?php echo $pill_class; ?>">

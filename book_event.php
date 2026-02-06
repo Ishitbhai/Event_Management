@@ -9,9 +9,9 @@ function is_logged_in() {
 
 function show_error($msg) {
     echo "<div class='err-msg' style='max-width:430px;margin:55px auto 0 auto;padding:16px 23px;border-radius:12px;background:#ffdede;color:#b2181e;text-align:center;font-family:sans-serif;'>" . htmlspecialchars($msg) . "</div>";
-    include 'footer.php';
+    include 'footer.php'; 
     exit();
-}
+} 
 
 if (!is_logged_in()) {
     show_error("You must be logged in to book the event. <a href='login.php'>Login here</a>.");
@@ -29,6 +29,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id'])) {
     }
     $event = mysqli_fetch_assoc($event_result);
 
+    // Re-fetch seats on every POST
+    $available_seats = isset($event['event_available_seats']) && $event['event_available_seats'] !== "" 
+        ? (int)$event['event_available_seats'] 
+        : (isset($event['event_seats']) ? (int)$event['event_seats'] : 0);
+
+    // If no seats left, instantly inform user
+    if ($available_seats <= 0) {
+        show_error("Sorry, there are no seats available for this event.");
+    }
+
     if (!isset($_POST['attendee_count'])): ?>
         <link rel="stylesheet" href="css/single_event.css">
         <div class="event-details-main" style="max-width:430px;padding:40px 32px;margin:55px auto 0 auto;">
@@ -42,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id'])) {
                     type="number"
                     name="attendee_count"
                     min="1"
-                    max="<?php echo (int)($event['event_available_seats'] ?? $event['event_seats']); ?>"
+                    max="<?php echo (int)$available_seats; ?>"
                     value="1"
                     required
                     style="padding:7px 15px;font-size:1.09em;margin:14px 0 26px 0;width:90px;border-radius:7px;border:1px solid #bbb;"
@@ -59,11 +69,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id'])) {
     if ($attendee_count < 1) {
         show_error("The number of persons must be at least 1.");
     }
-    $max_seats = isset($event['event_available_seats']) && $event['event_available_seats'] !== ""
-        ? (int)$event['event_available_seats']
-        : (int)$event['event_seats'];
-    if ($attendee_count > $max_seats) {
-        show_error("The entered number of persons exceeds event availability.");
+
+    // Always get the latest available_seats again before proceeding to booking logic
+    $event_result_check = mysqli_query($conn, $event_sql);
+    $event_check = $event_result_check && mysqli_num_rows($event_result_check) ? mysqli_fetch_assoc($event_result_check) : $event;
+    $current_seats = isset($event_check['event_available_seats']) && $event_check['event_available_seats'] !== "" 
+        ? (int)$event_check['event_available_seats'] 
+        : (isset($event_check['event_seats']) ? (int)$event_check['event_seats'] : 0);
+
+    if ($current_seats <= 0) {
+        show_error("Sorry, there are no seats available for this event.");
+    }
+    if ($attendee_count > $current_seats) {
+        show_error("Requested number of persons ($attendee_count) is more than available seats ($current_seats). Please reduce your count.");
     }
 
     // Check if user has already booked this event
@@ -104,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id'])) {
         exit();
     }
 
-    // Only insert into bookings table ONCE (fix double entry)
+    // Only insert into bookings table if seats check passed above
     $booking_sql = "INSERT INTO bookings (user_id, event_id, persons)
         VALUES ($user_id, $event_id, $attendee_count)";
     $insert_event_booking = mysqli_query($conn, $booking_sql);

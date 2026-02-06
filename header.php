@@ -15,15 +15,15 @@ if (session_status() == PHP_SESSION_NONE) {
 
 <header class="header">
     <div class="logo">
-        <span>Aone</span>Hub
+    <a href="index.php"><span>Aone</span>Hub</a>
     </div>
 
     <nav class="navbar">
         <a href="index.php">Home</a>
         <a href="events.php">Events</a>
-        <a href="#">Services</a>
+        <a href="services.php">Services</a>
         <a href="bookings.php">Bookings</a>
-        <a href="#">Reviews</a>
+        <!-- <a href="#">Reviews</a> -->
 
         <div class="dropdown">
             <a href="#" class="dropbtn">More ▾</a>
