@@ -20,7 +20,7 @@
             <nav>
                 <a href="index.php" <?php if ($current_page == 'index.php') echo 'class="active"'; ?>>Dashboard</a>
                 <a href="events.php" <?php if ($current_page == 'events.php') echo 'class="active"'; ?>>Events</a>
-                <a href="#" <?php if ($current_page == 'bookings.php' || $current_page == 'bookings.php') echo 'class="active"'; ?>>Bookings</a>
+                <a href="bookings.php" <?php if ($current_page == 'bookings.php' || $current_page == 'bookings.php') echo 'class="active"'; ?>>Bookings</a>
                 <a href="#" <?php if ($current_page == 'categories.php' || $current_page == 'categories.php') echo 'class="active"'; ?>>Categories</a>
                 <a href="#" <?php if ($current_page == 'users.php' || $current_page == 'users.php') echo 'class="active"'; ?>>Users</a>
                 <a href="#" <?php if ($current_page == 'services.php' || $current_page == 'services.php') echo 'class="active"'; ?>>Servives</a>
