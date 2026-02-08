@@ -289,6 +289,9 @@ usort($events, function($a, $b) {
     <div class="dashboard-main">
         <div class="events-header">
             <h2 style="margin:0; color:#322053;">Manage Events</h2>
+            <button class="create-event-btn" onclick="window.location.href='event_create.php'" type="button">
+                Create Event
+            </button>
         </div>
         <div class="event-table-container">
         <?php if (count($events) === 0): ?>

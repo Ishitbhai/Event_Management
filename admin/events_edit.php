@@ -31,9 +31,9 @@ if ($result && $result->num_rows === 1) {
 }
 $stmt->close();
 
-// Fetch all users for owner_id dropdown
+// Fetch all users for owner_id dropdown EXCEPT those with user_type = 'user'
 $all_users = [];
-$user_query = $conn->query("SELECT user_id, user_name FROM users");
+$user_query = $conn->query("SELECT user_id, user_name FROM users WHERE user_type <> 'user'");
 if ($user_query) {
     while ($row = $user_query->fetch_assoc()) {
         $all_users[] = $row;
