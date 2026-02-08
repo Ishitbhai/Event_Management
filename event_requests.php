@@ -24,14 +24,13 @@ if (!$user_row || !in_array($user_row['user_type'], ['owner', 'admin'])) {
 }
 $user_type = $user_row['user_type'];
 
-
 $event_id = isset($_GET['event_id']) ? intval($_GET['event_id']) : 0;
 if (!$event_id) {
     header("Location: events.php");
     exit();
 }
 
-// Get the event
+// Always fetch up-to-date event record from DB for images, as instructed
 $event_q = $conn->prepare("SELECT * FROM events WHERE event_id = ?");
 $event_q->bind_param('i', $event_id);
 $event_q->execute();
@@ -45,15 +44,7 @@ if (!$event) {
 }
 
 // --- Ownership Restriction Logic ---
-// Only owner of an event can access it, and only admin of an "admin-created" event can access their own (and not owner events).
-// Assume: 
-//   - owner_id on events is the user who created it.
-//   - if owner_id's user_type is 'owner', it's an owner event; if 'admin', it's an admin event
-//   - An admin cannot access owner events and vice versa.
-
 $event_owner_id = isset($event['owner_id']) ? intval($event['owner_id']) : 0;
-
-// Get event owner's type
 $owner_type = "";
 if ($event_owner_id) {
     $owner_q = $conn->prepare("SELECT user_type FROM users WHERE user_id = ?");
@@ -64,16 +55,12 @@ if ($event_owner_id) {
     $owner_q->close();
     $owner_type = $owner_row ? $owner_row['user_type'] : "";
 }
-
 $forbidden = false;
-
-// If user is owner, only allow events where owner is owner and owner_id matches user_id
 if ($user_type === 'owner') {
     if ($owner_type !== 'owner' || $event_owner_id !== $user_id) {
         $forbidden = true;
     }
 } elseif ($user_type === 'admin') {
-    // If user is admin, only allow events where owner is admin and owner_id matches user_id
     if ($owner_type !== 'admin' || $event_owner_id !== $user_id) {
         $forbidden = true;
     }
@@ -83,15 +70,144 @@ if ($forbidden) {
     exit();
 }
 
-// -------- REST OF ORIGINAL LOGIC --------
+$event_title = isset($event['event_title']) ? htmlspecialchars($event['event_title']) : '';
 
-// Actions: Approve/Reject booking
+// ---------- Gallery/Banner Images Logic ----------
+$img_msg = '';
+
+// Custom: fetch as plain comma list, no json, no brackets, no quotes
+function fetch_images_from_db($conn, $event_id) {
+    $updated_event_q = $conn->prepare("SELECT event_banner_image, event_gallery_images FROM events WHERE event_id=?");
+    $updated_event_q->bind_param('i', $event_id);
+    $updated_event_q->execute();
+    $updated_event_rs = $updated_event_q->get_result();
+    $updated_event = $updated_event_rs->fetch_assoc();
+    $updated_event_q->close();
+    $banner = $updated_event && isset($updated_event['event_banner_image']) ? trim($updated_event['event_banner_image']) : '';
+    $gallery_cstr = $updated_event && isset($updated_event['event_gallery_images']) ? $updated_event['event_gallery_images'] : '';
+    $gallery = [];
+    if (!empty($gallery_cstr) && is_string($gallery_cstr)) {
+        $arr = explode(',', $gallery_cstr);
+        foreach ($arr as $img) {
+            $even_cleaner = trim($img, " \t\n\r\0\x0B'\"");
+            if ($even_cleaner !== '') $gallery[] = $even_cleaner;
+        }
+    }
+    return [$banner, $gallery];
+}
+
+list($banner_image, $gallery_images) = fetch_images_from_db($conn, $event_id);
+
+// Handle image upload and delete actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Banner upload/replace
+    if (isset($_POST['upload_banner']) && isset($_FILES['banner_image']) && $_FILES['banner_image']['error'] === UPLOAD_ERR_OK) {
+        $allowed = ['jpg','jpeg','png','gif','webp'];
+        $ext = strtolower(pathinfo($_FILES['banner_image']['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, $allowed)) {
+            $img_msg = '<div class="img-msg img-msg-error">Invalid banner image type.</div>';
+        } else {
+            $filename = "banner_" . $event_id . "_" . time() . "." . $ext;
+            $dest = "images/" . $filename;
+            if (move_uploaded_file($_FILES['banner_image']['tmp_name'], $dest)) {
+                $upd = $conn->prepare("UPDATE events SET event_banner_image=? WHERE event_id=?");
+                $upd->bind_param('si', $filename, $event_id);
+                if ($upd->execute()) {
+                    $img_msg = '<div class="img-msg img-msg-success">Banner image updated.</div>';
+                } else {
+                    $img_msg = '<div class="img-msg img-msg-error">Failed to update banner image.</div>';
+                }
+                $upd->close();
+            } else {
+                $img_msg = '<div class="img-msg img-msg-error">Failed to upload banner image.</div>';
+            }
+        }
+    }
+    // Gallery upload (one or more)
+    if (isset($_POST['upload_gallery']) && isset($_FILES['gallery_images'])) {
+        $allowed = ['jpg','jpeg','png','gif','webp'];
+        $files = $_FILES['gallery_images'];
+        if (is_array($files['name'])) {
+            $count = count($files['name']);
+        } else {
+            $count = $files['name'] ? 1 : 0;
+        }
+        $uploads = [];
+        for ($i=0; $i<$count; $i++) {
+            if (!isset($files['name'][$i]) || !isset($files['error'][$i]) || $files['name'][$i] === '' || $files['error'][$i] !== UPLOAD_ERR_OK) continue;
+            $ext = strtolower(pathinfo($files['name'][$i], PATHINFO_EXTENSION));
+            if (!in_array($ext, $allowed)) continue;
+            $filename = "gallery_" . $event_id . "_" . time() . "_" . mt_rand(1000,9999) . "." . $ext;
+            $dest = "images/" . $filename;
+            if (move_uploaded_file($files['tmp_name'][$i], $dest)) {
+                $uploads[] = $filename;
+            }
+        }
+        // Fetch current gallery, then merge with new uploads
+        list($_b, $gallery_images) = fetch_images_from_db($conn, $event_id);
+        if (!is_array($gallery_images)) $gallery_images = [];
+        if ($uploads) {
+            $gallery_images = array_merge($gallery_images, $uploads);
+            // Remove empties and duplicates
+            $gallery_images = array_unique(array_values(array_filter($gallery_images, function($v) {
+                return is_string($v) && trim($v) !== '';
+            })));
+            // Save as plain string, only comma separator, no quotes or brackets
+            $str = implode(",", $gallery_images);
+            $upd = $conn->prepare("UPDATE events SET event_gallery_images=? WHERE event_id=?");
+            $upd->bind_param('si', $str, $event_id);
+            if ($upd->execute()) {
+                $img_msg = '<div class="img-msg img-msg-success">Gallery images added.</div>';
+            } else {
+                $img_msg = '<div class="img-msg img-msg-error">Failed to add gallery image.</div>';
+            }
+            $upd->close();
+        } elseif ($count && empty($uploads)) {
+            $img_msg = '<div class="img-msg img-msg-error">No valid images uploaded to gallery.</div>';
+        }
+    }
+    // Delete single gallery image
+    if (isset($_POST['delete_gallery']) && isset($_POST['del_filename'])) {
+        $del_file = basename($_POST['del_filename']);
+        list($_b, $gallery_images) = fetch_images_from_db($conn, $event_id);
+        $gallery_images_lc = array_map('strtolower', $gallery_images);
+        $idx = array_search(strtolower($del_file), $gallery_images_lc);
+        if ($idx !== false) {
+            // --- UNLINK the image file from disk before updating DB ---
+            $image_path = "images/" . $del_file;
+            if (is_file($image_path)) {
+                @unlink($image_path);
+            }
+            unset($gallery_images[$idx]);
+            $gallery_images = array_values($gallery_images);
+            $gallery_images = array_filter($gallery_images, function($v) {
+                return is_string($v) && trim($v) !== '';
+            });
+            $str = implode(",", $gallery_images);
+            $upd = $conn->prepare("UPDATE events SET event_gallery_images=? WHERE event_id=?");
+            $upd->bind_param('si', $str, $event_id);
+            if ($upd->execute()) {
+                $img_msg = '<div class="img-msg img-msg-success">Gallery image deleted.</div>';
+            } else {
+                $img_msg = '<div class="img-msg img-msg-error">Failed to delete gallery image.</div>';
+            }
+            $upd->close();
+        } else {
+            $img_msg = '<div class="img-msg img-msg-error">Gallery image not found for deletion. (DB mismatch error)</div>';
+        }
+    }
+    list($banner_image, $gallery_images) = fetch_images_from_db($conn, $event_id);
+}
+
+// --------- Booking Workflow ---------
 $msg = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['book_id'])) {
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST'
+    && isset($_POST['action'], $_POST['book_id'])
+) {
     $action = $_POST['action'];
     $book_id = intval($_POST['book_id']);
 
-    // Get info of booking record
     $booking_q = $conn->prepare("SELECT * FROM bookings WHERE book_id = ? AND event_id = ?");
     $booking_q->bind_param('ii', $book_id, $event_id);
     $booking_q->execute();
@@ -101,47 +217,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['boo
 
     if ($booking) {
         if ($action === 'approve' && $booking['booking_status'] === 'pending') {
-            // Approve flow
             $persons = intval($booking['persons']);
             $available_seats = intval($event['event_available_seats']);
-
             if ($persons > $available_seats) {
-                $msg = '<div style="color:#bb2424;">Not enough available seats for this request.</div>';
+                $msg = '<div class="msg msg-error">Not enough available seats for this request.</div>';
             } else {
-                // Transaction
                 $conn->autocommit(false);
                 $success = true;
-
-                // 1. Update booking status
                 $stmt = $conn->prepare("UPDATE bookings SET booking_status = 'approved' WHERE book_id = ?");
                 $stmt->bind_param('i', $book_id);
                 $success = $success && $stmt->execute();
                 $stmt->close();
-
-                // 2. Decrement available seats
                 $stmt = $conn->prepare("UPDATE events SET event_available_seats = event_available_seats - ? WHERE event_id = ?");
                 $stmt->bind_param('ii', $persons, $event_id);
                 $success = $success && $stmt->execute();
                 $stmt->close();
-
                 if ($success) {
                     $conn->commit();
-                    $msg = '<div style="color:#22813d;">Booking approved successfully!</div>';
+                    $msg = '<div class="msg msg-success">Booking approved successfully!</div>';
                     $event['event_available_seats'] -= $persons;
                 } else {
                     $conn->rollback();
-                    $msg = '<div style="color:#bb2424;">An error occurred, please try again.</div>';
+                    $msg = '<div class="msg msg-error">An error occurred, please try again.</div>';
                 }
                 $conn->autocommit(true);
             }
         } elseif ($action === 'reject' && $booking['booking_status'] === 'pending') {
-            // Reject flow
             $stmt = $conn->prepare("UPDATE bookings SET booking_status = 'rejected' WHERE book_id = ?");
             $stmt->bind_param('i', $book_id);
             if ($stmt->execute()) {
-                $msg = '<div style="color:#22813d;">Booking rejected successfully!</div>';
+                $msg = '<div class="msg msg-success">Booking rejected successfully!</div>';
             } else {
-                $msg = '<div style="color:#bb2424;">Failed to reject booking.</div>';
+                $msg = '<div class="msg msg-error">Failed to reject booking.</div>';
             }
             $stmt->close();
         }
@@ -169,24 +276,214 @@ while ($row = $rs->fetch_assoc()) {
     $bookings[] = $row;
 }
 $stmt->close();
-
-// Event title for display
-$event_title = isset($event['event_title']) ? htmlspecialchars($event['event_title']) : '';
-
 ?>
 
 <link rel="stylesheet" href="css/create_event.css">
 <link rel="stylesheet" href="css/event_requests.css">
 
+<style>
+    /* Modal styles for Images Manage popup */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        z-index: 999;
+        left: 0; top: 0; width: 100vw; height: 100vh;
+        background: rgba(37,40,57,0.35);
+    }
+    .modal-content {
+        position: absolute;
+        left: 0; right: 0; top: 58px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 10px;
+        max-width: 740px;
+        width: 96vw;
+        box-shadow: 0 2px 26px #b3b7e4;
+        padding: 22px 28px 9px 28px;
+        animation: modal-in 0.16s;
+    }
+    @keyframes modal-in {
+        0% { transform:translateY(-60px); opacity:0; }
+        100% { transform:translateY(0); opacity: 1; }
+    }
+    .modal-close-btn {
+        position: absolute; right:18px; top:18px; font-size:1.1em; 
+        background: none; border: none; color: #c02d2d; cursor: pointer;
+        font-weight:600; padding:6px;
+    }
+    @media (max-width: 600px) {
+        .modal-content { max-width: 99vw; padding: 7vw 6vw 2vw 6vw;}
+    }
+    /* Also keep the original box class for non-modal option */
+    .standalone-images-manage {
+        margin: 35px 0 55px 0; 
+        max-width: 680px; 
+        background: #f7f8ff; 
+        padding: 22px 28px 9px 28px; 
+        border-radius: 10px; 
+        box-shadow: 0 4px 18px #e3e6fa;
+    }
+    .back-to-events-link {
+        font-size:1.05em;
+        text-decoration:none;
+        color:#7b63e6;
+        margin-bottom:24px;
+        display:inline-block;
+    }
+    .page-title {
+        text-align:center;
+        color:#4242a0;
+        margin-bottom:18px;
+        font-size:1.25em;
+    }
+    .event-title-span {
+        color:#417bb4;
+    }
+
+    /* Modal trigger button */
+    .manage-images-btn {
+        padding:7px 19px;
+        background:#6179de;
+        color:#fff;
+        font-weight:600;
+        border-radius:7px;
+        border:none;
+        box-shadow:0 2px 8px #d2d6fe;
+        cursor:pointer; 
+        font-size:1.03em;
+        margin: 21px 0 12px 0;
+        display:block;
+        margin-left:auto;
+    }
+
+    /* Bookings/Requests Table Info  */
+    .req-table-info {
+        margin:30px 0 0 3px;
+        font-size:1.07em;
+        color:#5c5c79;
+    }
+    .no-bookings-yet {
+        text-align:center;
+        color:#999;
+        font-size:1.1em;
+        padding:43px 0;
+    }
+
+    /* Booking message/info */
+    .msg {
+        text-align:center;
+        margin-bottom:17px;
+        font-size:1.09em;
+    }
+    .msg-success {
+        color: #22813d;
+    }
+    .msg-error {
+        color: #bb2424;
+    }
+    /* Images messages */
+    .img-msg {
+        margin-bottom:14px;
+        text-align:center;
+        font-weight:500;
+    }
+    .img-msg-success {
+        color:#22813d;
+    }
+    .img-msg-error {
+        color:#bb2424;
+    }
+    /* Banner Manage */
+    .banner-manage {
+        margin-bottom:26px;
+    }
+    .banner-manage-img {
+        max-width:260px;
+        max-height:130px;
+        border-radius:7px;
+        box-shadow:0 2px 8px #dfe0f2;
+    }
+    .banner-missing {
+        color:#e24;
+    }
+    .banner-none {
+        color:#aab;
+    }
+
+    .banner-form-file {
+        margin-bottom:5px;
+    }
+    .replace-banner-btn {
+        margin-left:7px;
+        padding:4px 15px;
+    }
+    /* HR */
+    .images-modal-hr {
+        margin:16px 0 20px 0;
+        border-top:1px solid #eaeaf6;
+    }
+    /* Gallery Manage */
+    .gallery-manage {
+    }
+    .gallery-manage-title {
+        font-weight: bold;
+    }
+    .gallery-manage-sub {
+        font-size: 0.95em;
+        color: #888;
+    }
+    .gallery-images-box {
+        margin:13px 0 17px 0;
+        display:flex;
+        flex-wrap:wrap;
+        gap:18px;
+    }
+    .gallery-img-container {
+        display:inline-block;
+        text-align:center;
+        position:relative;
+    }
+    .gallery-missing {
+        color:#e95d32;
+        font-size:0.97em;
+    }
+    .gallery-img {
+        width:110px;
+        height:82px;
+        object-fit:cover;
+        border-radius:6px;
+        border:1px solid #e5e5f2;
+        box-shadow:0 2px 8px #ededf9;
+    }
+    .delete-gallery-form {
+        margin-top:7px;
+    }
+    .delete-gallery-btn {
+        background:#d23c3c;
+        color:#fff;
+        border:none;
+        border-radius:4px;
+        padding:2px 10px;
+        font-size:0.97em;
+        cursor:pointer;
+    }
+    .gallery-add-form {
+        margin:0;
+    }
+    .gallery-add-btn {
+        margin-left:7px;
+        padding:4px 15px;
+    }
+</style>
 
 <div class="req-table-container">
-    <div style="margin-bottom:18px;">
-        <a href="bookings.php" style="font-size:1.05em;text-decoration:none;color:#7b63e6;">&#8592; Back to My Events</a>
-    </div>
-    <h2 style="text-align:center;color:#4242a0;margin-bottom:22px;font-size:1.25em;">
-        Booking Requests for: "<span style="color:#417bb4;"><?php echo $event_title; ?></span>"
+    <a href="bookings.php" class="back-to-events-link">&#8592; Back to My Events</a>
+    <h2 class="page-title">
+        Booking Requests for: "<span class="event-title-span"><?php echo $event_title; ?></span>"
     </h2>
-    <?php if ($msg) echo '<div style="text-align:center;margin-bottom:17px;font-size:1.09em;">'.$msg.'</div>'; ?>
+
+    <!-- Bookings/Requests Table -->
+    <?php if ($msg) echo $msg; ?>
 
     <?php if (count($bookings)): ?>
     <table class="req-table">
@@ -224,7 +521,7 @@ $event_title = isset($event['event_title']) ? htmlspecialchars($event['event_tit
                     <form method="post" style="display:inline;">
                         <input type="hidden" name="book_id" value="<?php echo intval($b['book_id']); ?>">
                         <input type="hidden" name="action" value="approve">
-                        <button type="submit" class="action-btn action-approve" 
+                        <button type="submit" class="action-btn action-approve"
                         <?php if ($event['event_available_seats'] < $b['persons']) echo "disabled"; ?>
                         >Approve</button>
                     </form>
@@ -240,12 +537,158 @@ $event_title = isset($event['event_title']) ? htmlspecialchars($event['event_tit
         </tr>
         <?php endforeach; ?>
     </table>
-    <div style="margin:30px 0 0 3px; font-size:1.07em; color:#5c5c79;">
+    <div class="req-table-info">
         Event available seats: <b><?php echo intval($event['event_available_seats']); ?></b>
     </div>
     <?php else: ?>
-    <div style="text-align:center;color:#999;font-size:1.1em;padding:43px 0;">No bookings yet for this event.</div>
+    <div class="no-bookings-yet">No bookings yet for this event.</div>
     <?php endif; ?>
+
+    <!-- Images manage modal trigger button (MOVED HERE) -->
+    <button id="open-images-modal" class="manage-images-btn">Manage Images</button>
 </div>
+
+<!-- Modal Overlay for Event Images Manage - default hidden -->
+<div class="modal-overlay" id="images-manage-modal">
+    <div class="modal-content">
+
+        <button class="modal-close-btn" id="close-images-modal" title="Close">&times; Close</button>
+        <h3 style="margin-bottom:14px;">Event Images</h3>
+        <?php if ($img_msg) echo $img_msg; ?>
+
+        <div class="banner-manage">
+            <strong>Banner Image</strong> <small>(only one, can only replace)</small><br>
+            <div class="banner-manage-img-wrap">
+                <?php
+                if ($banner_image && is_file('images/'.basename($banner_image))):
+                ?>
+                    <img src="images/<?php echo htmlspecialchars(basename($banner_image)); ?>" alt="Banner" class="banner-manage-img">
+                <?php elseif ($banner_image && !is_file('images/'.basename($banner_image))): ?>
+                    <span class="banner-missing">Banner image "<?php echo htmlspecialchars(basename($banner_image)); ?>" not found on disk.</span>
+                <?php else: ?>
+                    <span class="banner-none">No banner image.</span>
+                <?php endif; ?>
+            </div>
+            <form method="post" enctype="multipart/form-data">
+                <input type="file" name="banner_image" accept="image/*" required class="banner-form-file">
+                <button type="submit" name="upload_banner" class="replace-banner-btn">Replace Banner</button>
+            </form>
+        </div>
+        <hr class="images-modal-hr">
+        <div class="gallery-manage">
+            <span class="gallery-manage-title">Gallery Images</span>
+            <small class="gallery-manage-sub">(can add new or delete individual)</small>
+            <div class="gallery-images-box">
+                <?php
+                if ($gallery_images && is_array($gallery_images) && count($gallery_images)):
+                    foreach ($gallery_images as $gi):
+                        $gi_clean = basename(trim($gi));
+                        if (!is_file("images/$gi_clean")): ?>
+                            <div class="gallery-img-container">
+                                <span class="gallery-missing">[Missing: <?php echo htmlspecialchars($gi_clean); ?>]</span>
+                            </div>
+                        <?php continue; endif;
+                ?>
+                    <div class="gallery-img-container">
+                        <img src="images/<?php echo htmlspecialchars($gi_clean); ?>" alt="Gallery" class="gallery-img">
+                        <form method="post" class="delete-gallery-form">
+                            <input type="hidden" name="del_filename" value="<?php echo htmlspecialchars($gi_clean); ?>">
+                            <button type="submit" name="delete_gallery" class="delete-gallery-btn">Delete</button>
+                        </form>
+                    </div>
+                <?php endforeach; else: ?>
+                    <span style="color:#aaa;">No images in gallery.</span>
+                <?php endif; ?>
+            </div>
+            <form method="post" enctype="multipart/form-data" class="gallery-add-form">
+                <input type="file" name="gallery_images[]" accept="image/*" multiple required>
+                <button type="submit" name="upload_gallery" class="gallery-add-btn">Add to Gallery</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Fallback: Standalone images manage box for non-JS (will only show if JS disabled) -->
+<noscript>
+<div class="standalone-images-manage">
+    <h3 style="margin-bottom:14px;">Event Images</h3>
+    <?php if ($img_msg) echo $img_msg; ?>
+
+    <div class="banner-manage">
+        <strong>Banner Image</strong> <small>(only one, can only replace)</small><br>
+        <div class="banner-manage-img-wrap">
+            <?php
+            if ($banner_image && is_file('images/'.basename($banner_image))):
+            ?>
+                <img src="images/<?php echo htmlspecialchars(basename($banner_image)); ?>" alt="Banner" class="banner-manage-img">
+            <?php elseif ($banner_image && !is_file('images/'.basename($banner_image))): ?>
+                <span class="banner-missing">Banner image "<?php echo htmlspecialchars(basename($banner_image)); ?>" not found on disk.</span>
+            <?php else: ?>
+                <span class="banner-none">No banner image.</span>
+            <?php endif; ?>
+        </div>
+        <form method="post" enctype="multipart/form-data">
+            <input type="file" name="banner_image" accept="image/*" required class="banner-form-file">
+            <button type="submit" name="upload_banner" class="replace-banner-btn">Replace Banner</button>
+        </form>
+    </div>
+    <hr class="images-modal-hr">
+    <div class="gallery-manage">
+        <span class="gallery-manage-title">Gallery Images</span>
+        <small class="gallery-manage-sub">(can add new or delete individual)</small>
+        <div class="gallery-images-box">
+            <?php
+            if ($gallery_images && is_array($gallery_images) && count($gallery_images)):
+                foreach ($gallery_images as $gi):
+                    $gi_clean = basename(trim($gi));
+                    if (!is_file("images/$gi_clean")): ?>
+                        <div class="gallery-img-container">
+                            <span class="gallery-missing">[Missing: <?php echo htmlspecialchars($gi_clean); ?>]</span>
+                        </div>
+                    <?php continue; endif;
+            ?>
+                <div class="gallery-img-container">
+                    <img src="images/<?php echo htmlspecialchars($gi_clean); ?>" alt="Gallery" class="gallery-img">
+                    <form method="post" class="delete-gallery-form">
+                        <input type="hidden" name="del_filename" value="<?php echo htmlspecialchars($gi_clean); ?>">
+                        <button type="submit" name="delete_gallery" class="delete-gallery-btn">Delete</button>
+                    </form>
+                </div>
+            <?php endforeach; else: ?>
+                <span style="color:#aaa;">No images in gallery.</span>
+            <?php endif; ?>
+        </div>
+        <form method="post" enctype="multipart/form-data" class="gallery-add-form">
+            <input type="file" name="gallery_images[]" accept="image/*" multiple required>
+            <button type="submit" name="upload_gallery" class="gallery-add-btn">Add to Gallery</button>
+        </form>
+    </div>
+</div>
+</noscript>
+
+<script>
+// Modal logic for images manage popup
+(function() {
+    var imagesModal = document.getElementById("images-manage-modal");
+    var openBtn = document.getElementById("open-images-modal");
+    var closeBtn = document.getElementById("close-images-modal");
+    if (imagesModal && openBtn && closeBtn) {
+        openBtn.addEventListener('click', function(e){
+            imagesModal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        });
+        closeBtn.addEventListener('click', function(){
+            imagesModal.style.display = 'none';
+            document.body.style.overflow = '';
+        });
+        imagesModal.addEventListener('click', function(ev){
+            if (ev.target === imagesModal) {
+                imagesModal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        });
+    }
+})();
+</script>
 
 <?php require_once('footer.php'); ?>
