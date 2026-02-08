@@ -1,0 +1,189 @@
+body {
+    overflow-x: hidden;
+}
+
+.event-table-container {
+    overflow-x: auto;
+    margin-top: 30px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 10px rgba(44,62,80,0.09);
+    padding: 24px;
+    width: 100%;
+    box-sizing: border-box;
+}
+table.event-table {
+    border-collapse: collapse;
+    min-width: 1200px;
+    width: 100%;
+}
+
+.event-table th, .event-table td {
+    padding: 12px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e6e7f0;
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 440px;
+    vertical-align: middle;
+}
+.event-table th.description-cell, .event-table td.description-cell {
+    white-space: normal;
+    max-width: 330px;
+    min-width:180px;
+}
+.event-table th, .event-table td {
+    min-width: 100px;
+}
+.event-table th.event_banner_image, .event-table td.event_banner_image,
+.event-table th.event_gallery_images, .event-table td.event_gallery_images {
+    min-width: 120px;
+    max-width: 200px;
+}
+.event-table th {
+    background: #f4f6fb;
+    color: #322053;
+    font-weight: 600;
+    border-top: 1px solid #e6e7f0;
+}
+.event-table tr:nth-child(even) {
+    background: #f9fafe;
+}
+.event-table tr:hover {
+    background: #f2f4fa;
+    transition: background 0.1s;
+}
+.event-table td .event-banner-thumb,
+.event-table td .event-gallery-thumb {
+    max-width: 85px;
+    max-height: 56px;
+    display: block;
+    border-radius: 5px;
+    margin-bottom:5px;
+}
+
+/* Custom styled select dropdown */
+.table-edit-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background: #fff url("data:image/svg+xml;utf8,<svg fill='gray' height='22' viewBox='0 0 24 24' width='22'><path d='M7 10l5 5 5-5z' /></svg>") no-repeat right 12px center/1.2em 1.2em;
+    border: 1px solid #bfc4d1;
+    padding: 7px 29px 7px 12px;
+    font-size: 15px;
+    border-radius: 5px;
+    color: #312153;
+    min-width: 112px;
+    outline: none;
+    transition: border .15s;
+    cursor: pointer;
+    margin-right: 5px;
+}
+.table-edit-select:focus {
+    border-color: #523ad5;
+    background-color: #fafbff;
+}
+
+.inline-dropdown-spinner {
+    vertical-align: middle; 
+    margin-left: 6px; 
+    height: 20px;
+    width: 20px;
+    display: inline-block;
+}
+
+.event-table td .delete-btn {
+    border: none;
+    border-radius: 5px;
+    padding: 7px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 15px;
+    transition: background 0.16s;
+    background: linear-gradient(90deg, #e94242 20%, #b02626 80%);
+    color: #fff;
+    margin-left: 0;
+    box-shadow: 0 1px 3px rgba(200,55,55,0.07);
+}
+.event-table td .delete-btn:hover {
+    background: linear-gradient(90deg, #a51818, #e94242 60%);
+}
+.event-table td .edit-btn {
+    border: none;
+    border-radius: 5px;
+    padding: 7px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 15px;
+    transition: background 0.16s;
+    background: linear-gradient(90deg, #327ac5 20%, #225085 80%);
+    color: #fff;
+    margin-right: 8px;
+    box-shadow: 0 1px 3px rgba(50,122,197,0.07);
+}
+.event-table td .edit-btn:hover {
+    background: linear-gradient(90deg, #225085, #327ac5 60%);
+}
+.events-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 30px;
+}
+.create-event-btn {
+    background: linear-gradient(90deg, #2d397a, #594285 90%);
+    color: #fff;
+    padding: 10px 27px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-left: 6px;
+    transition: background .18s;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 11px rgb(82 58 213 / 8%);
+}
+.create-event-btn:hover {
+    background: linear-gradient(90deg, #594285, #2d397a 100%);
+}
+.alert-message {
+    padding: 10px 20px;
+    border-radius: 7px;
+    margin: 18px 0;
+    font-size: 15px;
+    color: #fff;
+}
+.alert-success { background: #27a74e; }
+.alert-error { background: #c82f2f; }
+@media (max-width: 900px) {
+    table.event-table { min-width: 800px; font-size: 14px; }
+}
+
+/* Internalized inline styles for page elements */
+.internal-header {
+    margin: 0;
+    color: #322053;
+}
+.internal-no-events {
+    text-align: center;
+    color: #322053;
+    padding: 40px 5px;
+    font-size: 1.1em;
+}
+.internal-description-cell-div {
+    white-space: normal;
+    max-width: 330px;
+    overflow-x: auto;
+}
+.internal-created-updated {
+    white-space: normal;
+    font-size: 13px;
+    color: #57597A;
+}
+.internal-no-image {
+    color: #c82f2f;
+    font-size: 12px;
+}

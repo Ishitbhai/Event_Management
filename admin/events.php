@@ -121,181 +121,98 @@ usort($events, function($a, $b) {
     <meta charset="UTF-8">
     <title>Manage Events</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="css/events.css">
     <link rel="stylesheet" href="css/index.css">
-    <style>
-        .event-table-container {
-            overflow-x: auto;
-            margin-top: 30px;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 1px 10px rgba(44,62,80,0.09);
-            padding: 24px;
-            width: 100%;
-            max-width: 100vw;
-        }
-        table.event-table {
-            border-collapse: collapse;
-            min-width: 1200px;
-            width: max-content;
-            background: #fff;
-            table-layout: auto;
-        }
-        .event-table th, .event-table td {
-            padding: 12px 12px;
-            text-align: left;
-            border-bottom: 1px solid #e6e7f0;
-            font-size: 15px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 440px;
-            vertical-align: middle;
-        }
-        .event-table th.description-cell, .event-table td.description-cell {
-            white-space: normal;
-            max-width: 330px;
-            min-width:180px;
-        }
-        .event-table th, .event-table td {
-            min-width: 100px;
-        }
-        .event-table th.event_banner_image, .event-table td.event_banner_image,
-        .event-table th.event_gallery_images, .event-table td.event_gallery_images {
-            min-width: 120px;
-            max-width: 200px;
-        }
-        .event-table th {
-            background: #f4f6fb;
-            color: #322053;
-            font-weight: 600;
-            border-top: 1px solid #e6e7f0;
-        }
-        .event-table tr:nth-child(even) {
-            background: #f9fafe;
-        }
-        .event-table tr:hover {
-            background: #f2f4fa;
-            transition: background 0.1s;
-        }
-        .event-table td .event-banner-thumb,
-        .event-table td .event-gallery-thumb {
-            max-width: 85px;
-            max-height: 56px;
-            display: block;
-            border-radius: 5px;
-            margin-bottom:5px;
+    
+    <script>
+    // Internalized JS for page: moved previous inline logic to event listeners below
+    document.addEventListener('DOMContentLoaded', function() {
+        // dropdown change logic
+        document.querySelectorAll('.table-edit-select').forEach(function(el){
+            el.addEventListener('change', function(){
+                const selectEl = this;
+                const event_id = selectEl.getAttribute('data-eid');
+                const col = selectEl.getAttribute('data-col');
+                const val = selectEl.value;
+                const cell = selectEl.parentElement;
+                let spinner = cell.querySelector('.inline-dropdown-spinner');
+                if (!spinner) {
+                    spinner = document.createElement('span');
+                    spinner.className = 'inline-dropdown-spinner';
+                    spinner.style.display = '';
+                    cell.appendChild(spinner);
+                } else {
+                    spinner.style.display = '';
+                }
+                selectEl.disabled = true;
+                fetch(window.location.pathname, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                        table_ajax_update: 1,
+                        event_id: event_id,
+                        col: col,
+                        val: val
+                    })
+                }).then(r=>r.json())
+                .then(data=>{
+                    spinner.style.display = 'none';
+                    selectEl.disabled = false;
+                    window.location.reload();
+                }).catch(err=>{
+                    spinner.style.display = 'none';
+                    selectEl.disabled = false;
+                    window.location.reload();
+                });
+            });
+        });
+
+        // Create Event button logic
+        let createBtn = document.querySelector('.create-event-btn');
+        if (createBtn) {
+            createBtn.addEventListener('click', function() {
+                window.location.href = 'event_create.php';
+            });
         }
 
-        /* Custom styled select dropdown */
-        .table-edit-select {
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            background: #fff url("data:image/svg+xml;utf8,<svg fill='gray' height='22' viewBox='0 0 24 24' width='22'><path d='M7 10l5 5 5-5z' /></svg>") no-repeat right 12px center/1.2em 1.2em;
-            border: 1px solid #bfc4d1;
-            padding: 7px 29px 7px 12px;
-            font-size: 15px;
-            border-radius: 5px;
-            color: #312153;
-            min-width: 112px;
-            outline: none;
-            transition: border .15s;
-            cursor: pointer;
-            margin-right: 5px;
-        }
-        .table-edit-select:focus {
-            border-color: #523ad5;
-            background-color: #fafbff;
-        }
+        // Edit buttons event delegation
+        document.querySelectorAll('.edit-btn').forEach(function(btn){
+            btn.addEventListener('click', function(){
+                let tr = btn.closest('tr[data-event-id]');
+                if (tr) {
+                    let eid = tr.getAttribute('data-event-id');
+                    window.location.href = 'events_edit.php?event_id=' + eid;
+                }
+            });
+        });
 
-        .inline-dropdown-spinner {
-            vertical-align: middle; 
-            margin-left: 6px; 
-            height: 20px;
-            width: 20px;
-            display: inline-block;
-        }
+        // Delete buttons event delegation
+        document.querySelectorAll('.delete-btn').forEach(function(btn){
+            btn.addEventListener('click', function(){
+                let tr = btn.closest('tr[data-event-id]');
+                if (tr) {
+                    let eid = tr.getAttribute('data-event-id');
+                    if (confirm('Are you sure you want to delete this event?')) {
+                        window.location.href = '?delete_event_id=' + eid;
+                    }
+                }
+            });
+        });
 
-        .event-table td .delete-btn {
-            border: none;
-            border-radius: 5px;
-            padding: 7px 16px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 15px;
-            transition: background 0.16s;
-            background: linear-gradient(90deg, #e94242 20%, #b02626 80%);
-            color: #fff;
-            margin-left: 0;
-            box-shadow: 0 1px 3px rgba(200,55,55,0.07);
-        }
-        .event-table td .delete-btn:hover {
-            background: linear-gradient(90deg, #a51818, #e94242 60%);
-        }
-        .event-table td .edit-btn {
-            border: none;
-            border-radius: 5px;
-            padding: 7px 16px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 15px;
-            transition: background 0.16s;
-            background: linear-gradient(90deg, #327ac5 20%, #225085 80%);
-            color: #fff;
-            margin-right: 8px;
-            box-shadow: 0 1px 3px rgba(50,122,197,0.07);
-        }
-        .event-table td .edit-btn:hover {
-            background: linear-gradient(90deg, #225085, #327ac5 60%);
-        }
-        .events-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 30px;
-        }
-        .create-event-btn {
-            background: linear-gradient(90deg, #2d397a, #594285 90%);
-            color: #fff;
-            padding: 10px 27px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            margin-left: 6px;
-            transition: background .18s;
-            letter-spacing: 0.02em;
-            box-shadow: 0 2px 11px rgb(82 58 213 / 8%);
-        }
-        .create-event-btn:hover {
-            background: linear-gradient(90deg, #594285, #2d397a 100%);
-        }
-        .alert-message {
-            padding: 10px 20px;
-            border-radius: 7px;
-            margin: 18px 0;
-            font-size: 15px;
-            color: #fff;
-        }
-        .alert-success { background: #27a74e; }
-        .alert-error { background: #c82f2f; }
-        @media (max-width: 900px) {
-            table.event-table { min-width: 800px; font-size: 14px; }
-        }
-    </style>
+    });
+    </script>
 </head>
 <body>
     <div class="dashboard-main">
         <div class="events-header">
-            <h2 style="margin:0; color:#322053;">Manage Events</h2>
-            <button class="create-event-btn" onclick="window.location.href='event_create.php'" type="button">
+            <h2 class="internal-header">Manage Events</h2>
+            <button class="create-event-btn" type="button">
                 Create Event
             </button>
         </div>
         <div class="event-table-container">
         <?php if (count($events) === 0): ?>
-            <div style="text-align:center; color:#322053; padding: 40px 5px; font-size: 1.1em;">
+            <div class="internal-no-events">
                 No events available.
             </div>
         <?php else: ?>
@@ -344,7 +261,7 @@ usort($events, function($a, $b) {
                                         if (!empty($img_name) && file_exists("../images/" . $img_name)) {
                                             echo "<img src=\"" . esc($img_path) . "\" alt=\"banner\" class=\"event-banner-thumb\">";
                                         } else {
-                                            echo "<span style=\"color:#c82f2f;font-size:12px;\">No image uploaded</span>";
+                                            echo "<span class='internal-no-image'>No image uploaded</span>";
                                         }
                                     }
                                     // Gallery images (images only, comma separated)
@@ -363,10 +280,10 @@ usort($events, function($a, $b) {
                                                 }
                                             }
                                             if (!$hasImg) {
-                                                echo "<span style=\"color:#c82f2f;font-size:12px;\">No image uploaded</span>";
+                                                echo "<span class='internal-no-image'>No image uploaded</span>";
                                             }
                                         } else {
-                                            echo "<span style=\"color:#c82f2f;font-size:12px;\">No image uploaded</span>";
+                                            echo "<span class='internal-no-image'>No image uploaded</span>";
                                         }
                                     }
                                     // Dropdown fields for event table
@@ -402,13 +319,13 @@ usort($events, function($a, $b) {
                                     }
                                     // Description: allow wrap
                                     else if ($col === 'event_description') {
-                                        echo '<div style="white-space:normal;max-width:330px;overflow-x:auto;">'.esc($ev[$col]).'</div>';
+                                        echo '<div class="internal-description-cell-div">'.esc($ev[$col]).'</div>';
                                     }
                                     // created_at and updated_at: show as datetime, allow wrap, smaller font
                                     else if ($col === 'created_at' || $col === 'updated_at') {
                                         $dt = esc($ev[$col]);
                                         if ($dt) {
-                                            echo '<span style="white-space:normal;font-size:13px;color:#57597A;">'. $dt .'</span>';
+                                            echo '<span class="internal-created-updated">'. $dt .'</span>';
                                         } else {
                                             echo '-';
                                         }
@@ -422,12 +339,10 @@ usort($events, function($a, $b) {
                             <td>
                                 <button
                                     class="edit-btn"
-                                    onclick="window.location.href='events_edit.php?event_id=<?php echo (int)$ev['event_id']; ?>'"
                                     type="button"
                                 >Edit</button>
                                 <button 
                                     class="delete-btn"
-                                    onclick="if(confirm('Are you sure you want to delete this event?')){ window.location.href='?delete_event_id=<?php echo (int)$ev['event_id']; ?>' }"
                                     type="button"
                                 >Delete</button>
                             </td>
@@ -438,48 +353,6 @@ usort($events, function($a, $b) {
         <?php endif; ?>
         </div>
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.table-edit-select').forEach(function(el){
-                el.addEventListener('change', function(){
-                    const selectEl = this;
-                    const event_id = selectEl.getAttribute('data-eid');
-                    const col = selectEl.getAttribute('data-col');
-                    const val = selectEl.value;
-                    const cell = selectEl.parentElement;
-                    let spinner = cell.querySelector('.inline-dropdown-spinner');
-                    if (!spinner) {
-                        spinner = document.createElement('span');
-                        spinner.className = 'inline-dropdown-spinner';
-                        spinner.style.display = '';
-                        cell.appendChild(spinner);
-                    } else {
-                        spinner.style.display = '';
-                    }
-                    selectEl.disabled = true;
-                    fetch(window.location.pathname, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: new URLSearchParams({
-                            table_ajax_update: 1,
-                            event_id: event_id,
-                            col: col,
-                            val: val
-                        })
-                    }).then(r=>r.json())
-                    .then(data=>{
-                        spinner.style.display = 'none';
-                        selectEl.disabled = false;
-                        window.location.reload();
-                    }).catch(err=>{
-                        spinner.style.display = 'none';
-                        selectEl.disabled = false;
-                        window.location.reload();
-                    });
-                });
-            });
-        });
-    </script>
     <?php
     // --- Delete event handler (GET param for quick admin use) ---
     if (isset($_GET['delete_event_id']) && is_numeric($_GET['delete_event_id'])) {

@@ -13,7 +13,7 @@ if (!isset($_SESSION['user_id'])) {
 // Get event_id from URL
 $event_id = isset($_GET['event_id']) ? intval($_GET['event_id']) : 0;
 if ($event_id <= 0) {
-    echo "<div style='margin:2em;color:red;'>No valid event selected.</div>";
+    echo "<div class=\"error-message-inline\">No valid event selected.</div>";
     exit;
 }
 
@@ -26,7 +26,7 @@ $result = $stmt->get_result();
 if ($result && $result->num_rows === 1) {
     $event = $result->fetch_assoc();
 } else {
-    echo "<div style='margin:2em;color:red;'>Event not found.</div>";
+    echo "<div class=\"error-message-inline\">Event not found.</div>";
     exit;
 }
 $stmt->close();
@@ -45,9 +45,9 @@ $all_categories = [];
 $category_max_seats = [];
 $cat_query = $conn->query("SELECT category_id, category_name, category_seats FROM category");
 if ($cat_query) {
-    while ($row = $cat_query->fetch_assoc()) {
-        $all_categories[] = $row;
-        $category_max_seats[$row['category_id']] = isset($row['category_seats']) ? intval($row['category_seats']) : null;
+    while ($cat_query_row = $cat_query->fetch_assoc()) {
+        $all_categories[] = $cat_query_row;
+        $category_max_seats[$cat_query_row['category_id']] = isset($cat_query_row['category_seats']) ? intval($cat_query_row['category_seats']) : null;
     }
 }
 
@@ -356,55 +356,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_event'])) {
 if (!empty($field_errors)) {
     $field_errors_js = array_keys($field_errors);
 }
-
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Edit Event</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="css/event_edit.css">
     <link rel="stylesheet" href="css/index.css">
-    <style>
-        body { background:#f7f7fa; }
-        .edit-event-form { max-width:900px; margin:32px auto; background:#fff; padding:32px; border-radius:12px; box-shadow:0 1px 14px #553ad506; }
-        .edit-event-form h2{ margin-top:0;color:#322053;}
-        .form-row { margin-bottom:18px; display:flex; gap:18px; align-items:center;}
-        .form-row label { width:220px; flex:0 0 220px; font-weight:600; color:#322053; margin-bottom:0;}
-        .form-row input[type="text"], .form-row input[type="date"], .form-row input[type="datetime-local"], 
-        .form-row input[type="time"], .form-row input[type="number"], .form-row select, .form-row textarea {
-            width:100%; padding:10px 12px; border-radius:5px; border:1px solid #bfc4d1; font-size:15px; background:#f9faff;}
-        .form-row textarea {resize:vertical;}
-        .form-row select {min-width:115px;}
-        .form-row .error-msg { margin-bottom:0; margin-top:5px;}
-        .form-submit-row{margin-top:27px;}
-        .btn-primary {background: linear-gradient(90deg, #327ac5 20%, #225085 80%); color:#fff; border:none; padding:10px 26px; border-radius:8px; font-size:16px; font-weight:700; cursor:pointer;}
-        .btn-primary:hover {background: linear-gradient(90deg, #225085, #327ac5 60%);}
-        .success-msg { color:#26ad51;margin-bottom:18px; }
-        .error-msg { color:#cf2525;margin-bottom:18px; }
-        @media (max-width: 680px) {
-            .edit-event-form {padding: 8px;max-width:100%;}
-            .form-row { flex-direction:column; align-items:flex-start;}
-            .form-row label {width:auto;}
-        }
-        /* Add for file field info/messages */
-        .file-desc-message {
-            display: block;
-            margin-top: 6px;
-            font-size: 13px;
-            color: #6b6d77;
-            width: 100%;
-        }
-        .file-current-info {
-            display: block;
-            margin-top: 6px;
-            font-size: 90%;
-            color: #888;
-            width: 100%;
-        }
-    </style>
     <script src="js/jquery-4.0.0.min.js"></script>
-
     <script>
     var categoryMaxSeats = <?php echo json_encode($category_max_seats); ?>;
     var phpFieldErrors = <?php echo json_encode($field_errors); ?>;
@@ -522,7 +484,7 @@ if (!empty($field_errors)) {
         <?php
         echo '<div class="form-row">';
         echo '<label for="event_id">Event ID</label>';
-        echo '<input type="text" name="event_id" id="event_id" value="'.esc($event['event_id']).'" readonly style="background:#ececec;font-weight:bold;">';
+        echo '<input type="text" name="event_id" id="event_id" class="readonly-event-id" value="'.esc($event['event_id']).'" readonly>';
         echo '</div>';
 
         $field_rows = [];
@@ -640,7 +602,7 @@ if (!empty($field_errors)) {
                 echo "<label for=\"event_seats\">Event Seats</label>";
                 echo '<input type="number" name="event_seats" id="event_seats" min="0"' . $maxSeatsAttr . ' required value="'.esc($v).'">';
                 if ($maxSeats !== null) {
-                    echo '<span style="font-size: 0.95em; color: #666; margin-left:8px;">Max allowed: ' . esc($maxSeats) . '</span>';
+                    echo '<span class="max-seats-info">Max allowed: ' . esc($maxSeats) . '</span>';
                 }
                 if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
                 echo '</div>';
@@ -655,7 +617,6 @@ if (!empty($field_errors)) {
                 if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
                 echo '</div>';
             }
-            // ========== REWRITE HERE: Place the file/desc/old-info BELOW the input, not inline ========
             elseif ($col == 'event_banner_image') {
                 echo '<div class="form-row">';
                 echo "<label for=\"event_banner_image\">Event Banner Image</label>";
@@ -687,7 +648,6 @@ if (!empty($field_errors)) {
                 echo '</div>';
                 echo '</div>';
             }
-            // ========== END REWRITE ==========
             elseif ($col == 'created_at') {
                 // will place below
             }
@@ -696,7 +656,7 @@ if (!empty($field_errors)) {
                 echo '<label for="updated_at">Updated At</label>';
                 echo '<input type="datetime-local" name="updated_at" id="updated_at" value="'.esc($v).'" required>';
                 if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
-                echo '<span style="color:#8b8894;font-size:13px;margin-left:8px;">Leave unchanged to use current time, or enter custom date/time.</span>';
+                echo '<span class="updated-at-desc">Leave unchanged to use current time, or enter custom date/time.</span>';
                 echo '</div>';
             }
             else {
@@ -743,8 +703,11 @@ if (!empty($field_errors)) {
         <div class="form-submit-row">
             <button class="btn-primary" type="submit" name="edit_event">Update Event</button>
         </div>
-        <div style="margin-top:20px;">
-            <a href="events.php" style="color:#384ead;">&larr; Back to Events List</a>
+        <div class="back-link-wrap">
+            <a href="events.php" class="back-link">&larr; Back to Events List</a>
+        </div>
+        <div class="js-hint-info" style="margin-top:30px;color: #666; font-size:14px;">
+
         </div>
     </form>
 </body>

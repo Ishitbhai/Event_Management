@@ -286,9 +286,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<link rel="stylesheet" href="../css/create_event.css">
 
-<div style="position:relative; max-width:860px; margin:0 auto;">
+<div class="create-event-wrapper">
     <div class="outside-back-btn-wrapper">
         <a href="events.php" class="create-event-btn back-btn">&#8592; Back to Events</a>
     </div>
@@ -300,9 +299,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
         <?php if ($success): ?>
             <div class="msg-success">
-                <h3 style="margin-top:2px;">Event Created Successfully!</h3>
+                <h3>Event Created Successfully!</h3>
                 <p>Event created by admin and is automatically approved, published, and payment marked as completed.</p>
-                <a href="events.php" class="create-event-btn" style="width:auto;display:inline-block;margin-top:13px;">View Events</a>
+                <a href="events.php" class="create-event-btn">View Events</a>
             </div>
         <?php else: ?>
         <form method="post" enctype="multipart/form-data" id="create-event-form" autocomplete="off" novalidate>
@@ -319,21 +318,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                        <label id="owner_id-error" class="field-error" style="display:none;"></label>
+                        <label id="owner_id-error" class="field-error"></label>
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <label class="form-label" for="title">Event Title</label>
                         <input type="text" name="title" id="title" value="<?php echo isset($title)?htmlspecialchars($title):'' ?>" required class="input-text" placeholder="Event title">
-                        <label id="title-error" class="field-error" style="display:none;"></label>
+                        <label id="title-error" class="field-error"></label>
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <label class="form-label" for="description">Description</label>
                         <textarea name="description" id="description" rows="3" required class="input-area" placeholder="Event description"><?php echo isset($description)?htmlspecialchars($description):'' ?></textarea>
-                        <label id="description-error" class="field-error" style="display:none;"></label>
+                        <label id="description-error" class="field-error"></label>
                     </td>
                 </tr>
                 <tr>
@@ -349,27 +348,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                        <label id="category_id-error" class="field-error" style="display:none;"></label>
+                        <label id="category_id-error" class="field-error"></label>
                     </td>
                 </tr>
                 <tr>
                     <td>
-                        <label class="form-label" for="start_datetime">Start Datetime <span style="font-size:.96em;color:#377fd9;">(at least one week from today)</span></label>
+                        <label class="form-label" for="start_datetime">
+                            Start Datetime <span class="field-hint">(at least one week from today)</span>
+                        </label>
                         <input type="datetime-local" name="start_datetime" id="start_datetime" value="<?php echo isset($start_datetime)?htmlspecialchars($start_datetime):'' ?>" required class="input-text">
-                        <label id="start_datetime-error" class="field-error" style="display:none;"></label>
+                        <label id="start_datetime-error" class="field-error"></label>
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <label class="form-label" for="end_datetime">End Datetime</label>
                         <input type="datetime-local" name="end_datetime" id="end_datetime" value="<?php echo isset($end_datetime)?htmlspecialchars($end_datetime):'' ?>" required class="input-text">
-                        <label id="end_datetime-error" class="field-error" style="display:none;"></label>
+                        <label id="end_datetime-error" class="field-error"></label>
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <label class="form-label">Max seats for chosen category:</label>
-                        <span id="max-seats-caption" style="font-weight:600;margin-left:5px;color:#2363b9;">
+                        <span id="max-seats-caption">
                             <?php
                                 if (isset($category_id)) {
                                     foreach ($categories as $cat) {
@@ -387,7 +388,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </tr>
                 <tr>
                     <td>
-                        <label class="form-label" for="event_seats">Total seats to open for this event: <span style="font-size:.96em;color:#377fd9;">(can be less than max)</span></label>
+                        <label class="form-label" for="event_seats">
+                            Total seats to open for this event:
+                            <span class="field-hint">(can be less than max)</span>
+                        </label>
                         <input type="number" name="event_seats" min="1" max="<?php
                             if (isset($category_id)) {
                                 foreach ($categories as $cat) {
@@ -402,8 +406,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ?>"
                             id="event_seats_input"
                             value="<?php echo isset($event_seats)?htmlspecialchars($event_seats):'' ?>"
-                            required class="input-number" style="width:50%;display:inline-block;">
-                        <label id="event_seats-error" class="field-error" style="display:none;"></label>
+                            required class="input-number">
+                        <label id="event_seats-error" class="field-error"></label>
                     </td>
                 </tr>
                 <tr>
@@ -411,9 +415,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <label class="form-label" for="persons">How many family persons/seats you want to take?</label>
                         <input type="number" name="persons" min="1" max="<?php echo isset($event_seats) ? htmlspecialchars($event_seats) : '9999'; ?>"
                             id="persons-input" value="<?php echo isset($persons)?htmlspecialchars($persons):'' ?>"
-                            required class="input-number" style="width:50%;display:inline-block;">
-                        <label id="persons-error" class="field-error" style="display:none;"></label>
-                        <span style="font-size:.98em;color:#196bb5;">(Available: <span id="available-seats-span">
+                            required class="input-number">
+                        <label id="persons-error" class="field-error"></label>
+                        <span>
+                            (Available: <span id="available-seats-span">
                             <?php
                                 if (isset($event_seats) && isset($persons)) {
                                     $avail = intval($event_seats) - intval($persons);
@@ -422,28 +427,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     echo '-';
                                 }
                             ?>
-                        </span> seats after booking)</span>
+                        </span> seats after booking)
+                        </span>
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <label class="form-label" for="banner_image">Banner Image</label>
                         <input type="file" name="banner_image" id="banner_image" accept=".jpg,.jpeg,.png,.gif,.webp" required class="input-file">
-                        <label id="banner_image-error" class="field-error" style="display:none;"></label>
+                        <label id="banner_image-error" class="field-error"></label>
                     </td>
                 </tr>
                 <tr>
                     <td>
-                        <label class="form-label" for="gallery_images">Gallery Images <span style="font-size:.97em;color:#6ca3f7;">(JPG/PNG/GIF/WEBP, multiple allowed)</span></label>
+                        <label class="form-label" for="gallery_images">
+                            Gallery Images <span class="field-hint field-hint2">(JPG/PNG/GIF/WEBP, multiple allowed)</span>
+                        </label>
                         <input type="file" name="gallery_images[]" id="gallery_images" accept=".jpg,.jpeg,.png,.gif,.webp" multiple class="input-file">
-                        <label id="gallery_images-error" class="field-error" style="display:none;"></label>
+                        <label id="gallery_images-error" class="field-error"></label>
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <label class="form-label" for="reg_deadline">Registration Deadline</label>
                         <input type="date" name="reg_deadline" id="reg_deadline" value="<?php echo isset($reg_deadline)?htmlspecialchars($reg_deadline):'' ?>" required class="input-text">
-                        <label id="reg_deadline-error" class="field-error" style="display:none;"></label>
+                        <label id="reg_deadline-error" class="field-error"></label>
                     </td>
                 </tr>
                 <tr>
@@ -456,8 +464,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
     </div>
 </div>
-
-<script src="../js/jquery-4.0.0.min.js"></script>
+<link rel="stylesheet" href="css/index.css">
+<link rel="stylesheet" href="css/event_create.css">
+<script src="js/jquery-4.0.0.min.js"></script>
 <script>
     function updateMaxSeats() {
         var sel = document.getElementById('category_id');
@@ -726,5 +735,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     });
 
 </script>
-
 
