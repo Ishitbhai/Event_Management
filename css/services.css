@@ -44,6 +44,7 @@
     box-shadow: 0 5px 28px 0 rgba(65,48,160,0.17);
     transform: translateY(-5px) scale(1.028);
 }
+/* keep .service-icon-circle for any icons used in circles */
 .service-icon-circle {
     width: 70px;
     height: 70px;
@@ -54,6 +55,29 @@
     align-items: center;
     justify-content: center;
 }
+
+/* Service image styling: visually prominent but never overflowing */
+.service-icon-image img {
+    width: 68px;
+    height: 68px;
+    max-width: 100%;
+    max-height: 68px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto 17px auto;
+    border: none;
+    box-shadow: none;
+    background: none;
+    padding: 0;
+}
+
+.service-icon-image i {
+    font-size: 2.6em;
+    color: #7454C8;
+    display: block;
+    margin: 0 auto 17px auto;
+}
+
 .service-icon-circle i, .service-icon-circle img {
     font-size: 2.3em;
     color: #fff;

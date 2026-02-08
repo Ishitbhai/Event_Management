@@ -39,16 +39,17 @@
         <?php if (!empty($services)): ?>
             <?php foreach ($services as $service): ?>
                 <div class="service-card">
-                    <div class="service-icon-circle">
+                    <!-- Removed purple or colored background from icon/image container -->
+                    <div class="service-icon-image">
                         <?php
                             // If service_image is a FontAwesome class, use <i>
                             // If it is an image file path, use <img>
                             if (preg_match('/^fa[srlb]? /', $service['service_image'])) {
-                                // FontAwesome icon class
+                                // FontAwesome icon class, no colored background
                                 echo '<i class="' . htmlspecialchars($service['service_image']) . '"></i>';
                             } else {
-                                // Assume it's an image path
-                                echo '<img src="' . htmlspecialchars($service['service_image']) . '" alt="' . htmlspecialchars($service['service_title']) . ' Icon" />';
+                                // Assume it's an image path, no colored background or container
+                                echo '<img src="images/' . htmlspecialchars($service['service_image']) . '" alt="' . htmlspecialchars($service['service_title']) . ' Icon" style="background:none; box-shadow:none; border:none;" />';
                             }
                         ?>
                     </div>

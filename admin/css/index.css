@@ -1,6 +1,5 @@
 body {
     margin: 0;
-    font-family: 'Segoe UI', sans-serif;
     background: #f4f6fb;
 }
 
@@ -69,6 +68,7 @@ body {
     text-decoration: none;
     font-size: 14px;
     font-weight: 500;
+    color: black;
 }
 
 .events { border-left: 6px solid #5236d6; }
@@ -76,9 +76,11 @@ body {
 .users { border-left: 6px solid #c82f2f; }
 .services { border-left: 6px solid #197655; }
 .reviews { border-left: 6px solid #c82f2f; }
+.categories { border-left: 6px solid #5236d6; }
 
 .events .card-title { color: #5236d6; }
 .bookings .card-title { color: #197655; }
 .users .card-title { color: #c82f2f; }
 .services .card-title { color: #197655; }
 .reviews .card-title { color: #c82f2f; }
+.categories .card-title { color: #5236d6; }

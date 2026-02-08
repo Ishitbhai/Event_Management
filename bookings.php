@@ -11,6 +11,33 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
+// Handle cancellation for events in draft or pending only
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    isset($_POST['cancel_event_id']) &&
+    is_numeric($_POST['cancel_event_id']) &&
+    isset($_POST['cancel_owner_event'])
+) {
+    $cancel_event_id = intval($_POST['cancel_event_id']);
+
+    // Only allow cancelling if the event is owned by user and is in draft or pending status
+    $check_sql = "SELECT * FROM events WHERE event_id = ? AND owner_id = ? AND (event_status = 'draft' OR event_status = 'pending')";
+    $check_stmt = $conn->prepare($check_sql);
+    $check_stmt->bind_param('ii', $cancel_event_id, $user_id);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    if ($check_result->num_rows > 0) {
+        $update_sql = "UPDATE events SET event_approval_status = 'rejected', event_status = 'cancelled' WHERE event_id = ?";
+        $update_stmt = $conn->prepare($update_sql);
+        $update_stmt->bind_param('i', $cancel_event_id);
+        $update_stmt->execute();
+        $update_stmt->close();
+    }
+    $check_stmt->close();
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
+
 // Fetch user info from database (get user_type/role)
 $user_sql = "SELECT * FROM users WHERE user_id = ?";
 $user_stmt = $conn->prepare($user_sql);
@@ -87,6 +114,7 @@ if (!empty($event_ids)) {
 // For MY EVENTS (As Owner), group all: must include draft and cancelled
 $owner_events = [
     'draft'      => [],
+    'pending'    => [],
     'published'  => [],
     'ongoing'    => [],
     'completed'  => [],
@@ -111,7 +139,7 @@ function echo_booked_cards($events, $label)
         elseif ($status == "pending") $status_class = 'status-pending';
         elseif ($status == "rejected") $status_class = 'status-rejected';
         else $status_class = 'status-pending';
-        $banner = (!empty($event['event_banner_image'])) ? htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
+        $banner = (!empty($event['event_banner_image'])) ? 'images/' . htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
         $event_url = 'single_event.php?event_id=' . urlencode($event['event_id']);
         ?>
         <a href="<?php echo $event_url; ?>" class="event-card">
@@ -140,8 +168,6 @@ function echo_booked_cards($events, $label)
 ?>
 
 <link rel="stylesheet" href="css/bookings.css">
-
-
 
 <div class="bookings-container">
     <h2 class="bookings-title">My Event Bookings</h2>
@@ -179,15 +205,21 @@ function echo_booked_cards($events, $label)
 
         <div class="section-title"><span>&#127881;</span> My Events (As Owner)</div>
 
+        <!-- DRAFT AND PENDING EVENTS: Cancel Button Provided -->
         <div class="events-subsection-title">&#128195; Draft (Pending) Events</div>
         <div class="events-list">
-        <?php if (count($owner_events['draft'])): ?>
-            <?php foreach ($owner_events['draft'] as $event): ?>
+        <?php 
+            // Merge draft + pending events for cancellation
+            $cancelable_events = array_merge($owner_events['draft'], $owner_events['pending']);
+        ?>
+        <?php if (count($cancelable_events)): ?>
+            <?php foreach ($cancelable_events as $event): ?>
                 <?php
-                    $banner = (!empty($event['event_banner_image'])) ? htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
+                    $banner = (!empty($event['event_banner_image'])) ? 'images/' . htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
                     $event_requests_url = 'event_requests.php?event_id=' . urlencode($event['event_id']);
                     $seats = isset($event['event_seats']) ? intval($event['event_seats']) : 0;
                     $available = isset($event['event_available_seats']) ? intval($event['event_available_seats']) : "-";
+                    $event_status_disp = ucfirst(htmlspecialchars($event['event_status']));
                 ?>
                 <a href="<?php echo $event_requests_url; ?>" class="event-card">
                     <img class="event-card-banner" src="<?php echo $banner; ?>" alt="Event Banner" loading="lazy" />
@@ -202,7 +234,9 @@ function echo_booked_cards($events, $label)
                         </div>
                         <div class="event-title"><?php echo htmlspecialchars($event['event_title']); ?></div>
                         <div class="event-detail"><?php echo nl2br(htmlspecialchars(mb_strimwidth($event['event_description'], 0, 96, "..."))); ?></div>
-                        <div class="persons-info persons-info-owner-draft">Owner (Draft/Pending)</div>
+                        <div class="persons-info persons-info-owner-draft">
+                            Owner (<?php echo $event_status_disp === 'Draft' ? 'Draft' : 'Pending'; ?>)
+                        </div>
                         <div class="persons-info persons-info-available-seats">
                             Available seats: 
                             <b>
@@ -218,6 +252,12 @@ function echo_booked_cards($events, $label)
                                 <span class="total-seats">/ <?php echo $seats; ?></span>
                             <?php endif; ?>
                         </div>
+                        <!-- Cancel Button -->
+                        <form method="post" style="margin-top:10px;text-align:right;">
+                            <input type="hidden" name="cancel_event_id" value="<?php echo intval($event['event_id']); ?>">
+                            <input type="hidden" name="cancel_owner_event" value="1">
+                            <button type="submit" onclick="return confirm('Are you sure you want to cancel this event? This action cannot be undone.')" class="owner-cancel-btn" style="padding:.4em 1em;background:#ad1414;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:90%;">Cancel Event</button>
+                        </form>
                     </div>
                 </a>
             <?php endforeach; ?>
@@ -226,12 +266,13 @@ function echo_booked_cards($events, $label)
         <?php endif; ?>
         </div>
 
+        <!-- PUBLISHED EVENTS (NO CANCEL) -->
         <div class="events-subsection-title">&#128197; Published (Upcoming) Events</div>
         <div class="events-list">
         <?php if (count($owner_events['published'])): ?>
             <?php foreach ($owner_events['published'] as $event): ?>
                 <?php
-                    $banner = (!empty($event['event_banner_image'])) ? htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
+                    $banner = (!empty($event['event_banner_image'])) ? 'images/' . htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
                     $event_requests_url = 'event_requests.php?event_id=' . urlencode($event['event_id']);
                     $seats = isset($event['event_seats']) ? intval($event['event_seats']) : 0;
                     $available = isset($event['event_available_seats']) ? intval($event['event_available_seats']) : "-";
@@ -273,12 +314,13 @@ function echo_booked_cards($events, $label)
         <?php endif; ?>
         </div>
 
+        <!-- ONGOING EVENTS (NO CANCEL) -->
         <div class="events-subsection-title">&#128338; Ongoing Events</div>
         <div class="events-list">
         <?php if (count($owner_events['ongoing'])): ?>
             <?php foreach ($owner_events['ongoing'] as $event): ?>
                 <?php
-                    $banner = (!empty($event['event_banner_image'])) ? htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
+                    $banner = (!empty($event['event_banner_image'])) ? 'images/' . htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
                     $event_requests_url = 'event_requests.php?event_id=' . urlencode($event['event_id']);
                     $seats = isset($event['event_seats']) ? intval($event['event_seats']) : 0;
                     $available = isset($event['event_available_seats']) ? intval($event['event_available_seats']) : "-";
@@ -320,12 +362,13 @@ function echo_booked_cards($events, $label)
         <?php endif; ?>
         </div>
 
+        <!-- COMPLETED EVENTS (NO CANCEL) -->
         <div class="events-subsection-title">&#9200; Completed Events</div>
         <div class="events-list">
         <?php if (count($owner_events['completed'])): ?>
             <?php foreach ($owner_events['completed'] as $event): ?>
                 <?php
-                    $banner = (!empty($event['event_banner_image'])) ? htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
+                    $banner = (!empty($event['event_banner_image'])) ? 'images/' . htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
                     $event_requests_url = 'event_requests.php?event_id=' . urlencode($event['event_id']);
                     $seats = isset($event['event_seats']) ? intval($event['event_seats']) : 0;
                     $available = isset($event['event_available_seats']) ? intval($event['event_available_seats']) : "-";
@@ -367,12 +410,13 @@ function echo_booked_cards($events, $label)
         <?php endif; ?>
         </div>
 
+        <!-- CANCELLED EVENTS (NO CANCEL) -->
         <div class="events-subsection-title cancelled-section-title">&#10060; Cancelled Events</div>
         <div class="events-list">
         <?php if (count($owner_events['cancelled'])): ?>
             <?php foreach ($owner_events['cancelled'] as $event): ?>
                 <?php
-                    $banner = (!empty($event['event_banner_image'])) ? htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
+                    $banner = (!empty($event['event_banner_image'])) ? 'images/' . htmlspecialchars($event['event_banner_image']) : 'images/no_banner.png';
                     $event_requests_url = 'event_requests.php?event_id=' . urlencode($event['event_id']);
                     $seats = isset($event['event_seats']) ? intval($event['event_seats']) : 0;
                     $available = isset($event['event_available_seats']) ? intval($event['event_available_seats']) : "-";

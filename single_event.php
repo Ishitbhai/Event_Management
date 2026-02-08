@@ -68,7 +68,7 @@ if (!empty($event['event_gallery_images'])) {
     foreach ($imgs as $img) {
         $img = trim($img);
         if ($img) {
-            $gallery_html .= '<img src="'.htmlspecialchars($img).'" class="gallery-thumb" alt="Event gallery image">';
+            $gallery_html .= '<img src="images/'.htmlspecialchars($img).'" class="gallery-thumb" alt="Event gallery image">';
         }
     }
 }
@@ -174,7 +174,7 @@ $total_reviews = $avg_data['total_reviews'] ?? 0;
 
 <div class="event-details-main">
 
-    <img src="<?php echo $banner; ?>" alt="Event banner" class="event-banner">
+    <img src="images/<?php echo $banner; ?>" alt="Event banner" class="event-banner">
 
     <div class="event-content-wrap">
 

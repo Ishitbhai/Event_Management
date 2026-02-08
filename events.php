@@ -32,6 +32,10 @@ function render_gallery($event_gallery_images) {
     foreach ($images as $idx => $img) {
         $src = trim($img);
         if (!$src) continue;
+        // Add images/ path if not already present or if not an absolute URL
+        if (strpos($src, '://') === false && strpos($src, 'images/') !== 0) {
+            $src = 'images/' . $src;
+        }
         $out .= '<img src="' . htmlspecialchars($src) . '" class="gallery-img" alt="Gallery Image">';
     }
     $out .= '</div>';
@@ -62,8 +66,14 @@ function render_gallery($event_gallery_images) {
                     <?php foreach($ongoing_events as $event): ?>
                         <li class="event-item event-link" style="cursor:pointer;">
                             <a href="single_event.php?event_id=<?php echo (int)$event['event_id']; ?>" style="text-decoration:none;color:inherit;display:block;">
-                            <?php if (!empty($event['event_banner_image'])): ?>
-                                <img src="<?php echo htmlspecialchars($event['event_banner_image']); ?>" class="event-banner-thumb" alt="Banner">
+                            <?php if (!empty($event['event_banner_image'])): 
+                                $banner = $event['event_banner_image'];
+                                // Add images/ path if not already present or if not an absolute URL
+                                if (strpos($banner, '://') === false && strpos($banner, 'images/') !== 0) {
+                                    $banner = 'images/' . $banner;
+                                }
+                            ?>
+                                <img src="<?php echo htmlspecialchars($banner); ?>" class="event-banner-thumb" alt="Banner">
                             <?php else: ?>
                                 <img src="assets/default-banner.png" class="event-banner-thumb" alt="Banner">
                             <?php endif; ?>
@@ -93,8 +103,14 @@ function render_gallery($event_gallery_images) {
                     <?php foreach($upcoming_events as $event): ?>
                         <li class="event-item event-link" style="cursor:pointer;">
                             <a href="single_event.php?event_id=<?php echo (int)$event['event_id']; ?>" style="text-decoration:none;color:inherit;display:block;">
-                            <?php if (!empty($event['event_banner_image'])): ?>
-                                <img src="<?php echo htmlspecialchars($event['event_banner_image']); ?>" class="event-banner-thumb" alt="Banner">
+                            <?php if (!empty($event['event_banner_image'])): 
+                                $banner = $event['event_banner_image'];
+                                // Add images/ path if not already present or if not an absolute URL
+                                if (strpos($banner, '://') === false && strpos($banner, 'images/') !== 0) {
+                                    $banner = 'images/' . $banner;
+                                }
+                            ?>
+                                <img src="<?php echo htmlspecialchars($banner); ?>" class="event-banner-thumb" alt="Banner">
                             <?php else: ?>
                                 <img src="assets/default-banner.png" class="event-banner-thumb" alt="Banner">
                             <?php endif; ?>
@@ -135,8 +151,14 @@ function render_gallery($event_gallery_images) {
                     <?php foreach($past_events as $event): ?>
                         <li class="event-item event-link" style="cursor:pointer;">
                             <a href="single_event.php?event_id=<?php echo (int)$event['event_id']; ?>" style="text-decoration:none;color:inherit;display:block;">
-                            <?php if (!empty($event['event_banner_image'])): ?>
-                                <img src="<?php echo htmlspecialchars($event['event_banner_image']); ?>" class="event-banner-thumb" alt="Banner">
+                            <?php if (!empty($event['event_banner_image'])): 
+                                $banner = $event['event_banner_image'];
+                                // Add images/ path if not already present or if not an absolute URL
+                                if (strpos($banner, '://') === false && strpos($banner, 'images/') !== 0) {
+                                    $banner = 'images/' . $banner;
+                                }
+                            ?>
+                                <img src="<?php echo htmlspecialchars($banner); ?>" class="event-banner-thumb" alt="Banner">
                             <?php else: ?>
                                 <img src="assets/default-banner.png" class="event-banner-thumb" alt="Banner">
                             <?php endif; ?>

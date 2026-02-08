@@ -135,29 +135,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $banner_path = '';
     $gallery_paths = [];
 
+    // Banner image upload check for path in filename
     if (!empty($_FILES['banner_image']['name'])) {
-        $ext = strtolower(pathinfo($_FILES['banner_image']['name'], PATHINFO_EXTENSION));
+        // Check if path is included in the uploaded banner image filename
+        $file_name = $_FILES['banner_image']['name'];
+        if (strpos($file_name, '/') !== false || strpos($file_name, '\\') !== false) {
+            $errors[] = "Invalid banner image: the file name must not contain a path.";
+        }
+        $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
         if (!in_array($ext, ['jpg','jpeg','png','gif','webp'])) {
             $errors[] = "Invalid banner image format.";
         } else {
-            $banner_path = 'images/banner_' . uniqid() . '.' . $ext;
-            move_uploaded_file($_FILES['banner_image']['tmp_name'], $banner_path);
+            // Store in 'images/' but only save filename in DB
+            $banner_filename = 'banner_' . uniqid() . '.' . $ext;
+            $banner_storage_path = 'images/' . $banner_filename;
+            if (!is_dir('images')) {
+                mkdir('images', 0755, true);
+            }
+            if (!move_uploaded_file($_FILES['banner_image']['tmp_name'], $banner_storage_path)) {
+                $errors[] = "Failed to upload banner image.";
+            } else {
+                $banner_path = $banner_filename; // Only filename saved to DB
+            }
         }
     } else {
         $errors[] = "Banner image is required.";
     }
 
+    // Gallery images upload check for path in filenames
     if (!empty($_FILES['gallery_images']['name'][0])) {
         foreach ($_FILES['gallery_images']['tmp_name'] as $i => $tmp) {
-            $ext = strtolower(pathinfo($_FILES['gallery_images']['name'][$i], PATHINFO_EXTENSION));
+            $gallery_file_name = $_FILES['gallery_images']['name'][$i];
+            // Check if path is included in the uploaded gallery image filename
+            if (strpos($gallery_file_name, '/') !== false || strpos($gallery_file_name, '\\') !== false) {
+                $errors[] = "Invalid gallery image: file name must not contain a path.";
+                continue;
+            }
+            $ext = strtolower(pathinfo($gallery_file_name, PATHINFO_EXTENSION));
             if (in_array($ext, ['jpg','jpeg','png','gif','webp'])) {
-                $path = 'images/gallery_' . uniqid() . '.' . $ext;
-                move_uploaded_file($tmp, $path);
-                $gallery_paths[] = $path;
+                $gallery_filename = 'gallery_' . uniqid() . '.' . $ext;
+                $gallery_storage_path = 'images/' . $gallery_filename;
+                if (!is_dir('images')) {
+                    mkdir('images', 0755, true);
+                }
+                if (!move_uploaded_file($tmp, $gallery_storage_path)) {
+                    $errors[] = "Failed to upload one of the gallery images.";
+                    continue;
+                }
+                $gallery_paths[] = $gallery_filename; // Only filename saved to DB
             }
         }
     }
- 
+
     $gallery_csv = implode(',', $gallery_paths);
 
     /* INSERT EVENT AND OWNER'S BOOKINGS */
@@ -583,6 +612,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $('#banner_image-error').text("Invalid image format. Allowed: jpg, jpeg, png, gif, webp.").show();
                 $(this).addClass("input-invalid");
             }
+            // Check for path inclusion in file name (should not have / or \)
+            else if (files[0].name.indexOf('/') !== -1 || files[0].name.indexOf('\\') !== -1) {
+                $('#banner_image-error').text("Invalid image name: must not contain a path.").show();
+                $(this).addClass("input-invalid");
+            }
             else {
                 $('#banner_image-error').hide();
                 $(this).removeClass("input-invalid");
@@ -596,9 +630,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     valid = false;
                     break;
                 }
+                // Check for path inclusion in file name
+                if (files[i].name.indexOf('/') !== -1 || files[i].name.indexOf('\\') !== -1) {
+                    valid = false;
+                    break;
+                }
             }
             if (!valid) {
-                $('#gallery_images-error').text("Invalid image format in gallery. Allowed: jpg, jpeg, png, gif, webp.").show();
+                $('#gallery_images-error').text("Invalid image in gallery (bad name or format). Name must not contain a path. Allowed: jpg, jpeg, png, gif, webp.").show();
                 $(this).addClass("input-invalid");
             } else {
                 $('#gallery_images-error').hide();

@@ -60,7 +60,7 @@
                 <?php foreach($services as $service): ?>
                     <div class="service-card">
                         <?php if (!empty($service['service_image'])): ?>
-                            <img src="<?php echo htmlspecialchars($service['service_image']); ?>" alt="<?php echo htmlspecialchars($service['service_title']); ?>" />
+                            <img src="images/<?php echo htmlspecialchars($service['service_image']); ?>" alt="<?php echo htmlspecialchars($service['service_title']); ?>" />
                         <?php else: ?>
                             <img src="images/logo.jpg" alt="<?php echo htmlspecialchars($service['service_title']); ?>" />
                         <?php endif; ?>
@@ -82,7 +82,7 @@
         <div class="event-gallery">
             <?php foreach ($gallery_events as $idx => $event): ?>
                 <a href="single_event.php?event_id=<?php echo (int)$event['event_id']; ?>">
-                    <img src="<?php echo htmlspecialchars($event['event_banner_image']); ?>" class="gallery-photo" alt="Event Moment <?php echo $idx+1; ?>">
+                    <img src="images/<?php echo htmlspecialchars($event['event_banner_image']); ?>" class="gallery-photo" alt="Event Moment <?php echo $idx+1; ?>">
                 </a>
             <?php endforeach; ?>
         </div>

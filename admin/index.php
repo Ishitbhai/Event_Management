@@ -19,7 +19,8 @@ $dashboard_counts = [
     'bookings' => 0,
     'users' => 0,
     'services' => 0,
-    'reviews' => 0
+    'reviews' => 0,
+    'categories' => 0
 ];
 
 // Total Events
@@ -41,6 +42,10 @@ if ($row = $res->fetch_assoc()) $dashboard_counts['services'] = (int)$row['cnt']
 // All Reviews
 $res = $conn->query("SELECT COUNT(*) as cnt FROM reviews");
 if ($row = $res->fetch_assoc()) $dashboard_counts['reviews'] = (int)$row['cnt'];
+
+// All Categories
+$res = $conn->query("SELECT COUNT(*) as cnt FROM category");
+if ($row = $res->fetch_assoc()) $dashboard_counts['category'] = (int)$row['cnt'];
 ?>
 <link rel="stylesheet" href="css/index.css">
 <div class="dashboard-main">
@@ -55,7 +60,7 @@ if ($row = $res->fetch_assoc()) $dashboard_counts['reviews'] = (int)$row['cnt'];
         <div class="dashboard-card events">
             <div class="card-title">Total Events</div>
             <div class="card-number"><?php echo $dashboard_counts['events']; ?></div>
-            <a href="manage_events.php" class="card-link">Manage events →</a>
+            <a href="events.php" class="card-link">Manage events →</a>
         </div>
         
         <div class="dashboard-card bookings">
@@ -80,6 +85,12 @@ if ($row = $res->fetch_assoc()) $dashboard_counts['reviews'] = (int)$row['cnt'];
             <div class="card-title">All Reviews</div>
             <div class="card-number"><?php echo $dashboard_counts['reviews']; ?></div>
             <a href="manage_reviews.php" class="card-link">Manage Reviews →</a>
+        </div>
+
+        <div class="dashboard-card categories">
+            <div class="card-title">All Categories</div>
+            <div class="card-number"><?php echo $dashboard_counts['categories']; ?></div>
+            <a href="manage_categories.php" class="card-link">Manage Categories →</a>
         </div>
         
     </div>
