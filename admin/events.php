@@ -114,6 +114,18 @@ usort($events, function($a, $b) {
     $b_time = $b['event_start_time'] ?? '';
     return strcmp($a_time, $b_time);
 });
+
+
+$page = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0
+    ? (int)$_GET['page']          
+    : 1;
+$per_page = 10;                   
+$total_events = count($events);   
+$total_pages = ceil($total_events / $per_page); 
+$start_index = ($page - 1) * $per_page;         
+$paged_events = array_slice($events, $start_index, $per_page); 
+$serial_start = $start_index + 1; 
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -123,7 +135,6 @@ usort($events, function($a, $b) {
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="stylesheet" href="css/events.css">
     <link rel="stylesheet" href="css/index.css">
-    
     <script>
     // Internalized JS for page: moved previous inline logic to event listeners below
     document.addEventListener('DOMContentLoaded', function() {
@@ -145,7 +156,7 @@ usort($events, function($a, $b) {
                     spinner.style.display = '';
                 }
                 selectEl.disabled = true;
-                fetch(window.location.pathname, {
+                fetch(window.location.pathname + window.location.search, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: new URLSearchParams({
@@ -211,7 +222,7 @@ usort($events, function($a, $b) {
             </button>
         </div>
         <div class="event-table-container">
-        <?php if (count($events) === 0): ?>
+        <?php if ($total_events === 0): ?>
             <div class="internal-no-events">
                 No events available.
             </div>
@@ -219,6 +230,7 @@ usort($events, function($a, $b) {
             <table class="event-table">
                 <thead>
                     <tr>
+                        <th>Sr. No.</th>
                         <?php
                         $col_headings = [
                             'event_id' => 'Event ID',
@@ -249,8 +261,11 @@ usort($events, function($a, $b) {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($events as $ev): ?>
+                    <?php 
+                    $snum = $serial_start;
+                    foreach ($paged_events as $ev): ?>
                         <tr data-event-id="<?php echo (int)$ev['event_id']; ?>">
+                            <td><?= $snum++; ?></td>
                             <?php foreach ($fields as $col): ?>
                                 <td class="<?= esc($col) ?><?= $col === 'event_description' ? ' description-cell' : '' ?>">
                                 <?php
@@ -350,6 +365,33 @@ usort($events, function($a, $b) {
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            <?php if ($total_pages > 1): ?>
+                <div class="pagination-container">
+                    <?php if ($page > 1): ?>
+                        <a href="?page=<?= $page - 1 ?>" class="pagination-btn-go prev" aria-label="Previous Page">
+                            <span class="go-arrow-prev">
+                                <!-- Left arrow SVG -->
+                                <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+                                  <path d="M10.7 13.29a1 1 0 01-1.41 0l-4-4a1 1 0 010-1.41l4-4a1 1 0 111.41 1.41L8.41 8.5l3.29 3.29a1 1 0 010 1.41z" fill="currentColor"/>
+                                </svg>
+                            </span>
+                            Previous
+                        </a>
+                    <?php endif; ?>
+                    <span class="pagination-page-indicator">Page <?= $page ?> of <?= $total_pages ?></span>
+                    <?php if ($page < $total_pages): ?>
+                        <a href="?page=<?= $page + 1 ?>" class="pagination-btn-go next" aria-label="Next Page">
+                            Next
+                            <span class="go-arrow">
+                                <!-- Right arrow SVG -->
+                                <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+                                  <path d="M6.29 13.29a1 1 0 001.41 0l4-4a1 1 0 000-1.41l-4-4A1 1 0 105.88 7.7L9.17 11l-3.29 3.29a1 1 0 000 1.41z" fill="currentColor"/>
+                                </svg>
+                            </span>
+                        </a>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
         <?php endif; ?>
         </div>
     </div>

@@ -187,3 +187,81 @@ table.event-table {
     color: #c82f2f;
     font-size: 12px;
 }
+
+.pagination-container {
+    margin-top: 24px;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    font-size: 1rem;
+}
+.pagination-btn-go {
+    background: linear-gradient(90deg, #556cd6 60%, #768bfd 100%);
+    color: #fff;
+    border: none;
+    outline: none;
+    padding: 9px 25px 9px 16px;
+    margin: 0 4px;
+    border-radius: 24px;
+    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    box-shadow: 0 2px 10px 0 rgba(86,108,215,0.12);
+    transition: background 0.15s, transform 0.12s;
+    position: relative;
+    font-weight: 500;
+}
+.pagination-btn-go:active {
+    transform: scale(.97);
+}
+.pagination-btn-go[disabled], .pagination-btn-go.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.pagination-btn-go.prev {
+    padding-left: 23px;
+    padding-right: 14px;
+}
+.pagination-btn-go.next {
+    padding-right: 23px;
+    padding-left: 16px;
+}
+.pagination-btn-go .go-arrow, .pagination-btn-go .go-arrow-prev {
+    display: inline-block;
+    width: 17px;
+    height: 17px;
+    vertical-align: middle;
+}
+.pagination-btn-go .go-arrow {
+    margin-left: 7px;
+}
+.pagination-btn-go .go-arrow-prev {
+    margin-right: 7px;
+    transform: scaleX(-1);
+}
+.pagination-page-indicator {
+    margin: 0 8px;
+    font-size: 1.04em;
+    color: #425087;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
+@media (max-width: 600px) {
+    .pagination-container {
+        font-size: 0.91rem;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .pagination-btn-go {
+        width: 90%;
+        justify-content: center;
+    }
+    .pagination-page-indicator {
+        font-size: 1em;
+    }
+}

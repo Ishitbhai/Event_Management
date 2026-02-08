@@ -223,3 +223,31 @@ body.modal-open {
     padding-bottom: 4px;
     justify-content: flex-end;
 }
+
+.field-err, .field-err-pw {
+    color: #cc0000;
+    font-size: 0.95em;
+    font-weight: 500;
+}
+/* Modal Styles */
+#passwordModal {
+    position: fixed;
+    z-index: 10000;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.3);
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+#passwordModal .modal-content {
+    background: #fff;
+    margin: 40px auto;
+    border-radius: 7px;
+    padding: 20px 35px 10px 35px;
+    max-width: 400px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.15);
+    position: relative;
+}
+#passwordModal .modal-close-btn {
+    position: absolute; top: 15px; right: 15px; border: none; background: none; font-size: 1.6em; cursor: pointer;
+}
