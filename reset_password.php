@@ -84,6 +84,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['reset_email'], $_POST[
 <head>
     <meta charset="UTF-8">
     <title>Reset Password - AOne Hub</title>
+    <!-- Bootstrap CSS -->
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Your custom style if needed -->
     <link rel="stylesheet" href="css/login.css">
     <script src="js/jquery-4.0.0.min.js"></script>
     <script>
@@ -120,40 +123,47 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['reset_email'], $_POST[
     });
     </script>
 </head>
-<body>
-<div class="auth-container">
-    <div class="auth-box">
-        <h2>Reset Password</h2>
+<body class="bg-light">
+<div class="container min-vh-100 d-flex align-items-center justify-content-center">
+    <div class="auth-box card shadow p-4" style="max-width: 400px; width: 100%;">
+        <h2 class="text-center mb-4">Reset Password</h2>
         <?php if (!empty($error)) { ?>
-            <p style="color:red;"><?php echo $error; ?></p>
+            <div class="alert alert-danger text-center"><?php echo $error; ?></div>
         <?php } elseif (!empty($success)) { ?>
-            <p style="color:green;"><?php echo $success; ?></p>
+            <div class="alert alert-success text-center"><?php echo $success; ?></div>
         <?php } ?>
 
         <?php if ($step === 2 && empty($success)) { ?>
             <form method="POST" action="" id="resetForm" autocomplete="off">
                 <input type="hidden" name="reset_email" value="<?php echo htmlspecialchars($email); ?>">
                 <input type="hidden" name="user_token" value="<?php echo htmlspecialchars($token); ?>">
-                <label for="new_password">New Password:</label>
-                <input type="password" name="new_password" id="new_password" required style="margin-top:10px;padding:10px;width:95%;margin-bottom:12px;" autocomplete="new-password" />
-                <label for="confirm_password">Confirm New Password:</label>
-                <input type="password" name="confirm_password" id="confirm_password" required style="margin-top:3px;padding:10px;width:95%;margin-bottom:15px;" autocomplete="new-password" />
-                <div id="pw_warning" style="color:red;margin-bottom:8px;font-size:0.98em;"></div>
-                <button type="submit" style="width:100%;padding:10px;">Reset Password</button>
+
+                <div class="mb-3">
+                    <label for="new_password" class="form-label">New Password:</label>
+                    <input type="password" name="new_password" id="new_password" class="form-control" autocomplete="new-password" />
+                </div>
+                <div class="mb-3">
+                    <label for="confirm_password" class="form-label">Confirm New Password:</label>
+                    <input type="password" name="confirm_password" id="confirm_password" class="form-control" autocomplete="new-password" />
+                </div>
+                <div id="pw_warning" class="text-danger mb-3" style="font-size:0.98em;"></div>
+                <button type="submit" class="btn btn-success w-100">Reset Password</button>
             </form>
-            <div class="links">
-                <a href="login.php">Back to Login</a>
+            <div class="links text-center mt-3">
+                <a href="login.php" class="link-secondary">Back to Login</a>
             </div>
         <?php } elseif ($step === 3 && !empty($success)) { ?>
-            <div style="margin-top:20px;">
-                <a href="login.php" class="login-btn">Return to Login</a>
+            <div class="text-center mt-4">
+                <a href="login.php" class="btn btn-primary login-btn">Return to Login</a>
             </div>
         <?php } elseif ($step === 0) { ?>
-            <div class="links">
-                <a href="forgot_password.php">Request another reset link</a>
+            <div class="links text-center mt-3">
+                <a href="forgot_password.php" class="link-secondary">Request another reset link</a>
             </div>
         <?php } ?>
     </div>
 </div>
+<!-- Bootstrap JS Bundle (Optional) -->
+<script src="bootstrap/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -33,7 +33,7 @@ if (isset($_GET['email']) && isset($_GET['token'])) {
         } else {
             $error = "Verification failed. Please try again later.";
         }
-    } else {
+    } else { 
         // Check if account is already active
         $check_active_sql = "SELECT * FROM users WHERE user_email='$user_email' AND user_status='active' LIMIT 1";
         $check_active_res = mysqli_query($conn, $check_active_sql);

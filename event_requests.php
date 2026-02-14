@@ -278,96 +278,135 @@ while ($row = $rs->fetch_assoc()) {
 $stmt->close();
 ?>
 
-<link rel="stylesheet" href="css/create_event.css">
+<!-- Bootstrap 5 CDN -->
+<link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
+<!-- Animate.css for subtle element animations -->
+<link rel="stylesheet" href="bootstrap/css/animate.min.css"/>
 <link rel="stylesheet" href="css/event_requests.css">
 
 
-<div class="req-table-container">
-    <a href="bookings.php" class="back-to-events-link">&#8592; Back to My Events</a>
-    <h2 class="page-title">
-        Booking Requests for: "<span class="event-title-span"><?php echo $event_title; ?></span>"
-    </h2>
 
-    <!-- Bookings/Requests Table -->
-    <?php if ($msg) echo $msg; ?>
+<div class="container">
+    <div class="card card-glass shadow animate__animated animate__fadeInUp">
+        <a href="bookings.php" class="back-to-events-link mb-2">
+            <span class="me-2">&#8592;</span>Back to My Events
+        </a>
+        <h2 class="glow-header mb-4">
+            Booking Requests for: "<span class="event-title-span"><?php echo $event_title; ?></span>"
+        </h2>
 
-    <?php if (count($bookings)): ?>
-    <table class="req-table">
-        <tr>
-            <th>#</th>
-            <th>User Name</th>
-            <th>Email</th>
-            <th>Persons</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr>
-        <?php foreach ($bookings as $i => $b): 
-            $pill_class = ($b['booking_status']=='pending' ? 'status-pending' : ($b['booking_status']=='approved' ? 'status-approved' : 'status-rejected'));
-        ?>
-        <tr>
-            <td><?php echo $i+1; ?></td>
-            <td><?php echo htmlspecialchars($b['user_name'] ?? 'User #'.$b['user_id']); ?></td>
-            <td>
-                <?php 
-                    if (!empty($b['user_email'])) {
-                        echo htmlspecialchars($b['user_email']);
-                    } else {
-                        echo '<span style="color:#999;">(no email)</span>';
-                    }
+        <?php if ($msg): ?>
+            <div class="alert <?php echo strpos($msg, 'error') !== false ? 'alert-danger animate__animated animate__shakeX' : 'alert-success animate__animated animate__fadeInDown'; ?> mt-2 mb-4">
+                <?php echo $msg; ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if (count($bookings)): ?>
+        <div class="table-responsive">
+        <table class="table table-hover align-middle rounded-4 shadow-sm bg-white animate__animated animate__fadeIn">
+            <thead>
+                <tr style="background:linear-gradient(90deg,#eef2fe 60%,#fcf5f8 100%);">
+                    <th>#</th>
+                    <th>User Name</th>
+                    <th>Email</th>
+                    <th>Persons</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($bookings as $i => $b): 
+                $pill_class = ($b['booking_status']=='pending' ? 'status-pending' : ($b['booking_status']=='approved' ? 'status-approved' : 'status-rejected'));
                 ?>
-            </td>
-            <td><?php echo intval($b['persons']); ?></td>
-            <td>
-                <span class="status-pill <?php echo $pill_class; ?>">
-                    <?php echo ucfirst($b['booking_status']); ?>
-                </span>
-            </td>
-            <td>
-                <?php if ($b['booking_status'] == 'pending'): ?>
-                    <form method="post" style="display:inline;">
-                        <input type="hidden" name="book_id" value="<?php echo intval($b['book_id']); ?>">
-                        <input type="hidden" name="action" value="approve">
-                        <button type="submit" class="action-btn action-approve"
-                        <?php if ($event['event_available_seats'] < $b['persons']) echo "disabled"; ?>
-                        >Approve</button>
-                    </form>
-                    <form method="post" style="display:inline;">
-                        <input type="hidden" name="book_id" value="<?php echo intval($b['book_id']); ?>">
-                        <input type="hidden" name="action" value="reject">
-                        <button type="submit" class="action-btn action-reject">Reject</button>
-                    </form>
-                <?php else: ?>
-                    <span style="color:#bbb;">---</span>
-                <?php endif; ?>
-            </td>
-        </tr>
-        <?php endforeach; ?>
-    </table>
-    <div class="req-table-info">
-        Event available seats: <b><?php echo intval($event['event_available_seats']); ?></b>
-    </div>
-    <?php else: ?>
-    <div class="no-bookings-yet">No bookings yet for this event.</div>
-    <?php endif; ?>
+                <tr>
+                    <td><?php echo $i+1; ?></td>
+                    <td><?php echo htmlspecialchars($b['user_name'] ?? 'User #' . $b['user_id']); ?></td>
+                    <td>
+                        <?php 
+                            if (!empty($b['user_email'])) {
+                                echo htmlspecialchars($b['user_email']);
+                            } else {
+                                echo '<span class="text-secondary small">(no email)</span>';
+                            }
+                        ?>
+                    </td>
+                    <td><?php echo intval($b['persons']); ?></td>
+                    <td>
+                        <span class="status-pill <?php echo $pill_class; ?>">
+                            <?php echo ucfirst($b['booking_status']); ?>
+                        </span>
+                    </td>
+                    <td>
+                        <?php if ($b['booking_status'] == 'pending'): ?>
+                        <div class="d-flex flex-wrap gap-2 justify-content-center">
+                            <form method="post" class="d-inline">
+                                <input type="hidden" name="book_id" value="<?php echo intval($b['book_id']); ?>">
+                                <input type="hidden" name="action" value="approve">
+                                <button type="submit"
+                                    class="btn btn-success btn-sm px-3 fw-bold shadow-sm animate-btn-glow"
+                                    <?php if ($event['event_available_seats'] < $b['persons']) echo "disabled"; ?>
+                                >
+                                    <span class="bi bi-check-circle"></span> Approve
+                                </button>
+                            </form>
+                            <form method="post" class="d-inline">
+                                <input type="hidden" name="book_id" value="<?php echo intval($b['book_id']); ?>">
+                                <input type="hidden" name="action" value="reject">
+                                <button type="submit"
+                                    class="btn btn-danger btn-sm px-3 fw-bold shadow-sm"
+                                >
+                                    <span class="bi bi-x-circle"></span> Reject
+                                </button>
+                            </form>
+                        </div>
+                        <?php else: ?>
+                            <span class="text-muted">---</span>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+        <div class="req-table-info">
+            Event available seats: <b><?php echo intval($event['event_available_seats']); ?></b>
+        </div>
+        <?php else: ?>
+        <div class="no-bookings-yet animate__animated animate__fadeIn">
+            No bookings yet for this event.
+        </div>
+        <?php endif; ?>
 
-    <!-- Images manage modal trigger button (MOVED HERE) -->
-    <button id="open-images-modal" class="manage-images-btn">Manage Images</button>
+        <div class="text-end">
+            <!-- Images manage modal trigger button -->
+            <button id="open-images-modal"
+                class="btn btn-primary btn-lg mt-4 mb-1 px-4 py-2 fw-bold shadow animate-btn-glow"
+                data-bs-toggle="modal"
+                data-bs-target="#images-manage-modal"
+            >
+                <span class="bi bi-images"></span> Manage Images
+            </button>
+        </div>
+    </div>
 </div>
 
-<!-- Modal Overlay for Event Images Manage - default hidden -->
-<div class="modal-overlay" id="images-manage-modal">
+<!-- Modal Overlay for Event Images Manage - Bootstrap Modal -->
+<div class="modal fade" id="images-manage-modal" tabindex="-1" aria-labelledby="modalTitleImages" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
 
-        <button class="modal-close-btn" id="close-images-modal" title="Close">&times; Close</button>
-        <h3 style="margin-bottom:14px;">Event Images</h3>
+      <div class="modal-header border-0">
+        <h3 class="modal-title fs-4" id="modalTitleImages">Event Images</h3>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
         <?php if ($img_msg) echo $img_msg; ?>
 
-        <div class="banner-manage">
-            <strong>Banner Image</strong> <small>(only one, can only replace)</small><br>
-            <div class="banner-manage-img-wrap">
-                <?php
-                if ($banner_image && is_file('images/'.basename($banner_image))):
-                ?>
+        <div class="banner-manage mb-4">
+            <strong>Banner Image</strong> <small class="text-muted">(only one, can only replace)</small>
+            <div class="banner-manage-img-wrap my-2">
+                <?php if ($banner_image && is_file('images/'.basename($banner_image))): ?>
                     <img src="images/<?php echo htmlspecialchars(basename($banner_image)); ?>" alt="Banner" class="banner-manage-img">
                 <?php elseif ($banner_image && !is_file('images/'.basename($banner_image))): ?>
                     <span class="banner-missing">Banner image "<?php echo htmlspecialchars(basename($banner_image)); ?>" not found on disk.</span>
@@ -375,16 +414,18 @@ $stmt->close();
                     <span class="banner-none">No banner image.</span>
                 <?php endif; ?>
             </div>
-            <form method="post" enctype="multipart/form-data">
-                <input type="file" name="banner_image" accept="image/*" required class="banner-form-file">
+            <form method="post" enctype="multipart/form-data" class="d-flex gap-2 align-items-center flex-wrap">
+                <input type="file" name="banner_image" accept="image/*" required class="form-control form-control-sm w-auto banner-form-file" style="max-width:220px;">
                 <button type="submit" name="upload_banner" class="replace-banner-btn">Replace Banner</button>
             </form>
         </div>
-        <hr class="images-modal-hr">
+
+        <hr class="my-4 images-modal-hr">
+
         <div class="gallery-manage">
-            <span class="gallery-manage-title">Gallery Images</span>
-            <small class="gallery-manage-sub">(can add new or delete individual)</small>
-            <div class="gallery-images-box">
+            <span class="gallery-manage-title fs-5">Gallery Images</span>
+            <small class="gallery-manage-sub ms-2">(can add new or delete individual)</small>
+            <div class="gallery-images-box mt-2 mb-3">
                 <?php
                 if ($gallery_images && is_array($gallery_images) && count($gallery_images)):
                     foreach ($gallery_images as $gi):
@@ -396,7 +437,7 @@ $stmt->close();
                         <?php continue; endif;
                 ?>
                     <div class="gallery-img-container">
-                        <img src="images/<?php echo htmlspecialchars($gi_clean); ?>" alt="Gallery" class="gallery-img">
+                        <img src="images/<?php echo htmlspecialchars($gi_clean); ?>" alt="Gallery" class="gallery-img mb-2 animate__animated animate__zoomIn">
                         <form method="post" class="delete-gallery-form">
                             <input type="hidden" name="del_filename" value="<?php echo htmlspecialchars($gi_clean); ?>">
                             <button type="submit" name="delete_gallery" class="delete-gallery-btn">Delete</button>
@@ -406,23 +447,27 @@ $stmt->close();
                     <span style="color:#aaa;">No images in gallery.</span>
                 <?php endif; ?>
             </div>
-            <form method="post" enctype="multipart/form-data" class="gallery-add-form">
-                <input type="file" name="gallery_images[]" accept="image/*" multiple required>
+            <form method="post" enctype="multipart/form-data" class="gallery-add-form mt-2 d-flex gap-2 align-items-center flex-wrap">
+                <input type="file" name="gallery_images[]" accept="image/*" multiple required class="form-control form-control-sm w-auto" style="max-width:220px;">
                 <button type="submit" name="upload_gallery" class="gallery-add-btn">Add to Gallery</button>
             </form>
         </div>
+      </div>
     </div>
+  </div>
 </div>
+
 
 <!-- Fallback: Standalone images manage box for non-JS (will only show if JS disabled) -->
 <noscript>
-<div class="standalone-images-manage">
-    <h3 style="margin-bottom:14px;">Event Images</h3>
+<div class="container mt-4">
+<div class="standalone-images-manage card card-body shadow">
+    <h3 class="fs-4 mb-3">Event Images</h3>
     <?php if ($img_msg) echo $img_msg; ?>
 
-    <div class="banner-manage">
-        <strong>Banner Image</strong> <small>(only one, can only replace)</small><br>
-        <div class="banner-manage-img-wrap">
+    <div class="banner-manage mb-4">
+        <strong>Banner Image</strong> <small class="text-muted">(only one, can only replace)</small>
+        <div class="banner-manage-img-wrap my-2">
             <?php
             if ($banner_image && is_file('images/'.basename($banner_image))):
             ?>
@@ -433,16 +478,16 @@ $stmt->close();
                 <span class="banner-none">No banner image.</span>
             <?php endif; ?>
         </div>
-        <form method="post" enctype="multipart/form-data">
-            <input type="file" name="banner_image" accept="image/*" required class="banner-form-file">
+        <form method="post" enctype="multipart/form-data" class="d-flex gap-2 align-items-center flex-wrap">
+            <input type="file" name="banner_image" accept="image/*" required class="form-control form-control-sm w-auto banner-form-file" style="max-width:220px;">
             <button type="submit" name="upload_banner" class="replace-banner-btn">Replace Banner</button>
         </form>
     </div>
-    <hr class="images-modal-hr">
+    <hr class="images-modal-hr my-4">
     <div class="gallery-manage">
-        <span class="gallery-manage-title">Gallery Images</span>
-        <small class="gallery-manage-sub">(can add new or delete individual)</small>
-        <div class="gallery-images-box">
+        <span class="gallery-manage-title fs-5">Gallery Images</span>
+        <small class="gallery-manage-sub ms-2">(can add new or delete individual)</small>
+        <div class="gallery-images-box mt-2 mb-3">
             <?php
             if ($gallery_images && is_array($gallery_images) && count($gallery_images)):
                 foreach ($gallery_images as $gi):
@@ -454,7 +499,7 @@ $stmt->close();
                     <?php continue; endif;
             ?>
                 <div class="gallery-img-container">
-                    <img src="images/<?php echo htmlspecialchars($gi_clean); ?>" alt="Gallery" class="gallery-img">
+                    <img src="images/<?php echo htmlspecialchars($gi_clean); ?>" alt="Gallery" class="gallery-img mb-2">
                     <form method="post" class="delete-gallery-form">
                         <input type="hidden" name="del_filename" value="<?php echo htmlspecialchars($gi_clean); ?>">
                         <button type="submit" name="delete_gallery" class="delete-gallery-btn">Delete</button>
@@ -464,13 +509,15 @@ $stmt->close();
                 <span style="color:#aaa;">No images in gallery.</span>
             <?php endif; ?>
         </div>
-        <form method="post" enctype="multipart/form-data" class="gallery-add-form">
-            <input type="file" name="gallery_images[]" accept="image/*" multiple required>
+        <form method="post" enctype="multipart/form-data" class="gallery-add-form mt-2 d-flex gap-2 align-items-center flex-wrap">
+            <input type="file" name="gallery_images[]" accept="image/*" multiple required class="form-control form-control-sm w-auto" style="max-width:220px;">
             <button type="submit" name="upload_gallery" class="gallery-add-btn">Add to Gallery</button>
         </form>
     </div>
 </div>
+</div>
 </noscript>
 
+<link rel="stylesheet" href="bootstrap/css/bootstrap-icons.min.css">
 <script src="js/event_requests.js"></script>
 <?php require_once('footer.php'); ?>

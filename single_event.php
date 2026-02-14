@@ -36,18 +36,16 @@ if ($event_status === 'draft') {
     exit();
 }
 
-$is_completed_event = $event_status === "completed";
-$is_ongoing_event = $event_status === "ongoing";
-$is_upcoming_event = $event_status === "published";
+$is_completed_event   = $event_status === "completed";
+$is_ongoing_event    = $event_status === "ongoing";
+$is_upcoming_event   = $event_status === "published";
 
 // --------- SEAT AVAILABILITY & DEADLINE (for ongoing/upcoming) ----------
-// Use event_seats for total seats, event_available_seats for available seats
-$total_seats = isset($event['event_seats']) ? intval($event['event_seats']) : 0;
+$total_seats     = isset($event['event_seats']) ? intval($event['event_seats']) : 0;
 $seats_available = isset($event['event_available_seats']) ? intval($event['event_available_seats']) : null;
-$booked_seats = 0;
+$booked_seats    = 0;
 $booking_deadline = !empty($event['booking_deadline']) ? $event['booking_deadline'] : null;
 
-// Booked seats is total_seats - event_available_seats if both set and numeric
 if (($is_ongoing_event || $is_upcoming_event) && $total_seats > 0 && is_numeric($seats_available)) {
     $booked_seats = max(0, $total_seats - $seats_available);
 } else if ($total_seats > 0) {
@@ -68,7 +66,7 @@ if (!empty($event['event_gallery_images'])) {
     foreach ($imgs as $img) {
         $img = trim($img);
         if ($img) {
-            $gallery_html .= '<img src="images/'.htmlspecialchars($img).'" class="gallery-thumb" alt="Event gallery image">';
+            $gallery_html .= '<img src="images/'.htmlspecialchars($img).'" class="gallery-thumb rounded shadow-sm me-2 mb-2" alt="Event gallery image">';
         }
     }
 }
@@ -169,10 +167,12 @@ $avg_rating = $avg_data['avg_rating'] ? round($avg_data['avg_rating'], 1) : null
 $total_reviews = $avg_data['total_reviews'] ?? 0;
 ?>
 
+<!-- Bootstrap CDN (Classic, muted colors, responsive, some subtle animation) -->
+<link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
+
 <link rel="stylesheet" href="css/single_event.css">
 
-
-<div class="event-details-main">
+<div class="event-details-main shadow-lg animate__animated animate__fadeInDown">
 
     <img src="images/<?php echo $banner; ?>" alt="Event banner" class="event-banner">
 
@@ -188,7 +188,7 @@ $total_reviews = $avg_data['total_reviews'] ?? 0;
             </span>
 
             <?php if ($is_completed_event && $avg_rating !== null): ?>
-                <span style="margin-left:20px;">
+                <span class="ms-2 align-middle">
                     <?php
                     $full = floor($avg_rating);
                     $decimal = $avg_rating - $full;
@@ -205,10 +205,10 @@ $total_reviews = $avg_data['total_reviews'] ?? 0;
                         }
                     }
                     ?>
-                    <span style="margin-left:5px;font-weight:700;">
+                    <span class="ms-1 fw-bold">
                         <?php echo $avg_rating; ?>/5
                     </span>
-                    <span style="color:#999;">
+                    <span class="text-muted">
                         (<?php echo $total_reviews; ?> reviews)
                     </span>
                 </span>
@@ -217,7 +217,7 @@ $total_reviews = $avg_data['total_reviews'] ?? 0;
 
         <!-- EVENT INFO: Show for ongoing or upcoming events -->
         <?php if ($is_ongoing_event || $is_upcoming_event): ?>
-            <table class="event-info-table">
+            <table class="event-info-table table table-borderless align-middle mt-4 mb-3">
                 <tr>
                     <th>Date:</th>
                     <td>
@@ -227,7 +227,7 @@ $total_reviews = $avg_data['total_reviews'] ?? 0;
                             : 'N/A'; 
                         ?>
                         <?php if (!empty($event['event_time'])): ?>
-                            <span style="color:#666; font-size:.97em;">at <?php echo htmlspecialchars($event['event_time']); ?></span>
+                            <span class="text-muted ms-1 small">at <?php echo htmlspecialchars($event['event_time']); ?></span>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -249,8 +249,8 @@ $total_reviews = $avg_data['total_reviews'] ?? 0;
                         <?php
                         if ($total_seats > 0 && is_numeric($seats_available)) {
                             echo ($seats_available > 0)
-                                ? "<span style='color:#218a5a;font-weight:bold;'>$seats_available</span>"
-                                : "<span style='color:#d42e20;font-weight:bold;'>FULL</span>";
+                                ? "<span class='fw-bold text-success'>$seats_available</span>"
+                                : "<span class='fw-bold text-danger'>FULL</span>";
                         } else {
                             echo '-';
                         }
@@ -269,8 +269,8 @@ $total_reviews = $avg_data['total_reviews'] ?? 0;
                     <th>Status:</th>
                     <td>
                         <?php
-                        if ($is_ongoing_event) echo '<span style="color:#25c982;font-weight:bold;">Ongoing</span>';
-                        elseif ($is_upcoming_event) echo '<span style="color:#0495fa;font-weight:bold;">Upcoming</span>';
+                        if ($is_ongoing_event) echo '<span class="fw-bold text-primary">Ongoing</span>';
+                        elseif ($is_upcoming_event) echo '<span class="fw-bold text-secondary">Upcoming</span>';
                         ?>
                     </td>
                 </tr>
@@ -283,92 +283,82 @@ $total_reviews = $avg_data['total_reviews'] ?? 0;
             </table>
         <?php endif; ?>
 
-        <div class="event-desc-main">
+        <div class="event-desc-main mt-3 mb-2">
             <?php echo nl2br(htmlspecialchars($event['event_description'])); ?>
         </div>
 
         <?php if ($gallery_html): ?>
-        <div class="event-gallery-row">
+        <div class="event-gallery-row my-2">
             <?php echo $gallery_html; ?>
         </div>
         <?php endif; ?>
 
         <div class="event-action-row">
-
-            <?php if ($is_completed_event): ?>
-
-                <?php if ($user_can_review && !$has_already_rated): ?>
-
-                    <form method="post" class="review-form">
-                        <div class="stars-row">
-                            <?php for ($i = 1; $i <= 5; $i++): ?>
-                                <input type="radio" name="rating" value="<?php echo $i; ?>" id="star-<?php echo $i; ?>" class="star-input">
-                                <label for="star-<?php echo $i; ?>" class="star-label">★</label>
-                            <?php endfor; ?>
-                        </div>
-
-                        <textarea name="review_text" rows="3" required style="width:100%;margin-top:10px;"></textarea>
-                        <button type="submit" class="book-event-btn" style="margin-top:10px;">Submit Review</button>
-                    </form>
-
-                    <?php if ($error_msg): ?>
-                        <div style="color:red;"><?php echo $error_msg; ?></div>
-                    <?php elseif ($success_msg): ?>
-                        <div style="color:green;"><?php echo $success_msg; ?></div>
-                    <?php endif; ?>
-
-                <?php elseif ($user_can_review && $has_already_rated): ?>
-
-                    <div class="review-box">
-                        <strong>Your Review:</strong><br>
-                        <?php
-                        for ($i=1;$i<=5;$i++){
-                            echo $i <= $user_rating ? "★" : "☆";
-                        }
-                        ?>
-                        <div style="margin-top:8px;">
-                            <?php echo nl2br(htmlspecialchars($user_review_text)); ?>
-                        </div>
-                    </div>
-
-                <?php endif; ?>
-
-            <?php else: ?>
-                <?php if ($is_ongoing_event || $is_upcoming_event): ?>
-                    <?php
-                        // Booking allowed only if seat is available and before deadline (if set)
-                        $now_date = date('Y-m-d');
-                        $can_book = true;
-                        if ($total_seats > 0 && is_numeric($seats_available) && $seats_available <= 0) {
-                            $can_book = false;
-                        }
-                        if ($booking_deadline && $now_date > $booking_deadline) {
-                            $can_book = false;
-                        }
-                    ?>
-                    <?php if ($can_book): ?>
-                        <form method="post" action="book_event.php">
-                            <input type="hidden" name="event_id" value="<?php echo $event_id; ?>">
-                            <button type="submit" class="book-event-btn"
-                                <?php if ($total_seats > 0 && is_numeric($seats_available) && $seats_available <= 0) echo 'disabled style="opacity:.66;"'; ?>
-                            >Book Now</button>
+            <div class="action-btn-wrapper">
+                <?php if ($is_completed_event): ?>
+                    <?php if ($user_can_review && !$has_already_rated): ?>
+                        <form method="post" class="review-form my-3 w-100" style="max-width:430px;">
+                            <div class="stars-row mb-2">
+                                <?php for ($i = 1; $i <= 5; $i++): ?>
+                                    <input type="radio" name="rating" value="<?php echo $i; ?>" id="star-<?php echo $i; ?>" class="star-input">
+                                    <label for="star-<?php echo $i; ?>" class="star-label">★</label>
+                                <?php endfor; ?>
+                            </div>
+                            <textarea name="review_text" class="form-control mb-2" rows="3" required placeholder="Write your feedback here..."></textarea>
+                            <button type="submit" class="book-event-btn btn mt-2 py-2 px-4 w-100">Submit Review</button>
                         </form>
-                    <?php else: ?>
-                        <div style="color:#d42e20;font-weight:bold;">
-                            Booking Closed
+                        <?php if ($error_msg): ?>
+                            <div class="text-danger fw-semibold mb-2 w-100 text-center"><?php echo $error_msg; ?></div>
+                        <?php elseif ($success_msg): ?>
+                            <div class="text-success fw-semibold mb-2 w-100 text-center"><?php echo $success_msg; ?></div>
+                        <?php endif; ?>
+                    <?php elseif ($user_can_review && $has_already_rated): ?>
+                        <div class="review-box w-100" style="max-width:430px;margin-left:auto;margin-right:auto;">
+                            <span class="fw-semibold">Your Review:</span><br>
+                            <?php
+                            for ($i=1;$i<=5;$i++){
+                                echo $i <= $user_rating ? "★" : "☆";
+                            }
+                            ?>
+                            <div class="mt-2">
+                                <?php echo nl2br(htmlspecialchars($user_review_text)); ?>
+                            </div>
                         </div>
                     <?php endif; ?>
+                <?php else: ?>
+                    <?php if ($is_ongoing_event || $is_upcoming_event): ?>
+                        <?php
+                            $now_date = date('Y-m-d');
+                            $can_book = true;
+                            if ($total_seats > 0 && is_numeric($seats_available) && $seats_available <= 0) {
+                                $can_book = false;
+                            }
+                            if ($booking_deadline && $now_date > $booking_deadline) {
+                                $can_book = false;
+                            }
+                        ?>
+                        <?php if ($can_book): ?>
+                            <form method="post" action="book_event.php" class="w-100" style="max-width:320px;">
+                                <input type="hidden" name="event_id" value="<?php echo $event_id; ?>">
+                                <button type="submit" class="book-event-btn btn w-100 mb-3"
+                                    <?php if ($total_seats > 0 && is_numeric($seats_available) && $seats_available <= 0) echo 'disabled style="opacity:.66;"'; ?>
+                                >Book Now</button>
+                            </form>
+                        <?php else: ?>
+                            <div class="fw-bold text-danger pt-2 w-100 mb-3 text-center">
+                                Booking Closed
+                            </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
                 <?php endif; ?>
-            <?php endif; ?>
-
+            </div>
         </div>
 
         <?php if ($is_completed_event && count($all_reviews) > 0): ?>
-            <div style="margin-top:25px;">
-                <h3>Ratings & Reviews</h3>
-
+            <div class="mt-4">
+                <h4 class="mb-3 fw-bold">Ratings & Reviews</h4>
                 <?php foreach ($all_reviews as $review): ?>
-                    <div class="review-box">
+                    <div class="review-box mb-3">
                         <span class="review-username">
                             <?php echo htmlspecialchars($review['user_name'] ?? 'User'); ?>
                         </span>
@@ -377,16 +367,15 @@ $total_reviews = $avg_data['total_reviews'] ?? 0;
                             echo $i <= (int)$review['review_rating'] ? "★" : "☆";
                         }
                         ?>
-                        <span style="color:#aaa;font-size:.9em;">
+                        <span class="text-muted small ms-1">
                             <?php echo date('d M Y', strtotime($review['reviewed_at'])); ?>
                         </span>
 
-                        <div style="margin-top:5px;">
+                        <div class="mt-2">
                             <?php echo nl2br(htmlspecialchars($review['review_review'])); ?>
                         </div>
                     </div>
                 <?php endforeach; ?>
-
             </div>
         <?php endif; ?>
 

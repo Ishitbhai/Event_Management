@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $end_datetime   = $_POST['end_datetime'];
     $reg_deadline   = $_POST['reg_deadline'];
     $event_seats  = (int)$_POST['event_seats'];
-    $persons      = (int)$_POST['persons'];
+    $persons      = (int)$_POST['persons']; 
 
     /* REQUIRED FIELDS CHECK */
     if (empty($title) || empty($description) || empty($category_id) ||

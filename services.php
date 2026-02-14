@@ -23,66 +23,76 @@
     }
 ?>
 
+<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
 <link rel="stylesheet" href="css/services.css">
 
-<div class="services-hero">
+
+<div class="services-hero fade-in-up">
     <h1>Our Services</h1>
     <p>
-        At Aone Hub, we provide a comprehensive suite of event services to turn your vision into reality—<br>
-        from planning, and logistics to real-time support.
+        At Aone Hub, we curate, plan, and execute exceptional events.<br>
+        From visionary concepts to seamless delivery—explore our classic suite of services.
     </p>
 </div>
 
-<!-- SERVICES LIST SECTION -->
 <section class="services-list-section">
-    <div class="services-wrapper">
+    <div class="container">
+        <div class="text-center mb-5 fade-in-up"><span class="section-title">Service Offerings</span></div>
+        <div class="row justify-content-center">
         <?php if (!empty($services)): ?>
-            <?php foreach ($services as $service): ?>
-                <div class="service-card">
-                    <!-- Removed purple or colored background from icon/image container -->
-                    <div class="service-icon-image">
+            <?php 
+            $delay = 0;
+            foreach ($services as $service): 
+                $delay += 0.07; // Animation delay
+            ?>
+                <div class="col-12 col-sm-6 col-lg-4 d-flex align-items-stretch">
+                    <div class="service-card fade-in-up" style="animation-delay: <?= sprintf('%.2f', $delay) ?>s;">
+                        <div class="service-icon-image">
                         <?php
-                            // If service_image is a FontAwesome class, use <i>
-                            // If it is an image file path, use <img>
                             if (preg_match('/^fa[srlb]? /', $service['service_image'])) {
-                                // FontAwesome icon class, no colored background
-                                echo '<i class="' . htmlspecialchars($service['service_image']) . '"></i>';
+                                echo '<i class="' . htmlspecialchars($service['service_image']) . '" aria-hidden="true"></i>';
                             } else {
-                                // Assume it's an image path, no colored background or container
-                                echo '<img src="images/' . htmlspecialchars($service['service_image']) . '" alt="' . htmlspecialchars($service['service_title']) . ' Icon" style="background:none; box-shadow:none; border:none;" />';
+                                echo '<img src="images/' . htmlspecialchars($service['service_image']) . '" alt="' . htmlspecialchars($service['service_title']) . ' Icon" />';
                             }
                         ?>
+                        </div>
+                        <h3><?= htmlspecialchars($service['service_title']) ?></h3>
+                        <p><?= htmlspecialchars($service['service_description']) ?></p>
                     </div>
-                    <h3><?= htmlspecialchars($service['service_title']) ?></h3>
-                    <p><?= htmlspecialchars($service['service_description']) ?></p>
                 </div>
             <?php endforeach; ?>
         <?php else: ?>
-            <p style="text-align:center;width:100%;">No services available at the moment.</p>
+                <div class="col-12"><div class="alert alert-secondary text-center mt-3">No services available at the moment.</div></div>
         <?php endif; ?>
+        </div>
     </div>
 </section>
 
-<!-- VALUES SECTION -->
 <section class="values-section">
-    <h2>Why Choose Aone Hub?</h2>
-    <div class="values-grid">
+    <div class="container">
+        <h2 class="fade-in-up mb-4">Why Choose Aone Hub?</h2>
+        <div class="row values-grid justify-content-center">
         <?php if (!empty($values)): ?>
-            <?php foreach ($values as $value): ?>
-                <div class="value-card">
-                    <strong><?= htmlspecialchars($value['why_title']) ?>:</strong>
+            <?php 
+            $vdelay = 0;
+            foreach ($values as $value): 
+                $vdelay += 0.08;
+            ?>
+            <div class="col-12 col-md-6 col-lg-4 d-flex">
+                <div class="value-card fade-in-up" style="animation-delay: <?= sprintf('%.2f', $vdelay) ?>s;">
+                    <strong><?= htmlspecialchars($value['why_title']) ?>:</strong><br>
                     <?= htmlspecialchars($value['why_description']) ?>
                 </div>
+            </div>
             <?php endforeach; ?>
         <?php else: ?>
-            <div class="value-card">No reasons available at the moment.</div>
+            <div class="col-12">
+                <div class="value-card">No reasons available at the moment.</div>
+            </div>
         <?php endif; ?>
+        </div>
     </div>
 </section>
 
-<!-- FontAwesome for icons (if not already included) -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-
-<?php
-    require('footer.php');
-?>
+<?php require('footer.php'); ?>

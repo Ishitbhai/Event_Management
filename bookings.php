@@ -3,7 +3,6 @@ session_start();
 require_once('header.php');
 require_once('database/db_connect.php');
 
-// Check login via session, but get user and role/type from the users table, not from session
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
@@ -20,7 +19,6 @@ if (
 ) {
     $cancel_event_id = intval($_POST['cancel_event_id']);
 
-    // Only allow cancelling if the event is owned by user and is in draft or pending status
     $check_sql = "SELECT * FROM events WHERE event_id = ? AND owner_id = ? AND (event_status = 'draft' OR event_status = 'pending')";
     $check_stmt = $conn->prepare($check_sql);
     $check_stmt->bind_param('ii', $cancel_event_id, $user_id);
@@ -38,14 +36,12 @@ if (
     exit();
 }
 
-// Fetch user info from database (get user_type/role)
 $user_sql = "SELECT * FROM users WHERE user_id = ?";
 $user_stmt = $conn->prepare($user_sql);
 $user_stmt->bind_param('i', $user_id);
 $user_stmt->execute();
 $user_result = $user_stmt->get_result();
 if ($user_result->num_rows < 1) {
-    // No such user in DB, force log out
     session_destroy();
     header("Location: login.php");
     exit();
@@ -54,7 +50,6 @@ $user_row = $user_result->fetch_assoc();
 $user_type = isset($user_row['user_type']) ? $user_row['user_type'] : 'user';
 $user_stmt->close();
 
-// Fetch events where user booked, including booking status and event_status
 $booked_sql = "SELECT events.*, bookings.persons, bookings.booking_status 
     FROM events 
     JOIN bookings ON events.event_id = bookings.event_id
@@ -66,24 +61,21 @@ $stmt->execute();
 $booked_events = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// For bookings, NO draft or cancelled events: only published, ongoing, completed
 $booked_categorized = [
-    'published'  => [], // Upcoming
-    'ongoing'    => [], // Ongoing
-    'completed'  => []  // Completed
+    'published'  => [],
+    'ongoing'    => [],
+    'completed'  => []
 ];
 foreach ($booked_events as $event) {
     $status = isset($event['event_status']) ? strtolower($event['event_status']) : '';
-    if ($status === 'cancelled' || $status === 'draft') continue; // Not for this section
+    if ($status === 'cancelled' || $status === 'draft') continue;
     if (isset($booked_categorized[$status])) {
         $booked_categorized[$status][] = $event;
     } else {
-        // Unknown status, treat as upcoming
         $booked_categorized['published'][] = $event;
     }
 }
 
-// Fetch events owned by this user (admin can view/manage their own events too)
 $my_events_sql = "SELECT * FROM events WHERE owner_id = ? ORDER BY event_date DESC";
 $stmt = $conn->prepare($my_events_sql);
 $stmt->bind_param('i', $user_id);
@@ -91,7 +83,6 @@ $stmt->execute();
 $my_events = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// For all user-owned events, get the number of approved bookings (optional, can be used if you need total participants)
 $event_ids = array_column($my_events, 'event_id');
 $booked_seats = [];
 if (!empty($event_ids)) {
@@ -111,7 +102,6 @@ if (!empty($event_ids)) {
     $stmt->close();
 }
 
-// For MY EVENTS (As Owner), group all: must include draft and cancelled
 $owner_events = [
     'draft'      => [],
     'pending'    => [],
@@ -125,11 +115,12 @@ foreach ($my_events as $event) {
     if (isset($owner_events[$status])) {
         $owner_events[$status][] = $event;
     } else {
-        $owner_events['draft'][] = $event; // unknown as draft
+        $owner_events['draft'][] = $event;
     }
 }
 
-function echo_booked_cards($events, $label)
+// NO LABEL echo_booked_cards
+function echo_booked_cards($events)
 {
     foreach ($events as $event) {
         $status = strtolower($event['booking_status']);
@@ -158,7 +149,7 @@ function echo_booked_cards($events, $label)
                 <div class="event-detail"><?php echo nl2br(htmlspecialchars(mb_strimwidth($event['event_description'], 0, 96, "..."))); ?></div>
                 <div class="persons-info">Booked for: <b><?php echo intval($event['persons']); ?></b> <?php echo (intval($event['persons']) > 1) ? "persons" : "person"; ?></div>
                 <span class="booking-status <?php echo $status_class; ?>">
-                    <?php echo $status_text; ?> (<?php echo $label; ?>)
+                    <?php echo $status_text; ?>
                 </span>
             </div>
         </a>
@@ -177,7 +168,7 @@ function echo_booked_cards($events, $label)
     <div class="events-subsection-title">&#128197; Upcoming Events</div>
     <div class="events-list">
     <?php if (count($booked_categorized['published'])): ?>
-        <?php echo_booked_cards($booked_categorized['published'], "Upcoming"); ?>
+        <?php echo_booked_cards($booked_categorized['published']); ?>
     <?php else: ?>
         <div class="bookings-empty-message">No upcoming events.</div>
     <?php endif; ?>
@@ -186,7 +177,7 @@ function echo_booked_cards($events, $label)
     <div class="events-subsection-title">&#128338; Ongoing Events</div>
     <div class="events-list">
     <?php if (count($booked_categorized['ongoing'])): ?>
-        <?php echo_booked_cards($booked_categorized['ongoing'], "Ongoing"); ?>
+        <?php echo_booked_cards($booked_categorized['ongoing']); ?>
     <?php else: ?>
         <div class="bookings-empty-message">No ongoing events.</div>
     <?php endif; ?>
@@ -195,7 +186,7 @@ function echo_booked_cards($events, $label)
     <div class="events-subsection-title">&#9200; Completed Events</div>
     <div class="events-list">
     <?php if (count($booked_categorized['completed'])): ?>
-        <?php echo_booked_cards($booked_categorized['completed'], "Completed"); ?>
+        <?php echo_booked_cards($booked_categorized['completed']); ?>
     <?php else: ?>
         <div class="bookings-empty-message">No completed events.</div>
     <?php endif; ?>
@@ -209,7 +200,6 @@ function echo_booked_cards($events, $label)
         <div class="events-subsection-title">&#128195; Draft (Pending) Events</div>
         <div class="events-list">
         <?php 
-            // Merge draft + pending events for cancellation
             $cancelable_events = array_merge($owner_events['draft'], $owner_events['pending']);
         ?>
         <?php if (count($cancelable_events)): ?>
@@ -256,7 +246,7 @@ function echo_booked_cards($events, $label)
                         <form method="post" style="margin-top:10px;text-align:right;">
                             <input type="hidden" name="cancel_event_id" value="<?php echo intval($event['event_id']); ?>">
                             <input type="hidden" name="cancel_owner_event" value="1">
-                            <button type="submit" onclick="return confirm('Are you sure you want to cancel this event? This action cannot be undone.')" class="owner-cancel-btn" style="padding:.4em 1em;background:#ad1414;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:90%;">Cancel Event</button>
+                            <button type="submit" onclick="return confirm('Are you sure you want to cancel this event? This action cannot be undone.')" class="owner-cancel-btn">Cancel Event</button>
                         </form>
                     </div>
                 </a>

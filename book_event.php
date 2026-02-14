@@ -2,9 +2,11 @@
 session_start();
 include 'header.php';
 include 'database/db_connect.php';
-
-
 ?>
+
+
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
 
 <link rel="stylesheet" href="css/book_event.css">
 
@@ -16,7 +18,8 @@ function is_logged_in() {
 
 function show_error($msg) {
     ?>
-    <div class='err-msg'><?php echo $msg; ?></div>
+    <div class='err-msg animate__animated animate__shakeX'><i class="fa-solid fa-triangle-exclamation"></i> <?php echo $msg; ?></div>
+    <div class="event-details-space-bottom"></div>
     <?php
     include 'footer.php'; 
     exit();
@@ -62,15 +65,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id'])) {
 
     if (!isset($_POST['attendee_count'])): ?>
         <link rel="stylesheet" href="css/single_event.css">
-        <div class="event-details-main book-custom">
+        <div class="event-details-main book-custom animate__animated animate__fadeInDown">
             <div class="event-title-main book-custom booking">
+                <i class="fa-solid fa-calendar-check fa-fw" style="color:#fff6a6;"></i>
                 Book Event: <?php echo htmlspecialchars($event['event_title']); ?>
             </div>
-            <form method="post" action="book_event.php" class="book-custom-form">
+            <form method="post" action="book_event.php" class="book-custom-form" autocomplete="off">
                 <input type="hidden" name="event_id" value="<?php echo (int)$event_id; ?>">
-                <label class="book-custom-label">How many of you will come?</label><br>
+                <label class="book-custom-label" for="attendee_count"><i class="fa-solid fa-users"></i> How many of you will come?</label><br>
                 <input
                     type="number"
+                    id="attendee_count"
                     name="attendee_count"
                     min="1"
                     max="<?php echo (int)$available_seats; ?>"
@@ -78,9 +83,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id'])) {
                     required
                     class="book-custom-input"
                 ><br>
-                <button class="book-event-btn" type="submit">Book Now</button>
+                <button class="book-event-btn animate__animated animate__pulse" type="submit"><i class="fa-solid fa-ticket"></i> Book Now</button>
             </form>
         </div>
+        <div class="event-details-space-bottom"></div>
         <?php
         include 'footer.php';
         exit();
@@ -124,20 +130,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id'])) {
         // User has already submitted a booking; redirect in 3 seconds
         ?>
         <link rel="stylesheet" href="css/single_event.css">
-        <div class="event-details-main book-custom">
-            <div class="event-title-main book-custom already">Already Booked!</div>
+        <div class="event-details-main book-custom animate__animated animate__bounceIn">
+            <div class="event-title-main book-custom already"><i class="fa-solid fa-circle-check"></i> Already Booked!</div>
             <div class="book-custom-msg">
-                You have already submitted a booking for <strong><?php echo htmlspecialchars($event['event_title']); ?></strong>.<br>
+                <i class="fa-solid fa-calendar-days"></i> You have already submitted a booking for <strong><?php echo htmlspecialchars($event['event_title']); ?></strong>.
             </div>
             <div class="book-custom-note">
+                <i class="fa-regular fa-circle-dot"></i>
                 Redirecting to the event page in <span id="countdown">5</span> seconds...
             </div>
             <div class="book-custom-link">
                 <a href="single_event.php?event_id=<?php echo (int)$event_id; ?>" class="create-event-btn book-custom-link">
-                    Go to Event Page Now
+                    <i class="fa-solid fa-arrow-right"></i> Go to Event Page Now
                 </a>
             </div>
         </div>
+        <div class="event-details-space-bottom"></div>
         <script>
             var c = 5;
             var cd = document.getElementById('countdown');
@@ -162,29 +170,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['event_id'])) {
 
     if ($insert_event_booking): ?>
         <link rel="stylesheet" href="css/single_event.css">
-        <div class="event-details-main book-custom">
-            <div class="event-title-main book-custom submitted">Booking Submitted!</div>
+        <div class="event-details-main book-custom animate__animated animate__fadeInDown">
+            <div class="event-title-main book-custom submitted"><i class="fa-solid fa-circle-check"></i> Booking Submitted!</div>
             <div class="book-custom-msg">
-                Thank you for booking your spot for <strong><?php echo htmlspecialchars($event['event_title']); ?></strong>.<br>
+                <i class="fa-solid fa-thumbs-up"></i> Thank you for booking your spot for <strong><?php echo htmlspecialchars($event['event_title']); ?></strong>.<br>
                 <span class="book-custom-total">👥 <b>Total Persons:</b> <?php echo (int)$attendee_count; ?></span>
             </div>
             <div class="book-custom-note">
-                Please check daily for your booking approval status.
+                <i class="fa-solid fa-bell"></i> Please check daily for your booking approval status.
             </div>
             <div class="book-custom-link">
                 <a href="single_event.php?event_id=<?php echo (int)$event_id; ?>" class="create-event-btn book-custom-link">
-                    Go to Event Page
+                    <i class="fa-solid fa-arrow-right"></i> Go to Event Page
                 </a>
             </div>
         </div>
+        <div class="event-details-space-bottom"></div>
         <?php
         include 'footer.php';
         exit();
     else:
-        show_error("Failed to submit booking. Please try again.");
+        show_error("<b>Failed to submit booking.</b> Please try again.");
     endif;
 } else {
     show_error("Invalid access. Please book via the event page.");
 }
 
+?>
+<div class="event-details-space-bottom"></div>
+<?php
 include 'footer.php';
