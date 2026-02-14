@@ -66,8 +66,8 @@ if (session_status() == PHP_SESSION_NONE) {
               More
           </a>
           <ul class="dropdown-menu" aria-labelledby="navbarMoreDropdown">
-            <li><a class="dropdown-item" href="#">About Us</a></li>
-            <li><a class="dropdown-item" href="#">Contact</a></li>
+            <li><a class="dropdown-item" href="about_us.php">About Us</a></li>
+            <li><a class="dropdown-item" href="contact.php">Contact</a></li>
           </ul>
         </li>
 
