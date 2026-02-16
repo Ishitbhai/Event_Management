@@ -1,0 +1,92 @@
+.booking-form-container {
+    max-width: 490px;
+    margin: 42px auto 0 auto;
+    background: #fff;
+    border-radius: 9px;
+    box-shadow: 0 1px 9px #4b397622;
+    padding: 34px 34px 29px;
+}
+.booking-form-container h2 {
+    margin-top: 0;
+    color: #312153;
+    font-size: 1.44em;
+}
+.booking-form label {
+    display: block;
+    font-weight: 530;
+    margin-bottom: 7px;
+    color: #514178;
+}
+.booking-form select,
+.booking-form input[type="number"] {
+    display: block;
+    width: 100%;
+    font-size: 16px;
+    padding: 8px 10px;
+    margin-bottom: 17px;
+    border: 1px solid #c2c5db;
+    border-radius: 6px;
+    background: #f7f8fb;
+    color: #322053;
+    transition: border .14s;
+}
+.booking-form select:focus,
+.booking-form input[type="number"]:focus {
+    border-color: #7353e5;
+    outline: none;
+    background: #fcfcff;
+}
+.booking-form button[type="submit"] {
+    background: linear-gradient(88deg, #556cd6, #7867ea 90%);
+    color: #fff;
+    font-weight: 600;
+    font-size: 17px;
+    border: none;
+    border-radius: 9px;
+    padding: 12px 39px;
+    cursor: pointer;
+    box-shadow: 0 2px 9px #7b74e515;
+    transition: background 0.20s;
+}
+.booking-form button[type="submit"]:hover {
+    background: linear-gradient(88deg, #4538a4, #5944be 90%);
+}
+.booking-error {
+    background: #ffeded;
+    color: #b5141f;
+    padding: 9px 16px;
+    border-radius: 7px;
+    margin-bottom: 14px;
+    font-size: 15px;
+}
+.booking-succ {
+    background: #e8fad6;
+    color: #24890d;
+    padding: 9px 16px;
+    border-radius: 7px;
+    margin-bottom: 14px;
+    font-size: 15px;
+}
+.booking-form .form-desc {
+    color: #938fb0;
+    font-size: 14px;
+    margin-bottom: 23px;
+    display: block;
+}
+.back-to-bookings-btn {
+    display: inline-block;
+    margin-top: 8px;
+    margin-bottom: 18px;
+    padding: 9px 26px;
+    background: #e9eafe;
+    color: #433999;
+    border-radius: 7px;
+    border: none;
+    font-size: 16px;
+    text-decoration: none;
+    font-weight: 510;
+    transition: background 0.15s;
+}
+.back-to-bookings-btn:hover {
+    background: #d0d4f5;
+}

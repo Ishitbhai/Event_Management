@@ -1,16 +1,13 @@
-
 <?php
 session_start();
-require_once('sidebar.php');
-require_once('../database/db_connect.php');
-
-// Redirect to login if user is not logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit();
 }
+require_once('sidebar.php');
+require_once('../database/db_connect.php');
 
-// Get event_id from URL
+
 $event_id = isset($_GET['event_id']) ? intval($_GET['event_id']) : 0;
 if ($event_id <= 0) {
     echo "<div class=\"error-message-inline\">No valid event selected.</div>";
@@ -86,9 +83,7 @@ function datetime_local($dt) {
 // --- Validation & update ---
 $update_success = false;
 $field_errors = [];
-$field_errors_js = [];
-
-$conflict_err = '';
+$field_values = [];
 $event_seats_max_for_category = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_event'])) {
 
@@ -111,7 +106,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_event'])) {
             if (!move_uploaded_file($_FILES['event_banner_image']['tmp_name'], $banner_upload_dir.$new_banner)) {
                 $field_errors['event_banner_image'] = "Failed to upload banner image.";
             } else {
-                // DO NOT REMOVE/UNLINK ANY OLD IMAGE UNDER ANY CIRCUMSTANCES!
                 $banner_filename = $new_banner;
             }
         }
@@ -126,7 +120,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_event'])) {
         count(array_filter($_FILES['event_gallery_images']['name'])) > 0
     ) {
         $allowed = ['jpg','jpeg','png','gif','webp'];
-        // DO NOT REMOVE/UNLINK ANY OLD GALLERY IMAGE EVER!
         foreach ($_FILES['event_gallery_images']['name'] as $idx => $gname) {
             if ($gname == '') continue;
             $ext = strtolower(pathinfo($gname, PATHINFO_EXTENSION));
@@ -146,6 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_event'])) {
         }
     }
 
+    // Remove event_date from post, will set from event_start_time below
     unset($_POST['event_date']);
     $auto_event_date = '';
     if (isset($_POST['event_start_time']) && $_POST['event_start_time'] != '') {
@@ -161,62 +155,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_event'])) {
     $new_event_end = isset($_POST['event_end_time']) ? $_POST['event_end_time'] : '';
     $new_created_at = isset($_POST['created_at']) ? $_POST['created_at'] : '';
     $new_event_seats = isset($_POST['event_seats']) ? intval($_POST['event_seats']) : null;
+    $new_event_available = isset($_POST['event_available_seats']) ? intval($_POST['event_available_seats']) : null;
     $new_updated_at = isset($_POST['updated_at']) ? $_POST['updated_at'] : '';
+    $new_event_reg_deadline = isset($_POST['event_registration_deadline']) ? $_POST['event_registration_deadline'] : '';
 
+    // PHP Validation, will be repeated clientside
+    if (empty(trim($_POST['event_title'] ?? ""))) {
+        $field_errors['event_title'] = "Event Title must not be empty.";
+    }
+    if (empty(trim($_POST['event_description'] ?? ""))) {
+        $field_errors['event_description'] = "Event Description must not be empty.";
+    }
+    if ($new_event_start == '') {
+        $field_errors['event_start_time'] = "Event Start Time is required.";
+    }
+    if ($new_event_end == '') {
+        $field_errors['event_end_time'] = "Event End Time is required.";
+    }
     if ($new_event_start && $new_event_end && strtotime($new_event_start) >= strtotime($new_event_end)) {
         $field_errors['event_start_time'] = "Event Start Time must be before Event End Time.";
         $field_errors['event_end_time'] = "Event Start Time must be before Event End Time.";
     }
+    // Conflict validation
+    if ($new_event_start && $new_event_end && empty($field_errors['event_start_time']) && empty($field_errors['event_end_time'])) {
+        $date = $auto_event_date;
+        $start = $new_event_start;
+        $end = $new_event_end;
+        $q = $conn->prepare("SELECT event_id FROM events WHERE event_id != ? AND event_date = ? AND ((? < event_end_time AND ? > event_start_time))");
+        $q->bind_param("isss", $event_id, $date, $start, $end);
+        $q->execute();
+        $qres = $q->get_result();
+        if ($qres && $qres->num_rows > 0) {
+            $field_errors['event_start_time'] = "Conflict: Another event overlaps these times.";
+            $field_errors['event_end_time'] = "Conflict: Another event overlaps these times.";
+        }
+        $q->close();
+    }
+    
+    // Registration deadline must be before event_date (event_start_time's date)
+    if (!empty($new_event_reg_deadline) && !empty($auto_event_date)) {
+        if (strtotime($new_event_reg_deadline) >= strtotime($auto_event_date.' 00:00:00')) {
+            $field_errors['event_registration_deadline'] = "Registration deadline must be before event date.";
+        }
+    }
+    // Seats available vs event seats
     if (isset($_POST['event_seats']) && isset($_POST['event_available_seats']) && intval($_POST['event_available_seats']) > intval($_POST['event_seats'])) {
-        $field_errors['event_available_seats'] = "Available seats must not be greater than Event Seats.";
-        $field_errors['event_seats'] = "Available seats must not be greater than Event Seats.";
+        $field_errors['event_available_seats'] = "Available seats cannot be more than Event Seats.";
     }
+    // Seats maximum for category
     if ($event_seats_max_for_category !== null && $new_event_seats !== null && $new_event_seats > $event_seats_max_for_category) {
-        $field_errors['event_seats'] = "Event Seats cannot exceed the maximum allowed for this category (" . intval($event_seats_max_for_category) . ").";
+        $field_errors['event_seats'] = "Event Seats cannot exceed the max allowed for this category ($event_seats_max_for_category).";
     }
-    if ($new_created_at) {
-        $created_ts = strtotime($new_created_at);
-        $date_fields = ['event_start_time', 'event_end_time'];
-        foreach ($date_fields as $df) {
-            if (!empty($_POST[$df])) {
-                $target = strtotime($_POST[$df]);
-                if ($target && $created_ts && $target < $created_ts) {
-                    $human_label = ucwords(str_replace('_',' ', $df));
-                    $field_errors[$df] = $human_label . " cannot be before Created At.";
-                }
-            }
-        }
-    }
-    if (empty($field_errors)) {
-        $start_changed = isset($_POST['event_start_time']) && datetime_local($_POST['event_start_time']) !== datetime_local($event['event_start_time']);
-        $end_changed   = isset($_POST['event_end_time']) && datetime_local($_POST['event_end_time']) !== datetime_local($event['event_end_time']);
-        $date_changed  = ($auto_event_date && $auto_event_date !== $event['event_date']);
-        $category_changed = ($selected_category_id !== null && intval($event['event_category']) !== $selected_category_id);
 
-        if ($category_changed) {
-            $event['event_category'] = $selected_category_id;
-            if ($event_seats_max_for_category !== null && $new_event_seats > $event_seats_max_for_category) {
-                $_POST['event_seats'] = $event_seats_max_for_category;
-            }
-        }
-
-        if ($date_changed || $start_changed || $end_changed) {
-            $date = $auto_event_date;
-            $start = $_POST['event_start_time'];
-            $end = $_POST['event_end_time'];
-            $q = $conn->prepare("SELECT event_id FROM events WHERE event_id != ? AND event_date = ? AND ((? < event_end_time AND ? > event_start_time))");
-            $q->bind_param("isss", $event_id, $date, $start, $end);
-            $q->execute();
-            $qres = $q->get_result();
-            if ($qres && $qres->num_rows > 0) {
-                $field_errors['event_start_time'] = "Conflict: There is another event with overlapping date/time.";
-                $field_errors['event_end_time'] = "Conflict: There is another event with overlapping date/time.";
-            }
-            $q->close();
+    // Track last values for rehydration in client (for per-field error display)
+    foreach ($columns as $col) {
+        if ($col == 'event_id') continue;
+        if ($col == 'event_banner_image') {
+            $field_values[$col] = $banner_filename;
+        } else if ($col == 'event_gallery_images') {
+            $field_values[$col] = $gallery_filenames;
+        } elseif(isset($_POST[$col])) {
+            $field_values[$col] = $_POST[$col];
+        } elseif (isset($event[$col])) {
+            $field_values[$col] = $event[$col];
+        } else {
+            $field_values[$col] = '';
         }
     }
 
     if (empty($field_errors)) {
+        // Update event_date from event_start_time
         $update_fields = [];
         $update_params = [];
         $update_types = '';
@@ -256,7 +264,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_event'])) {
                 $update_fields[] = "created_at = ?";
                 continue;
             }
-
             if ($col == 'event_category') {
                 if (isset($_POST['event_category'])) {
                     $v = $_POST['event_category'];
@@ -322,6 +329,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_event'])) {
                 $update_fields[] = "$col = ?";
                 continue;
             }
+            if ($col == 'event_is_featured') {
+                $update_types .= 's';
+                $update_params[] = $value;
+                $update_fields[] = "$col = ?";
+                continue;
+            }
 
             $update_types .= 's';
             $update_params[] = $value;
@@ -352,10 +365,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_event'])) {
         }
     }
 }
-
-if (!empty($field_errors)) {
-    $field_errors_js = array_keys($field_errors);
-}
 ?>
 
 <!DOCTYPE html>
@@ -370,7 +379,108 @@ if (!empty($field_errors)) {
     <script>
     var categoryMaxSeats = <?php echo json_encode($category_max_seats); ?>;
     var phpFieldErrors = <?php echo json_encode($field_errors); ?>;
+    var phpFieldValues = <?php echo json_encode($field_values); ?>;
     $(document).ready(function () {
+
+        // --- Real-time & on submit validation for each field ---
+        function showFieldError(id, msg) {
+            $("#"+id).parent().find(".error-msg.valid-js").remove();
+            if (msg && msg !== "") {
+                $("#"+id).after("<div class='error-msg valid-js'>" + msg + "</div>");
+            }
+        }
+        function clearFieldError(id) {
+            $("#"+id).parent().find(".error-msg.valid-js").remove();
+        }
+
+        function validateTitle() {
+            var v = $("#event_title").val();
+            if (!v.trim()) {
+                showFieldError("event_title", "Event Title must not be empty.");
+                return false;
+            } else {
+                clearFieldError("event_title");
+                return true;
+            }
+        }
+        function validateDesc() {
+            var v = $("#event_description").val();
+            if (!v.trim()) {
+                showFieldError("event_description", "Event Description must not be empty.");
+                return false;
+            } else {
+                clearFieldError("event_description");
+                return true;
+            }
+        }
+        function validateStartEnd() {
+            var start = $("#event_start_time").val();
+            var end = $("#event_end_time").val();
+            var valid = true;
+            function showBoth(msg) {
+                showFieldError("event_start_time", msg);
+                showFieldError("event_end_time", msg);
+            }
+            clearFieldError("event_start_time");
+            clearFieldError("event_end_time");
+            if (!start) {
+                showFieldError("event_start_time", "Event Start Time is required.");
+                valid = false;
+            }
+            if (!end) {
+                showFieldError("event_end_time", "Event End Time is required.");
+                valid = false;
+            }
+            if (start && end && start >= end) {
+                showBoth("Event Start Time must be before Event End Time.");
+                valid = false;
+            }
+            return valid;
+        }
+        function validateSeatAvailability() {
+            var seatVal = parseInt($("#event_seats").val(),10),
+                availVal = parseInt($("#event_available_seats").val(),10);
+            var valid = true;
+            if (!isNaN(seatVal) && !isNaN(availVal) && availVal > seatVal) {
+                showFieldError("event_available_seats", "Available seats cannot be more than Event Seats.");
+                valid = false;
+            } else {
+                clearFieldError("event_available_seats");
+            }
+            var selectedCat = $("#event_category").val();
+            var maxSeats = categoryMaxSeats[selectedCat];
+            if (maxSeats && !isNaN(seatVal) && seatVal > maxSeats) {
+                showFieldError("event_seats", "Event Seats cannot exceed the max allowed for this category ("+maxSeats+").");
+                valid = false;
+            } else {
+                clearFieldError("event_seats");
+            }
+            return valid;
+        }
+        function validateRegDeadlineVsEventDate() {
+            var reg = $("#event_registration_deadline").val();
+            var start = $("#event_start_time").val();
+            if (!reg || !start) { clearFieldError("event_registration_deadline"); return true;}
+            var evDate = start.split("T")[0];
+            if (reg >= evDate) {
+                showFieldError("event_registration_deadline", "Registration deadline must be before event date.");
+                return false;
+            } else {
+                clearFieldError("event_registration_deadline");
+                return true;
+            }
+        }
+
+        $("#event_title").on('input change blur', validateTitle);
+        $("#event_description").on('input change blur', validateDesc);
+        $("#event_start_time,#event_end_time").on('change blur', function(){
+            validateStartEnd();
+            validateRegDeadlineVsEventDate();
+        });
+        $("#event_seats,#event_available_seats,#event_category").on('input change blur', validateSeatAvailability);
+        $("#event_registration_deadline").on('input change blur', validateRegDeadlineVsEventDate);
+
+        // Also enforce seats max for category
         function enforceSeatsMax() {
             var catId = $("#event_category").val();
             var maxSeats = categoryMaxSeats[catId];
@@ -384,94 +494,56 @@ if (!empty($field_errors)) {
                 $("#event_seats").removeAttr("max");
             }
         }
-
         enforceSeatsMax();
         $("#event_category").on("change", function() {
             enforceSeatsMax();
+            validateSeatAvailability();
         });
 
         var seats = document.getElementById('event_seats');
         var available = document.getElementById('event_available_seats');
         if (seats && available) {
-            seats.addEventListener('input', function() {
-                enforceSeatsMax();
+            seats.addEventListener('input', function () { 
+                enforceSeatsMax(); 
+                validateSeatAvailability();
                 if (parseInt(available.value) > parseInt(seats.value)) {
                     available.value = seats.value;
                 }
                 available.max = seats.value;
             });
-            available.addEventListener('input', function() {
+            available.addEventListener('input', function () { 
+                validateSeatAvailability();
                 if (parseInt(available.value) > parseInt(seats.value)) {
                     available.value = seats.value;
                 }
             });
         }
 
-        // Client-side validation
+        // On submit, validate all
         $(".edit-event-form").submit(function(e) {
-            $(".error-msg.form-js").remove();
-
-            let createdAt = $("#created_at").val();
-            let eventStartTime = $("#event_start_time").val();
-            let eventEndTime = $("#event_end_time").val();
-            let errorFields = {};
-
-            function parseDate(dt) {
-                if (!dt) return null;
-                let d = new Date(dt);
-                if (d.toString().toLowerCase().indexOf('invalid') !== -1) {
-                    if (/^\d{4}-\d{2}-\d{2}$/.test(dt)) return new Date(dt+"T00:00");
-                    return null;
-                }
-                return d;
-            }
-
-            let cAt = parseDate(createdAt);
-            let eStart = parseDate(eventStartTime);
-            let eEnd = parseDate(eventEndTime);
-
-            if (eStart && eEnd && eStart >= eEnd) {
-                errorFields['event_start_time'] = "Event Start Time must be before Event End Time.";
-                errorFields['event_end_time'] = "Event Start Time must be before Event End Time.";
-            }
-            if (cAt) {
-                if (eStart && eStart < cAt) errorFields['event_start_time'] = "Event Start Time cannot be before Created At.";
-                if (eEnd && eEnd < cAt) errorFields['event_end_time'] = "Event End Time cannot be before Created At.";
-            }
-            var selectedCat = $("#event_category").val();
-            var maxSeats = categoryMaxSeats[selectedCat];
-            var eventSeats = parseInt($("#event_seats").val(), 10);
-            if (maxSeats && !isNaN(maxSeats) && eventSeats > maxSeats) {
-                errorFields['event_seats'] = "Event Seats cannot exceed the maximum allowed for this category ("+maxSeats+").";
-            }
-            var availableSeats = parseInt($("#event_available_seats").val(), 10);
-            if ($("#event_seats").length && $("#event_available_seats").length && availableSeats > eventSeats) {
-                errorFields['event_available_seats'] = "Available seats must not be greater than Event Seats.";
-                errorFields['event_seats'] = "Available seats must not be greater than Event Seats.";
-            }
-
-            $(".error-msg.form-js").remove();
-
-            let focused = false;
-            for (let field_id in errorFields) {
-                let inp = $("#" + field_id);
-                if (inp.length) {
-                    $("<div class='error-msg form-js'>"+errorFields[field_id]+"</div>").insertAfter(inp);
-                    if (!focused) { inp.focus(); focused = true; }
-                }
-            }
-
-            if (Object.keys(errorFields).length > 0) {
+            var ok = true;
+            if (!validateTitle()) ok = false;
+            if (!validateDesc()) ok = false;
+            if (!validateStartEnd()) ok = false;
+            if (!validateSeatAvailability()) ok = false;
+            if (!validateRegDeadlineVsEventDate()) ok = false;
+            if (!ok) {
                 e.preventDefault();
+                $("html,body").animate({scrollTop: $(".error-msg.valid-js:visible:first").offset().top - 80}, 300);
                 return false;
             }
         });
+
+        // Restore errors from PHP validation (ajax reload etc)
+        for (let k in phpFieldErrors) {
+            showFieldError(k, phpFieldErrors[k]);
+        }
     });
     </script>
 </head>
 <body>
     <form class="edit-event-form" method="post" enctype="multipart/form-data">
-        <h2>Edit Event </h2>
+        <h2>Edit Event</h2>
         <?php if ($update_success): ?>
             <div class="success-msg">Event updated successfully!</div>
         <?php endif; ?>
@@ -491,7 +563,7 @@ if (!empty($field_errors)) {
         foreach ($columns as $col) {
             if ($col == 'event_id') continue;
             $label = ucwords(str_replace('_',' ', $col));
-            $v = isset($event[$col]) ? $event[$col] : '';
+            $v = (isset($field_values) && isset($field_values[$col])) ? $field_values[$col] : (isset($event[$col]) ? $event[$col] : '');
             ob_start();
 
             if ($col == 'owner_id') {
@@ -503,7 +575,7 @@ if (!empty($field_errors)) {
                     echo '<option value="'.esc($user['user_id']).'" '.$selected.'>'.esc($user['user_id'])." (".esc($user['user_name']).")</option>";
                 }
                 echo '</select>';
-                if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
+                echo '<div class="error-msg valid-js"></div>';
                 echo '</div>';
             }
             elseif ($col == 'event_category') {
@@ -516,7 +588,7 @@ if (!empty($field_errors)) {
                     echo '<option value="'.esc($cat['category_id']).'" '.$selected.'>'.esc($cat['category_name']).esc($max_seats_txt).'</option>';
                 }
                 echo '</select>';
-                if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
+                echo '<div class="error-msg valid-js"></div>';
                 echo '</div>';
             }
             elseif ($col == 'event_approval_status') {
@@ -529,7 +601,7 @@ if (!empty($field_errors)) {
                     echo '<option value="'.$k.'" '.$selected.'>'.$vv.'</option>';
                 }
                 echo '</select>';
-                if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
+                echo '<div class="error-msg valid-js"></div>';
                 echo '</div>';
             }
             elseif ($col == 'event_status') {
@@ -545,7 +617,7 @@ if (!empty($field_errors)) {
                     echo '<option value="'.$k.'" '.$selected.'>'.$vv.'</option>';
                 }
                 echo '</select>';
-                if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
+                echo '<div class="error-msg valid-js"></div>';
                 echo '</div>';
             }
             elseif ($col == 'event_paymeny_status') {
@@ -558,37 +630,45 @@ if (!empty($field_errors)) {
                     echo '<option value="'.$k.'" '.$selected.'>'.$vv.'</option>';
                 }
                 echo '</select>';
-                if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
+                echo '<div class="error-msg valid-js"></div>';
                 echo '</div>';
             }
             elseif ($col == 'event_title') {
                 echo '<div class="form-row">';
                 echo "<label for=\"event_title\">Event Title</label>";
-                echo '<input type="text" name="event_title" id="event_title" required value="'.esc($v).'">';
-                if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
+                echo '<input type="text" name="event_title" id="event_title"  value="'.esc($v).'">';
+                echo '<div class="error-msg valid-js"></div>';
                 echo '</div>';
             }
             elseif ($col == 'event_description') {
                 echo '<div class="form-row">';
                 echo "<label for=\"event_description\">Event Description</label>";
-                echo '<textarea name="event_description" id="event_description" rows="4" required>'.esc($v).'</textarea>';
-                if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
+                echo '<textarea name="event_description" id="event_description" rows="4" >'.esc($v).'</textarea>';
+                echo '<div class="error-msg valid-js"></div>';
                 echo '</div>';
             }
-            elseif ($col == 'event_start_time' || $col == 'event_end_time') {
+            elseif ($col == 'event_start_time') {
                 echo '<div class="form-row">';
-                echo "<label for=\"".esc($col)."\">".esc($label)."</label>";
+                echo "<label for=\"event_start_time\">Event Start Time</label>";
                 $input_val = datetime_local($v);
-                echo '<input type="datetime-local" name="'.esc($col).'" id="'.esc($col).'" required value="'.esc($input_val).'">';
-                if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
+                echo '<input type="datetime-local" name="event_start_time" id="event_start_time"  value="'.esc($input_val).'">';
+                echo '<div class="error-msg valid-js"></div>';
+                echo '</div>';
+            }
+            elseif ($col == 'event_end_time') {
+                echo '<div class="form-row">';
+                echo "<label for=\"event_end_time\">Event End Time</label>";
+                $input_val = datetime_local($v);
+                echo '<input type="datetime-local" name="event_end_time" id="event_end_time"  value="'.esc($input_val).'">';
+                echo '<div class="error-msg valid-js"></div>';
                 echo '</div>';
             }
             elseif ($col == 'event_registration_deadline') {
                 echo '<div class="form-row">';
                 echo "<label for=\"event_registration_deadline\">Event Registration Deadline</label>";
                 $input_val = datetime_local($v);
-                echo '<input type="datetime-local" name="event_registration_deadline" id="event_registration_deadline" required value="'.esc($input_val).'">';
-                if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
+                echo '<input type="datetime-local" name="event_registration_deadline" id="event_registration_deadline"  value="'.esc($input_val).'">';
+                echo '<div class="error-msg valid-js"></div>';
                 echo '</div>';
             }
             elseif ($col == 'event_seats') {
@@ -600,21 +680,35 @@ if (!empty($field_errors)) {
                 }
                 echo '<div class="form-row">';
                 echo "<label for=\"event_seats\">Event Seats</label>";
-                echo '<input type="number" name="event_seats" id="event_seats" min="0"' . $maxSeatsAttr . ' required value="'.esc($v).'">';
+                echo '<input type="number" name="event_seats" id="event_seats" min="0"' . $maxSeatsAttr . '  value="'.esc($v).'">';
                 if ($maxSeats !== null) {
                     echo '<span class="max-seats-info">Max allowed: ' . esc($maxSeats) . '</span>';
                 }
-                if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
+                echo '<div class="error-msg valid-js"></div>';
                 echo '</div>';
             }
             elseif ($col == 'event_available_seats') {
                 $max = esc(isset($_POST['event_seats']) ? $_POST['event_seats'] : $event['event_seats']);
                 echo '<div class="form-row">';
                 echo "<label for=\"event_available_seats\">Event Available Seats</label>";
-                echo '<input type="number" name="event_available_seats" id="event_available_seats" min="0" required value="'.esc($v).'"';
+                echo '<input type="number" name="event_available_seats" id="event_available_seats" min="0"  value="'.esc($v).'"';
                 if ($max !== '') echo ' max="'.esc($max).'"';
                 echo '>';
-                if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
+                echo '<div class="error-msg valid-js"></div>';
+                echo '</div>';
+            }
+            elseif ($col == 'event_is_featured') {
+                echo '<div class="form-row">';
+                echo "<label for=\"event_is_featured\">Event Is Featured</label>";
+                $curVal = strtolower((string)($v));
+                // "yes" = 1, "no" = 0 (accepting existing val from DB)
+                $selectedYes = ($curVal == "1" || $curVal == "yes" || $curVal === "true") ? "selected" : "";
+                $selectedNo = ($curVal == "0" || $curVal == "no" || $curVal === "false" || $curVal === "") ? "selected" : "";
+                echo '<select name="event_is_featured" id="event_is_featured">';
+                echo '<option value="1" '.$selectedYes.'>Yes</option>';
+                echo '<option value="0" '.$selectedNo.'>No</option>';
+                echo '</select>';
+                echo '<div class="error-msg valid-js"></div>';
                 echo '</div>';
             }
             elseif ($col == 'event_banner_image') {
@@ -628,7 +722,7 @@ if (!empty($field_errors)) {
                 echo '<span class="file-desc-message">';
                 echo 'If you don\'t change this, the old banner will remain.<br>';
                 echo '</span>';
-                if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
+                echo '<div class="error-msg valid-js"></div>';
                 echo '</div>';
                 echo '</div>';
             }
@@ -644,7 +738,7 @@ if (!empty($field_errors)) {
                 echo '<span class="file-desc-message">';
                 echo "If you don't change this, your old gallery images will remain.<br>";
                 echo '</span>';
-                if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
+                echo '<div class="error-msg valid-js"></div>';
                 echo '</div>';
                 echo '</div>';
             }
@@ -654,16 +748,16 @@ if (!empty($field_errors)) {
             elseif ($col == 'updated_at') {
                 echo '<div class="form-row">';
                 echo '<label for="updated_at">Updated At</label>';
-                echo '<input type="datetime-local" name="updated_at" id="updated_at" value="'.esc($v).'" required>';
-                if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
+                echo '<input type="datetime-local" name="updated_at" id="updated_at" value="'.esc($v).'" >';
                 echo '<span class="updated-at-desc">Leave unchanged to use current time, or enter custom date/time.</span>';
+                echo '<div class="error-msg valid-js"></div>';
                 echo '</div>';
             }
             else {
                 echo '<div class="form-row">';
                 echo "<label for=\"".esc($col)."\">".esc($label)."</label>";
                 echo '<input type="text" name="'.esc($col).'" id="'.esc($col).'" value="'.esc($v).'">';
-                if (!empty($field_errors[$col])) echo '<div class="error-msg">'.esc($field_errors[$col]).'</div>';
+                echo '<div class="error-msg valid-js"></div>';
                 echo '</div>';
             }
             $field_rows[$col] = ob_get_clean();
@@ -675,9 +769,9 @@ if (!empty($field_errors)) {
                 if (in_array('created_at', $columns)) {
                     echo '<div class="form-row">';
                     echo '<label for="created_at">Created At</label>';
-                    $raw_val = isset($event['created_at']) ? $event['created_at'] : '';
-                    echo '<input type="datetime-local" name="created_at" id="created_at" value="'.esc($raw_val).'" required>';
-                    if (!empty($field_errors['created_at'])) echo '<div class="error-msg">'.esc($field_errors['created_at']).'</div>';
+                    $raw_val = (isset($field_values['created_at'])) ? $field_values['created_at'] : (isset($event['created_at']) ? $event['created_at'] : '');
+                    echo '<input type="datetime-local" name="created_at" id="created_at" value="'.esc($raw_val).'">';
+                    echo '<div class="error-msg valid-js"></div>';
                     echo '</div>';
                 }
                 echo isset($field_rows['updated_at']) ? $field_rows['updated_at'] : '';
@@ -694,9 +788,9 @@ if (!empty($field_errors)) {
         if (in_array('created_at', $columns) && !in_array('updated_at', $columns)) {
             echo '<div class="form-row">';
             echo '<label for="created_at">Created At</label>';
-            $raw_val = isset($event['created_at']) ? $event['created_at'] : '';
-            echo '<input type="datetime-local" name="created_at" id="created_at" value="'.esc($raw_val).'" required>';
-            if (!empty($field_errors['created_at'])) echo '<div class="error-msg">'.esc($field_errors['created_at']).'</div>';
+            $raw_val = (isset($field_values['created_at'])) ? $field_values['created_at'] : (isset($event['created_at']) ? $event['created_at'] : '');
+            echo '<input type="datetime-local" name="created_at" id="created_at" value="'.esc($raw_val).'">';
+            echo '<div class="error-msg valid-js"></div>';
             echo '</div>';
         }
         ?>
@@ -707,9 +801,7 @@ if (!empty($field_errors)) {
             <a href="events.php" class="back-link">&larr; Back to Events List</a>
         </div>
         <div class="js-hint-info" style="margin-top:30px;color: #666; font-size:14px;">
-
         </div>
     </form>
 </body>
 </html>
-

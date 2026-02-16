@@ -180,7 +180,7 @@ $(document).ready(function(){
         var valid = true;
 
         // Clear previous errors
-        $('.field-err').text('');
+        $('.field-err').text(''); 
 
         // Name
         if (name.length == 0) {
@@ -299,14 +299,14 @@ $(document).ready(function(){
             <tr>
                 <td class="profile-label">Name:</td>
                 <td class="profile-value">
-                    <input type="text" name="user_name" required value="<?php echo htmlspecialchars($user_name); ?>">
+                    <input type="text" name="user_name"  value="<?php echo htmlspecialchars($user_name); ?>">
                     <br><span class="field-err" id="err_user_name"><?php if(isset($field_errors) && $field_errors['user_name']) echo htmlspecialchars($field_errors['user_name']); ?></span>
                 </td>
             </tr>
             <tr>
                 <td class="profile-label">Email:</td>
                 <td class="profile-value">
-                    <input type="email" name="user_email" required value="<?php echo htmlspecialchars($user_email); ?>" readonly>
+                    <input type="email" name="user_email"  value="<?php echo htmlspecialchars($user_email); ?>" readonly>
                 </td>
             </tr>
             <tr>
@@ -319,7 +319,7 @@ $(document).ready(function(){
             <tr>
                 <td class="profile-label">Address:</td>
                 <td class="profile-value">
-                    <input type="text" name="user_address" value="<?php echo htmlspecialchars($user_address); ?>" required>
+                    <input type="text" name="user_address" value="<?php echo htmlspecialchars($user_address); ?>" >
                     <br><span class="field-err" id="err_user_address"><?php if(isset($field_errors) && $field_errors['user_address']) echo htmlspecialchars($field_errors['user_address']); ?></span>
                 </td>
             </tr>
@@ -360,17 +360,17 @@ $(document).ready(function(){
                 <legend class="pw-legend">Change Password</legend>
                 <div class="form-group">
                     <label class="pw-label" for="current_password">Current Password:</label>
-                    <input type="password" id="current_password" name="current_password" class="pw-input" required value="<?php echo isset($_POST['current_password']) ? htmlspecialchars($_POST['current_password']) : ''; ?>">
+                    <input type="password" id="current_password" name="current_password" class="pw-input"  value="<?php echo isset($_POST['current_password']) ? htmlspecialchars($_POST['current_password']) : ''; ?>">
                     <br><span class="field-err-pw" id="err_current_password"><?php if(isset($pw_field_errors) && $pw_field_errors['current_password']) echo htmlspecialchars($pw_field_errors['current_password']); ?></span>
                 </div>
                 <div class="form-group">
                     <label class="pw-label" for="new_password">New Password:</label>
-                    <input type="password" id="new_password" name="new_password" class="pw-input" required value="">
+                    <input type="password" id="new_password" name="new_password" class="pw-input"  value="">
                     <br><span class="field-err-pw" id="err_new_password"><?php if(isset($pw_field_errors) && $pw_field_errors['new_password']) echo htmlspecialchars($pw_field_errors['new_password']); ?></span>
                 </div>
                 <div class="form-group">
                     <label class="pw-label" for="confirm_password">Confirm New Password:</label>
-                    <input type="password" id="confirm_password" name="confirm_password" class="pw-input" required value="">
+                    <input type="password" id="confirm_password" name="confirm_password" class="pw-input"  value="">
                     <br><span class="field-err-pw" id="err_confirm_password"><?php if(isset($pw_field_errors) && $pw_field_errors['confirm_password']) echo htmlspecialchars($pw_field_errors['confirm_password']); ?></span>
                 </div>
             </fieldset>

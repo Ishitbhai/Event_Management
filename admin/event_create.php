@@ -87,17 +87,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = "End datetime must be after start datetime.";
     }
 
-    if ($event_date && strtotime($event_date) < strtotime('+7 days')) {
-        $errors[] = "Event start date must be at least one week from today.";
-    }
+    // REMOVE: if ($event_date && strtotime($event_date) < strtotime('+7 days')) { ... }
+    // (Removed as per instruction: start_date does NOT have to be at least 1 week after now.)
 
     if ($event_reg_deadline && strtotime($event_reg_deadline) > strtotime($event_start_datetime)) {
         $errors[] = "Registration deadline must be before event start time.";
     }
-
-    if ($event_reg_deadline && strtotime($event_reg_deadline) < strtotime('today')) {
-        $errors[] = "Registration deadline cannot be in the past.";
-    }
+    // The following check is REMOVED in accordance with instruction:
+    // if ($event_reg_deadline && strtotime($event_reg_deadline) < strtotime('today')) {
+    //     $errors[] = "Registration deadline cannot be in the past.";
+    // }
 
     // Category seat limit
     $cat_stmt = mysqli_prepare($conn, "SELECT category_seats FROM category WHERE category_id = ?");
@@ -250,26 +249,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $event_ok = false;
         $booking_ok = false;
+        $event_id = null;
 
         if (mysqli_stmt_execute($stmt)) {
             $event_ok = true;
             $event_id = mysqli_insert_id($conn);
 
-            // Insert booking for the owner (persons from family field)
+            // Insert corresponding booking
             $booking_status = 'approved';
-            // Here, persons = number selected in 'family persons' field (can be more than 1)
-            $owner_booking_stmt = mysqli_prepare(
+            $booking_stmt = mysqli_prepare(
                 $conn,
                 "INSERT INTO bookings (user_id, event_id, persons, booking_status) VALUES (?, ?, ?, ?)"
             );
-            mysqli_stmt_bind_param($owner_booking_stmt, "iiis", $owner_id, $event_id, $persons, $booking_status);
-
-            if (mysqli_stmt_execute($owner_booking_stmt)) {
+            mysqli_stmt_bind_param(
+                $booking_stmt,
+                "iiis",
+                $owner_id,
+                $event_id,
+                $persons,
+                $booking_status
+            );
+            if (mysqli_stmt_execute($booking_stmt)) {
                 $booking_ok = true;
             } else {
                 $errors[] = "Booking insertion failed: " . mysqli_error($conn);
             }
-            mysqli_stmt_close($owner_booking_stmt);
+            mysqli_stmt_close($booking_stmt);
         } else {
             $errors[] = "Database error: " . mysqli_error($conn);
         }
@@ -354,7 +359,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <tr>
                     <td>
                         <label class="form-label" for="start_datetime">
-                            Start Datetime <span class="field-hint">(at least one week from today)</span>
+                            Start Datetime
+                            <!-- removed one week from today validation -->
                         </label>
                         <input type="datetime-local" name="start_datetime" id="start_datetime" value="<?php echo isset($start_datetime)?htmlspecialchars($start_datetime):'' ?>" required class="input-text">
                         <label id="start_datetime-error" class="field-error"></label>
@@ -572,21 +578,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $('#start_datetime').on('change blur', function() {
             var val = $(this).val();
-            var valid = false;
-            if (val) {
-                var entered = new Date(val);
-                var today = new Date();
-                today.setHours(0,0,0,0);
-                var minDate = new Date(today);
-                minDate.setDate(minDate.getDate() + 7);
-                entered.setHours(0,0,0,0);
-                valid = entered >= minDate;
-            }
+            // removed 1 week ahead validation
+            var valid = !!val;
             if (!val) {
                 $('#start_datetime-error').text("Start datetime is required.").show();
-                $(this).addClass("input-invalid");
-            } else if (!valid) {
-                $('#start_datetime-error').text("Event start datetime must be at least one week from today.").show();
                 $(this).addClass("input-invalid");
             } else {
                 $('#start_datetime-error').hide();
@@ -699,16 +694,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (val && startDatetimeVal) {
                 var deadline = new Date(val);
                 var eventStart = new Date(startDatetimeVal);
-                var today = new Date();
-                today.setHours(0,0,0,0);
                 eventStart.setHours(0,0,0,0);
-                valid = (deadline <= eventStart && deadline >= today);
+                valid = (deadline <= eventStart);
             }
             if (!val) {
                 $('#reg_deadline-error').text("Registration deadline required.").show();
                 $(this).addClass("input-invalid");
             } else if (!valid) {
-                $('#reg_deadline-error').text("Deadline must be before event start date and not in the past.").show();
+                $('#reg_deadline-error').text("Deadline must be before event start date.").show();
                 $(this).addClass("input-invalid");
             } else {
                 $('#reg_deadline-error').hide();

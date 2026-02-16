@@ -1,5 +1,4 @@
 <?php
-
 session_start();
 require_once('sidebar.php');
 
@@ -20,8 +19,50 @@ $fields = [
 ];
 
 $error_message = '';
+$success_message = '';
 
-// Postback for changing booking status.
+// Handle deletion request
+if (
+    isset($_POST['delete_booking_id']) && is_numeric($_POST['delete_booking_id'])
+) {
+    $delete_book_id = intval($_POST['delete_booking_id']);
+
+    // Fetch booking's persons, event_id, status before deletion
+    $stmt = $conn->prepare("SELECT persons, event_id, booking_status FROM bookings WHERE book_id = ?");
+    $stmt->bind_param("i", $delete_book_id);
+    $stmt->execute();
+    $stmt->bind_result($del_persons, $del_event_id, $del_booking_status);
+    $has_row = $stmt->fetch();
+    $stmt->close();
+
+    if ($has_row) {
+        // If approved, restore seats for its event
+        if ($del_booking_status === 'approved' && $del_event_id > 0 && $del_persons > 0) {
+            $stmt = $conn->prepare("UPDATE events SET event_available_seats = event_available_seats + ? WHERE event_id = ?");
+            $stmt->bind_param("ii", $del_persons, $del_event_id);
+            $stmt->execute();
+            $stmt->close();
+        }
+
+        // Now delete the booking
+        $stmt = $conn->prepare("DELETE FROM bookings WHERE book_id = ?");
+        $stmt->bind_param("i", $delete_book_id);
+        if ($stmt->execute()) {
+            $stmt->close();
+            $success_message = "Booking deleted successfully.";
+            // Redirect to this page to avoid reposting
+            header('Location: '.$_SERVER['PHP_SELF'].(isset($_POST['page']) ? '?page='.intval($_POST['page']) : ''));
+            exit();
+        } else {
+            $error_message = "Failed to delete booking.";
+            $stmt->close();
+        }
+    } else {
+        $error_message = "Booking not found.";
+    }
+}
+
+// Postback for changing booking status
 if (
     isset($_POST['booking_id']) && is_numeric($_POST['booking_id']) &&
     isset($_POST['new_status'])
@@ -130,7 +171,6 @@ $total_pages = ceil($total_bookings / $per_page);
 $start_index = ($page - 1) * $per_page;
 $paged_bookings = array_slice($bookings, $start_index, $per_page);
 $serial_start = $start_index + 1;
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -140,56 +180,6 @@ $serial_start = $start_index + 1;
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="stylesheet" href="css/events.css">
     <link rel="stylesheet" href="css/index.css">
-    <style>
-    body { overflow-x: hidden; }
-    .success-message {
-        color: #228a36;
-        background: #e8fdeb;
-        border: 1px solid #a8dfb1;
-        padding: 9px 15px;
-        border-radius: 7px;
-        margin: 15px 0 14px 0;
-        display: none;
-        font-weight: 600;
-        font-size: 16px;
-        max-width: 390px;
-    }
-    .error-message-inline {
-        color: #b70c26;
-        background: #fff0f0;
-        border: 1px solid #e1c2c7;
-        padding: 9px 15px;
-        border-radius: 7px;
-        margin: 15px 0 14px 0;
-        font-weight: 600;
-        font-size: 16px;
-        max-width: 490px;
-        display: block;
-    }
-    .booking-status-select {
-        padding: 6px 20px 6px 10px;
-        font-size: 14px;
-        border-radius: 18px;
-        border: 1px solid #dad7f6;
-        background: #f7f6fc;
-        color: #473b6f;
-        outline: none;
-        min-width: 108px;
-        font-weight: 500;
-        transition: border-color .15s;
-        cursor: pointer;
-        appearance: none;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-    }
-    .booking-status-select:focus {
-        border-color: #aa97eb;
-        background: #f3f0fa;
-    }
-    .booking-status-select::-ms-expand {
-        display: none;
-    }
-    </style>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         let createBtn = document.querySelector('.create-booking-btn');
@@ -203,7 +193,7 @@ $serial_start = $start_index + 1;
                 let tr = btn.closest('tr[data-booking-id]');
                 if (tr) {
                     let bid = tr.getAttribute('data-booking-id');
-                    window.location.href = 'bookings_edit.php?booking_id=' + bid;
+                    window.location.href = 'booking_edit.php?booking_id=' + bid;
                 }
             });
         });
@@ -216,22 +206,50 @@ $serial_start = $start_index + 1;
                 }
             });
         });
+
+        // Delete buttons
+        document.querySelectorAll('.delete-booking-btn').forEach(function(btn){
+            btn.addEventListener('click', function(e){
+                let tr = btn.closest('tr[data-booking-id]');
+                let bid = tr ? tr.getAttribute('data-booking-id') : '';
+                if (bid && confirm('Are you sure you want to delete this booking?')) {
+                    // Post deletion via hidden form
+                    var deleteForm = document.getElementById('delete-booking-form');
+                    deleteForm.querySelector('input[name="delete_booking_id"]').value = bid;
+                    // If paged, keep page
+                    let pageInput = deleteForm.querySelector('input[name="page"]');
+                    if (pageInput) pageInput.value = <?= esc($page) ?>;
+                    deleteForm.submit();
+                }
+            });
+        });
     });
     </script>
 </head>
 <body>
-    <div class="dashboard-main">
-        <div class="events-header">
-            <h2 class="internal-header">Manage Bookings</h2>
-            <button class="create-booking-btn create-event-btn" type="button">
-                New Booking
-            </button>
-        </div>
-        <div class="event-table-container">
+<div class="dashboard-main">
+    <div class="events-header">
+        <h2 class="internal-header">Manage Bookings</h2>
+        <button class="create-booking-btn create-event-btn" type="button">
+            New Booking
+        </button>
+    </div>
+    <div class="event-table-container">
         <?php if (!empty($error_message)): ?>
             <div class="error-message-inline"><?= esc($error_message) ?></div>
         <?php endif; ?>
-        <div id="success-message-box" class="success-message"></div>
+        <?php if (!empty($success_message)): ?>
+            <div id="success-message-box" class="success-message"><?= esc($success_message) ?></div>
+        <?php endif; ?>
+
+        <!-- Hidden delete form -->
+        <form id="delete-booking-form" method="post" style="display:none;">
+            <input type="hidden" name="delete_booking_id" value="">
+            <?php if ($page > 1): ?>
+                <input type="hidden" name="page" value="<?= esc($page) ?>">
+            <?php endif; ?>
+        </form>
+
         <?php if ($total_bookings === 0): ?>
             <div class="internal-no-events">
                 No bookings available.
@@ -239,30 +257,30 @@ $serial_start = $start_index + 1;
         <?php else: ?>
             <table class="event-table">
                 <thead>
-                    <tr>
-                        <th>Sr. No.</th>
-                        <?php
-                        $col_headings = [
-                            'book_id'     => 'Booking ID',
-                            'event_id'    => 'Event ID',
-                            'user_id'     => 'User ID',
-                            'persons'     => 'Persons',
-                            'booking_status' => 'Booking Status',
-                            'booked_at'   => 'Booked At',
-                            'updated_at'  => 'Updated At'
-                        ];
-                        foreach ($fields as $col): ?>
-                            <th class="<?php echo esc($col); ?>">
-                                <?= esc($col_headings[$col] ?? $col) ?>
-                            </th>
-                        <?php endforeach; ?>
-                        <th>Action</th>
-                    </tr>
+                <tr>
+                    <th>Sr. No.</th>
+                    <?php
+                    $col_headings = [
+                        'book_id'     => 'Booking ID',
+                        'event_id'    => 'Event ID',
+                        'user_id'     => 'User ID',
+                        'persons'     => 'Persons',
+                        'booking_status' => 'Booking Status',
+                        'booked_at'   => 'Booked At',
+                        'updated_at'  => 'Updated At'
+                    ];
+                    foreach ($fields as $col): ?>
+                        <th class="<?= esc($col) ?>">
+                            <?= esc($col_headings[$col] ?? $col) ?>
+                        </th>
+                    <?php endforeach; ?>
+                    <th>Action</th>
+                </tr>
                 </thead>
                 <tbody>
-                    <?php
-                    $snum = $serial_start;
-                    foreach ($paged_bookings as $bk): ?>
+                <?php
+                $snum = $serial_start;
+                foreach ($paged_bookings as $bk): ?>
                     <tr data-booking-id="<?= esc($bk['book_id']) ?>">
                         <td><?= $snum++ ?></td>
                         <?php foreach ($fields as $col): ?>
@@ -288,32 +306,64 @@ $serial_start = $start_index + 1;
                         <?php endforeach; ?>
                         <td>
                             <button class="edit-booking-btn edit-btn" type="button">Edit</button>
+                            <button class="delete-booking-btn delete-btn" type="button" style="margin-left:6px;">Delete</button>
                         </td>
                     </tr>
-                    <?php endforeach; ?>
+                <?php endforeach; ?>
                 </tbody>
             </table>
-
             <?php if ($total_pages > 1): ?>
-            <div class="pagination-container">
-                <?php if ($page > 1): ?>
-                    <button class="pagination-btn-go prev" onclick="window.location.href='?page=<?=($page-1)?>'">
-                        <span class="go-arrow-prev">&#8592;</span> Prev
-                    </button>
-                <?php endif; ?>
-                <span class="pagination-page-indicator">
-                    Page <?= $page ?> of <?= $total_pages ?>
-                </span>
-                <?php if ($page < $total_pages): ?>
-                    <button class="pagination-btn-go next" onclick="window.location.href='?page=<?=($page+1)?>'">
-                        Next <span class="go-arrow">&#8594;</span>
-                    </button>
-                <?php endif; ?>
-            </div>
+                <div class="classic-pagination">
+                    <ul>
+                        <?php if ($page > 1): ?>
+                            <li>
+                                <a href="?page=<?= ($page-1) ?>" class="pagination-btn-go prev">Prev</a>
+                            </li>
+                        <?php endif; ?>
+                        
+                        <?php
+                        // Calculate pages displayed for pagination bar (windowed, e.g., show ... if many pages)
+                        $max_page_links = 5;
+                        $page_window = floor($max_page_links / 2);
+                        $start_page = max(1, $page - $page_window);
+                        $end_page = min($total_pages, $page + $page_window);
+                        if ($end_page - $start_page + 1 < $max_page_links) {
+                            // Expand window as needed
+                            if ($start_page == 1) $end_page = min($total_pages, $start_page + $max_page_links - 1);
+                            if ($end_page == $total_pages) $start_page = max(1, $end_page - $max_page_links + 1);
+                        }
+                        if ($start_page > 1): ?>
+                            <li><a href="?page=1">1</a></li>
+                            <?php if ($start_page > 2): ?>
+                                <li><span>…</span></li>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                        <?php for ($p = $start_page; $p <= $end_page; $p++): ?>
+                            <li>
+                                <?php if ($p == $page): ?>
+                                    <span class="current-page"><?= $p ?></span>
+                                <?php else: ?>
+                                    <a href="?page=<?= $p ?>"><?= $p ?></a>
+                                <?php endif; ?>
+                            </li>
+                        <?php endfor; ?>
+                        <?php if ($end_page < $total_pages): ?>
+                            <?php if ($end_page < $total_pages - 1): ?>
+                                <li><span>…</span></li>
+                            <?php endif; ?>
+                            <li><a href="?page=<?= $total_pages ?>"><?= $total_pages ?></a></li>
+                        <?php endif; ?>
+                        
+                        <?php if ($page < $total_pages): ?>
+                            <li>
+                                <a href="?page=<?= ($page+1) ?>" class="pagination-btn-go next">Next</a>
+                            </li>
+                        <?php endif; ?>
+                    </ul>
+                </div>
             <?php endif; ?>
-
         <?php endif; ?>
-        </div>
     </div>
+</div>
 </body>
 </html>

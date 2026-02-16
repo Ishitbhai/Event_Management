@@ -17,7 +17,6 @@ function h($str) {
 $user_id = $_SESSION['user_id'];
 
 $excluded_fields = ['user_id', 'user_status', 'type'];
-
 $readonly_fields = ['user_email', 'registered_at', 'last_login', 'user_type'];
 
 $all_fields_sql = "SHOW COLUMNS FROM users";
@@ -45,31 +44,53 @@ if ($result && mysqli_num_rows($result) === 1) {
     $user = array_fill_keys($db_fields, '');
 }
 
+$field_errors = [];
 $update_msg = '';
+
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['profile_update'])) {
     $updates = [];
     $params = [];
     $param_types = '';
+    $has_error = false;
     foreach ($db_fields as $field) {
         if (in_array($field, $readonly_fields)) continue;
         $val = trim($_POST[$field] ?? '');
 
+        // Name validation: not empty, must be only letters and whitespace
         if ($field === 'user_name') {
             if ($val === '') {
-                $update_msg = '<div style="color:#c00;">Name cannot be empty.</div>';
-                break;
-            }
-            if (preg_match('/\d/', $val)) {
-                $update_msg = '<div style="color:#c00;">Name must not contain digits.</div>';
-                break;
+                $field_errors[$field] = 'Name cannot be empty.';
+                $has_error = true;
+            } elseif (!preg_match('/^[a-zA-Z\s]+$/', $val)) {
+                $field_errors[$field] = 'Name must contain only letters and spaces.';
+                $has_error = true;
             }
         }
 
+        // Address validation: not empty
+        if (strpos($field, 'address') !== false) {
+            if ($val === '') {
+                $field_errors[$field] = 'Address cannot be empty.';
+                $has_error = true;
+            }
+        }
+
+        // Phone number validation: must be exactly 10 digits, only digits allowed
+        if ($field === 'user_phone_number') {
+            $only_digits = preg_replace('/\D/', '', $val);
+            if (strlen($only_digits) !== 10) {
+                $field_errors[$field] = 'Phone number must be exactly 10 digits.';
+                $has_error = true;
+            } else {
+                // Use cleaned value for DB
+                $val = $only_digits;
+            }
+        }
         $updates[] = "`$field`=?";
         $params[] = $val;
         $param_types .= 's';
     }
-    if ($update_msg === '') {
+    if (!$has_error) {
         if (!empty($updates)) {
             $sql_update = "UPDATE users SET " . implode(", ", $updates) . " WHERE user_id=?";
             $params[] = $user_id;
@@ -89,6 +110,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['profile_update'])) {
                 $update_msg = '<div style="color:#c00;">Failed to update profile. Please try again.</div>';
             }
         }
+    } else {
+        $update_msg = '<div style="color:#c00;">Please correct the highlighted errors below.</div>';
     }
 }
 ?>
@@ -110,6 +133,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['profile_update'])) {
                     if ($field == 'registered_at') $label = "Account Created";
                     if ($field == 'last_login') $label = "Last Login";
                     if ($field == 'user_type') $label = "User Type";
+                    $has_field_error = isset($field_errors[$field]);
                 ?>
                 <span class="profile-label"><?php echo $label; ?>:</span>
                 <span class="profile-value">
@@ -121,10 +145,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['profile_update'])) {
                     <input type="text" name="<?php echo h($field); ?>" value="<?php echo (!empty($user[$field]) ? date('M d, Y H:i', strtotime($user[$field])) : '') ?>" readonly />
                 <?php elseif ($field == 'user_type'): ?>
                     <input type="text" name="<?php echo h($field); ?>" value="<?php echo h(ucfirst($user[$field])); ?>" readonly />
+                <?php elseif ($field === 'user_phone_number'): ?>
+                    <input type="tel" name="<?php echo h($field); ?>" value="<?php echo h($user[$field]); ?>" />
                 <?php elseif (strpos($field, 'address') !== false): ?>
                     <textarea name="<?php echo h($field); ?>"><?php echo h($user[$field]); ?></textarea>
+                <?php elseif ($field === 'user_name'): ?>
+                    <input type="text" name="<?php echo h($field); ?>" value="<?php echo h($user[$field]); ?>" />
                 <?php else: ?>
                     <input type="text" name="<?php echo h($field); ?>" value="<?php echo h($user[$field]); ?>" />
+                <?php endif; ?>
+                <?php if ($has_field_error): ?>
+                    <div style="color:#c00; font-size:13px;"><?php echo h($field_errors[$field]); ?></div>
                 <?php endif; ?>
                 </span>
             </div>

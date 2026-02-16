@@ -8,7 +8,6 @@ if (!isset($_SESSION['user_id'])) {
 }
 require_once('../database/db_connect.php');
 
-// Add created_at and updated_at to displayed fields
 $fields = [
     'event_id',
     'owner_id',
@@ -26,6 +25,7 @@ $fields = [
     'event_paymeny_status',
     'event_banner_image',
     'event_gallery_images',
+    'event_is_featured',
     'created_at',
     'updated_at'
 ];
@@ -36,7 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['table_ajax_update']))
     $eid = isset($_POST['event_id']) ? intval($_POST['event_id']) : 0;
     $col = isset($_POST['col']) ? $_POST['col'] : '';
     $val = isset($_POST['val']) ? $_POST['val'] : '';
-    if (in_array($col, ['event_status', 'event_approval_status', 'event_paymeny_status']) && $eid > 0) {
+    if (in_array($col, ['event_status', 'event_approval_status', 'event_paymeny_status', 'event_is_featured']) && $eid > 0){
+
         $extraSet = '';
         $types = 'si';
         $vals = [$val, $eid];
@@ -115,7 +116,6 @@ usort($events, function($a, $b) {
     return strcmp($a_time, $b_time);
 });
 
-
 $page = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0
     ? (int)$_GET['page']          
     : 1;
@@ -136,7 +136,6 @@ $serial_start = $start_index + 1;
     <link rel="stylesheet" href="css/events.css">
     <link rel="stylesheet" href="css/index.css">
     <script>
-    // Internalized JS for page: moved previous inline logic to event listeners below
     document.addEventListener('DOMContentLoaded', function() {
         // dropdown change logic
         document.querySelectorAll('.table-edit-select').forEach(function(el){
@@ -249,6 +248,7 @@ $serial_start = $start_index + 1;
                             'event_paymeny_status' => 'Payment Status',
                             'event_banner_image' => 'Banner',
                             'event_gallery_images' => 'Gallery',
+                            'event_is_featured' => 'Featured',
                             'created_at' => 'Created At',
                             'updated_at' => 'Updated At'
                         ];
@@ -332,11 +332,18 @@ $serial_start = $start_index + 1;
                                         echo '</select>';
                                         echo '<span class="inline-dropdown-spinner" style="display:none;"></span>';
                                     }
-                                    // Description: allow wrap
+                                    // Featured dropdown (0 / 1)
+                                    else if ($col === 'event_is_featured') {
+                                        $opts = ['0' => 'No', '1' => 'Yes'];
+                                        echo '<select class="table-edit-select" data-eid="' . (int)$ev['event_id'] . '" data-col="event_is_featured">';
+                                        foreach ($opts as $k => $v)
+                                            echo '<option value="' . esc($k) . '"' . ($ev[$col] == $k ? ' selected' : '') . '>' . esc($v) . '</option>';
+                                        echo '</select>';
+                                        echo '<span class="inline-dropdown-spinner" style="display:none;"></span>';
+                                    }
                                     else if ($col === 'event_description') {
                                         echo '<div class="internal-description-cell-div">'.esc($ev[$col]).'</div>';
                                     }
-                                    // created_at and updated_at: show as datetime, allow wrap, smaller font
                                     else if ($col === 'created_at' || $col === 'updated_at') {
                                         $dt = esc($ev[$col]);
                                         if ($dt) {
@@ -365,35 +372,79 @@ $serial_start = $start_index + 1;
                     <?php endforeach; ?>
                 </tbody>
             </table>
-            <?php if ($total_pages > 1): ?>
-                <div class="pagination-container">
-                    <?php if ($page > 1): ?>
-                        <a href="?page=<?= $page - 1 ?>" class="pagination-btn-go prev" aria-label="Previous Page">
-                            <span class="go-arrow-prev">
-                                <!-- Left arrow SVG -->
-                                <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
-                                  <path d="M10.7 13.29a1 1 0 01-1.41 0l-4-4a1 1 0 010-1.41l4-4a1 1 0 111.41 1.41L8.41 8.5l3.29 3.29a1 1 0 010 1.41z" fill="currentColor"/>
-                                </svg>
-                            </span>
-                            Previous
-                        </a>
-                    <?php endif; ?>
-                    <span class="pagination-page-indicator">Page <?= $page ?> of <?= $total_pages ?></span>
-                    <?php if ($page < $total_pages): ?>
-                        <a href="?page=<?= $page + 1 ?>" class="pagination-btn-go next" aria-label="Next Page">
-                            Next
-                            <span class="go-arrow">
-                                <!-- Right arrow SVG -->
-                                <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
-                                  <path d="M6.29 13.29a1 1 0 001.41 0l4-4a1 1 0 000-1.41l-4-4A1 1 0 105.88 7.7L9.17 11l-3.29 3.29a1 1 0 000 1.41z" fill="currentColor"/>
-                                </svg>
-                            </span>
-                        </a>
-                    <?php endif; ?>
-                </div>
             <?php endif; ?>
-        <?php endif; ?>
         </div>
+        <?php if ($total_pages > 1): ?>
+            <div class="classic-pagination">
+                <ul>
+                <?php
+                    // Classic paging: prev, 1 2 3 ... n, next
+                    // Previous Button
+                    if ($page > 1) {
+                        echo '<li><a href="?page=' . ($page-1) . '">&laquo; Prev</a></li>';
+                    } else {
+                        echo '<li><span class="disabled">&laquo; Prev</span></li>';
+                    }
+
+                    // Show all page numbers for <=15, else window & first/last/ellipsis (classic style)
+                    if ($total_pages <= 15) {
+                        for ($p = 1; $p <= $total_pages; $p++) {
+                            if ($page == $p) {
+                                echo '<li><span class="active">' . $p . '</span></li>';
+                            } else {
+                                echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
+                            }
+                        }
+                    } else {
+                        // Classic window: always show first, prev, ... window ..., last, next
+                        if ($page < 6) {
+                            // 1 2 3 4 5 ... n
+                            for ($p = 1; $p <= 6; $p++) {
+                                if ($page == $p) {
+                                    echo '<li><span class="active">' . $p . '</span></li>';
+                                } else {
+                                    echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
+                                }
+                            }
+                            echo '<li><span>...</span></li>';
+                            echo '<li><a href="?page=' . $total_pages . '">' . $total_pages . '</a></li>';
+                        } elseif ($page > $total_pages - 5) {
+                            // 1 ... n-5 n-4 n-3 n-2 n-1 n
+                            echo '<li><a href="?page=1">1</a></li>';
+                            echo '<li><span>...</span></li>';
+                            for ($p = $total_pages-5; $p <= $total_pages; $p++) {
+                                if ($page == $p) {
+                                    echo '<li><span class="active">' . $p . '</span></li>';
+                                } else {
+                                    echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
+                                }
+                            }
+                        } else {
+                            // 1 ... page-2 page-1 page page+1 page+2 ... n
+                            echo '<li><a href="?page=1">1</a></li>';
+                            echo '<li><span>...</span></li>';
+                            for ($p = $page-2; $p <= $page+2; $p++) {
+                                if ($page == $p) {
+                                    echo '<li><span class="active">' . $p . '</span></li>';
+                                } else {
+                                    echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
+                                }
+                            }
+                            echo '<li><span>...</span></li>';
+                            echo '<li><a href="?page=' . $total_pages . '">' . $total_pages . '</a></li>';
+                        }
+                    }
+
+                    // Next Button
+                    if ($page < $total_pages) {
+                        echo '<li><a href="?page=' . ($page+1) . '">Next &raquo;</a></li>';
+                    } else {
+                        echo '<li><span class="disabled">Next &raquo;</span></li>';
+                    }
+                ?>
+                </ul>
+            </div>
+        <?php endif; ?>
     </div>
     <?php
     // --- Delete event handler (GET param for quick admin use) ---
