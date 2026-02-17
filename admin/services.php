@@ -13,39 +13,51 @@ function esc($str) {
     return htmlspecialchars($str ?? '', ENT_QUOTES, 'UTF-8');
 }
 
-// ---- Handle delete request ----
+// ---- Handle delete request for Services and Why Aone Hub ----
 $delete_success = null;
 $delete_error = null;
 
-// Process POST delete request securely
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id']) && is_numeric($_POST['delete_id'])) {
-    $delete_id = (int)$_POST['delete_id'];
-    // Find the image filename for deletion
-    $stmt = $conn->prepare("SELECT service_image FROM services WHERE service_id = ?");
-    $stmt->bind_param("i", $delete_id);
-    $stmt->execute();
-    $stmt->bind_result($img_name);
-    if ($stmt->fetch()) {
-        $stmt->close();
-        // Delete from DB
-        $del_stmt = $conn->prepare("DELETE FROM services WHERE service_id = ?");
-        $del_stmt->bind_param("i", $delete_id);
-        if ($del_stmt->execute()) {
-            // Delete image file if it exists and non-empty
-            if (!empty($img_name)) {
-                $img_path = __DIR__ . "/../images/" . basename($img_name);
-                if (file_exists($img_path)) {
-                    @unlink($img_path);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Handle Services delete
+    if (isset($_POST['delete_id']) && is_numeric($_POST['delete_id'])) {
+        $delete_id = (int)$_POST['delete_id'];
+        $stmt = $conn->prepare("SELECT service_image FROM services WHERE service_id = ?");
+        $stmt->bind_param("i", $delete_id);
+        $stmt->execute();
+        $stmt->bind_result($img_name);
+        if ($stmt->fetch()) {
+            $stmt->close();
+            $del_stmt = $conn->prepare("DELETE FROM services WHERE service_id = ?");
+            $del_stmt->bind_param("i", $delete_id);
+            if ($del_stmt->execute()) {
+                if (!empty($img_name)) {
+                    $img_path = __DIR__ . "/../images/" . basename($img_name);
+                    if (file_exists($img_path)) {
+                        @unlink($img_path);
+                    }
                 }
+                $delete_success = "Service deleted successfully.";
+            } else {
+                $delete_error = "Failed to delete service.";
             }
-            $delete_success = "Service deleted successfully.";
+            $del_stmt->close();
         } else {
-            $delete_error = "Failed to delete service.";
+            $stmt->close();
+            $delete_error = "Service not found.";
         }
-        $del_stmt->close();
-    } else {
+    }
+
+    // Handle Why Aone Hub delete
+    if (isset($_POST['delete_why_id']) && is_numeric($_POST['delete_why_id'])) {
+        $delete_why_id = (int)$_POST['delete_why_id'];
+        $stmt = $conn->prepare("DELETE FROM why_aone_hub WHERE why_id = ?");
+        $stmt->bind_param("i", $delete_why_id);
+        if ($stmt->execute()) {
+            $delete_success = "Why Aone Hub entry deleted successfully.";
+        } else {
+            $delete_error = "Failed to delete Why Aone Hub entry.";
+        }
         $stmt->close();
-        $delete_error = "Service not found.";
     }
 }
 
@@ -64,25 +76,56 @@ $total_pages = ceil($total_services / $per_page);
 $start_index = ($page - 1) * $per_page;
 $paged_services = array_slice($services, $start_index, $per_page);
 $serial_start = $start_index + 1;
-?>
 
+// ---- Fetch Why Aone Hub data ----
+$why_rows = [];
+$why_result = $conn->query("SELECT * FROM why_aone_hub ORDER BY why_id ASC");
+if ($why_result && $why_result->num_rows > 0) {
+    while ($row = $why_result->fetch_assoc()) {
+        $why_rows[] = $row;
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Manage Services</title>
+    <title>Manage Services & Why Aone Hub</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="stylesheet" href="css/services.css">
     <link rel="stylesheet" href="css/index.css">
     <link rel="stylesheet" href="css/events.css">
+    <style>
+        .main-section-block {
+            background: #fff;
+            border-radius: 12px;
+            margin-bottom: 44px;
+            box-shadow: 0 1px 10px rgba(44,62,80,0.06);
+            padding: 30px 22px 32px 22px;
+        }
+        .main-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 22px;
+            gap: 10px;
+        }
+        .main-section-header h1, .main-section-header h2 {
+            font-size: 1.35rem;
+            margin: 0;
+            color: #322053;
+            font-weight: 700;
+        }
+        .classic-pagination {
+            margin-top: 18px;
+        }
+        @media (max-width: 960px) {
+            .main-section-block { padding: 16px 2vw; }
+        }
+    </style>
 </head>
 <body>
 <div class="service-table-container">
-
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:30px;gap:20px;">
-        <h1 class="internal-services-h1">Manage Services</h1>
-        <a href="service_create.php" class="add-service-btn">+ Add New Service</a>
-    </div>
 
     <?php if ($delete_success): ?>
         <div style="background:#e4fbe5;color:#09930c;padding:13px 13px 9px 13px;border-radius:5px;margin-bottom:13px;font-size:16px;">
@@ -94,92 +137,79 @@ $serial_start = $start_index + 1;
         </div>
     <?php endif; ?>
 
-    <table class="service-table">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Service Name</th>
-                <th class="description-cell">Description</th>
-                <th class="service_image">Image</th>
-                <th style="text-align:center;min-width:130px;">Action</th>
-            </tr>
-        </thead>
-        <tbody>
-        <?php 
-        if (!empty($paged_services)) :
-            $snum = $serial_start;
-            foreach ($paged_services as $row): ?>
-            <tr>
-                <td><?= $snum++; ?></td>
-                <td><?= esc($row['service_title']); ?></td>
-                <td class="description-cell">
-                    <div style="white-space:pre-line;"><?= esc($row['service_description']); ?></div>
-                </td>
-                <td class="service_image">
-                    <?php
-                        $img_name = !empty($row['service_image']) ? basename($row['service_image']) : '';
-                        $img_path = !empty($img_name) ? '../images/' . $img_name : '';
-                        if (!empty($img_name) && file_exists("../images/" . $img_name)) {
-                            echo "<img src=\"" . esc($img_path) . "\" alt=\"service\" class=\"service-image-thumb\">";
-                        } else {
-                            echo "<span class='internal-no-image'>No image uploaded</span>";
-                        }
-                    ?>
-                </td>
-                <td style="text-align:center;">
-                    <a href="service_edit.php?id=<?= esc($row['service_id']); ?>" class="edit-btn">Edit</a>
-                    <form method="POST" action="" style="display:inline;margin:0;padding:0;" onsubmit="return confirm('Are you sure you want to delete this service?');">
-                        <input type="hidden" name="delete_id" value="<?= esc($row['service_id']); ?>">
-                        <button type="submit" class="delete-btn">Delete</button>
-                    </form>
-                </td>
-            </tr>
-        <?php endforeach;
-        else: ?>
-            <tr>
-                <td colspan="5" style="text-align:center;font-style:italic;background:#f2f3fb;color:#515575;font-size:17px;padding:38px 0;border-bottom:none;">
-                    No services found.
-                </td>
-            </tr>
-        <?php endif; ?>
-        </tbody>
-    </table>
-
-    <?php if ($total_pages > 1): ?>
-        <div class="classic-pagination">
-            <ul>
-                <?php
-                // Previous Button
-                if ($page > 1) {
-                    echo '<li><a href="?page=' . ($page-1) . '">&laquo; Prev</a></li>';
-                } else {
-                    echo '<li><span class="disabled">&laquo; Prev</span></li>';
-                }
-
-                // Show all page numbers for <=15, else window & first/last/ellipsis (classic style)
-                if ($total_pages <= 15) {
-                    for ($p = 1; $p <= $total_pages; $p++) {
-                        if ($page == $p) {
-                            echo '<li><span class="active">' . $p . '</span></li>';
-                        } else {
-                            echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
-                        }
-                    }
-                } else {
-                    if ($page < 6) {
-                        for ($p = 1; $p <= 6; $p++) {
-                            if ($page == $p) {
-                                echo '<li><span class="active">' . $p . '</span></li>';
+    <!-- SERVICES TABLE -->
+    <div class="main-section-block">
+        <div class="main-section-header">
+            <h1>Manage Services</h1>
+            <a href="service_create.php" class="add-service-btn">+ Add New Service</a>
+        </div>
+        <table class="service-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>ID</th>
+                    <th>Service Name</th>
+                    <th class="description-cell">Description</th>
+                    <th class="service_image">Image</th>
+                    <th style="text-align:center;min-width:130px;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php 
+            if (!empty($paged_services)) :
+                $snum = $serial_start;
+                foreach ($paged_services as $row): ?>
+                <tr>
+                    <td><?= $snum++; ?></td>
+                    <td><?= esc($row['service_id']); ?></td>
+                    <td><?= esc($row['service_title']); ?></td>
+                    <td class="description-cell">
+                        <div style="white-space:pre-line;"><?= esc($row['service_description']); ?></div>
+                    </td>
+                    <td class="service_image">
+                        <?php
+                            $img_name = !empty($row['service_image']) ? basename($row['service_image']) : '';
+                            $img_path = !empty($img_name) ? '../images/' . $img_name : '';
+                            if (!empty($img_name) && file_exists("../images/" . $img_name)) {
+                                echo "<img src=\"" . esc($img_path) . "\" alt=\"service\" class=\"service-image-thumb\">";
                             } else {
-                                echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
+                                echo "<span class='internal-no-image'>No image uploaded</span>";
                             }
-                        }
-                        echo '<li><span>...</span></li>';
-                        echo '<li><a href="?page=' . $total_pages . '">' . $total_pages . '</a></li>';
-                    } elseif ($page > $total_pages - 5) {
-                        echo '<li><a href="?page=1">1</a></li>';
-                        echo '<li><span>...</span></li>';
-                        for ($p = $total_pages-5; $p <= $total_pages; $p++) {
+                        ?>
+                    </td>
+                    <td style="text-align:center;">
+                        <a href="service_edit.php?id=<?= esc($row['service_id']); ?>" class="edit-btn">Edit</a>
+                        <form method="POST" action="" style="display:inline;margin:0;padding:0;" onsubmit="return confirm('Are you sure you want to delete this service?');">
+                            <input type="hidden" name="delete_id" value="<?= esc($row['service_id']); ?>">
+                            <button type="submit" class="delete-btn">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            <?php endforeach;
+            else: ?>
+                <tr>
+                    <td colspan="6" style="text-align:center;font-style:italic;background:#f2f3fb;color:#515575;font-size:17px;padding:38px 0;border-bottom:none;">
+                        No services found.
+                    </td>
+                </tr>
+            <?php endif; ?>
+            </tbody>
+        </table>
+
+        <?php if ($total_pages > 1): ?>
+            <div class="classic-pagination">
+                <ul>
+                    <?php
+                    // Previous Button
+                    if ($page > 1) {
+                        echo '<li><a href="?page=' . ($page-1) . '">&laquo; Prev</a></li>';
+                    } else {
+                        echo '<li><span class="disabled">&laquo; Prev</span></li>';
+                    }
+
+                    // Show all page numbers for <=15, else window & first/last/ellipsis (classic style)
+                    if ($total_pages <= 15) {
+                        for ($p = 1; $p <= $total_pages; $p++) {
                             if ($page == $p) {
                                 echo '<li><span class="active">' . $p . '</span></li>';
                             } else {
@@ -187,30 +217,100 @@ $serial_start = $start_index + 1;
                             }
                         }
                     } else {
-                        echo '<li><a href="?page=1">1</a></li>';
-                        echo '<li><span>...</span></li>';
-                        for ($p = $page-2; $p <= $page+2; $p++) {
-                            if ($page == $p) {
-                                echo '<li><span class="active">' . $p . '</span></li>';
-                            } else {
-                                echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
+                        if ($page < 6) {
+                            for ($p = 1; $p <= 6; $p++) {
+                                if ($page == $p) {
+                                    echo '<li><span class="active">' . $p . '</span></li>';
+                                } else {
+                                    echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
+                                }
                             }
+                            echo '<li><span>...</span></li>';
+                            echo '<li><a href="?page=' . $total_pages . '">' . $total_pages . '</a></li>';
+                        } elseif ($page > $total_pages - 5) {
+                            echo '<li><a href="?page=1">1</a></li>';
+                            echo '<li><span>...</span></li>';
+                            for ($p = $total_pages-5; $p <= $total_pages; $p++) {
+                                if ($page == $p) {
+                                    echo '<li><span class="active">' . $p . '</span></li>';
+                                } else {
+                                    echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
+                                }
+                            }
+                        } else {
+                            echo '<li><a href="?page=1">1</a></li>';
+                            echo '<li><span>...</span></li>';
+                            for ($p = $page-2; $p <= $page+2; $p++) {
+                                if ($page == $p) {
+                                    echo '<li><span class="active">' . $p . '</span></li>';
+                                } else {
+                                    echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
+                                }
+                            }
+                            echo '<li><span>...</span></li>';
+                            echo '<li><a href="?page=' . $total_pages . '">' . $total_pages . '</a></li>';
                         }
-                        echo '<li><span>...</span></li>';
-                        echo '<li><a href="?page=' . $total_pages . '">' . $total_pages . '</a></li>';
                     }
-                }
 
-                // Next Button
-                if ($page < $total_pages) {
-                    echo '<li><a href="?page=' . ($page+1) . '">Next &raquo;</a></li>';
-                } else {
-                    echo '<li><span class="disabled">Next &raquo;</span></li>';
-                }
-                ?>
-            </ul>
+                    // Next Button
+                    if ($page < $total_pages) {
+                        echo '<li><a href="?page=' . ($page+1) . '">Next &raquo;</a></li>';
+                    } else {
+                        echo '<li><span class="disabled">Next &raquo;</span></li>';
+                    }
+                    ?>
+                </ul>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- WHY AONE HUB TABLE -->
+    <div class="main-section-block">
+        <div class="main-section-header">
+            <h2>Manage Why Aone Hub</h2>
+            <a href="why_aone_hub_create.php" class="add-service-btn">+ Add New Why Aone Hub</a>
         </div>
-    <?php endif; ?>
+        <table class="service-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th style="text-align:center;min-width:120px;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php 
+            if (!empty($why_rows)):
+                $wnum = 1;
+                foreach ($why_rows as $wrow): ?>
+                <tr>
+                    <td><?= $wnum++; ?></td>
+                    <td><?= esc($wrow['why_id']); ?></td>
+                    <td><?= esc($wrow['why_title']); ?></td>
+                    <td>
+                        <div style="white-space:pre-line;"><?= esc($wrow['why_description']); ?></div>
+                    </td>
+                    <td style="text-align:center;">
+                        <a href="why_aone_hub_edit.php?id=<?= esc($wrow['why_id']); ?>" class="edit-btn">Edit</a>
+                        <form method="POST" action="" style="display:inline;margin:0;padding:0;" onsubmit="return confirm('Are you sure you want to delete this Why Aone Hub entry?');">
+                            <input type="hidden" name="delete_why_id" value="<?= esc($wrow['why_id']); ?>">
+                            <button type="submit" class="delete-btn">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            <?php endforeach;
+            else: ?>
+                <tr>
+                    <td colspan="5" style="text-align:center;font-style:italic;background:#f2f3fb;color:#515575;font-size:16px;padding:32px 0;border-bottom:none;">
+                        No Why Aone Hub entries found.
+                    </td>
+                </tr>
+            <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
 
 </div>
 </body>
