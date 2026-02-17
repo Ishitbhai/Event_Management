@@ -61,6 +61,7 @@
                         <p><?= htmlspecialchars($service['service_description']) ?></p>
                     </div>
                 </div>
+                
             <?php endforeach; ?>
         <?php else: ?>
                 <div class="col-12"><div class="alert alert-secondary text-center mt-3">No services available at the moment.</div></div>
