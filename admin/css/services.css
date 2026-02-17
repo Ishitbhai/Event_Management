@@ -1,0 +1,187 @@
+body {
+    background: #f8fafc;
+    margin: 0;
+    overflow-x: hidden;
+}
+.service-table-container {
+    overflow-x: auto;
+    margin-top: 22px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 10px rgba(44,62,80,0.09);
+    padding: 16px;
+    width: 100%;
+    box-sizing: border-box;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+table.service-table {
+    border-collapse: collapse;
+    min-width: 860px;
+    width: 100%;
+}
+.service-table th, .service-table td {
+    padding: 11px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e6e7f0;
+    font-size: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 440px;
+    vertical-align: middle;
+}
+.service-table th.description-cell, .service-table td.description-cell {
+    white-space: normal;
+    max-width: 330px;
+    min-width: 160px;
+}
+.service-table th, .service-table td {
+    min-width: 90px;
+}
+.service-table th.service_image, .service-table td.service_image {
+    min-width: 110px;
+    max-width: 180px;
+}
+.service-table th {
+    background: #f4f6fb;
+    color: #322053;
+    font-weight: 600;
+    border-top: 1px solid #e6e7f0;
+}
+.service-table tr:nth-child(even) {
+    background: #f9fafe;
+}
+.service-table tr:hover {
+    background: #f2f4fa;
+    transition: background 0.1s;
+}
+.service-table td .service-image-thumb {
+    max-width: 76px;
+    max-height: 56px;
+    display: block;
+    border-radius: 5px;
+    margin-bottom:5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    background: #fff;
+}
+.internal-no-image {
+    color: #ca3125;
+    background: #ffd4d4;
+    padding: 7px 13px;
+    border-radius: 4px;
+    font-size: 15px;
+    font-style: italic;
+    display: inline-block;
+}
+.service-table td .edit-btn,
+.service-table td .delete-btn {
+    border: none;
+    border-radius: 5px;
+    padding: 7px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 15px;
+    transition: background 0.18s;
+    text-decoration: none;
+    display: inline-block;
+}
+.service-table td .edit-btn {
+    background: linear-gradient(90deg, #338bc0 20%, #2b67d0 80%);
+    color: #fff;
+    margin-right: 6px;
+    box-shadow: 0 1px 3px rgba(60,75,170,0.07);
+}
+.service-table td .edit-btn:hover {
+    background: linear-gradient(90deg, #234e8a 30%, #387add 100%);
+}
+.service-table td .delete-btn {
+    background: linear-gradient(90deg, #e94242 20%, #b02626 80%);
+    color: #fff;
+    margin-left: 0;
+    box-shadow: 0 1px 3px rgba(200,55,55,0.08);
+}
+.service-table td .delete-btn:hover {
+    background: linear-gradient(90deg, #b52d2d 10%, #a12020 90%);
+}
+.add-service-btn {
+    background: linear-gradient(90deg, #2d397a, #594285 90%);
+    padding: 9px 22px;
+    font-size: 16px;
+    border: none;
+    border-radius: 7px;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 1px 6px rgba(60,180,80,0.11);
+    cursor: pointer;
+    transition: background 0.16s;
+    margin-bottom: 0;
+    text-decoration: none;
+    float:right;
+}
+.add-service-btn:hover {
+    background: linear-gradient(90deg, #594285, #2d397a 100%);
+}
+.internal-services-h1 {
+    font-size: 2.14rem;
+    font-weight: 700;
+    color: #2b255d;
+    margin: 0 0 23px 0;
+    letter-spacing: 0.7px;
+}
+.classic-pagination {
+    margin: 28px 0 10px 0;
+    text-align: center;
+}
+.classic-pagination ul {
+    list-style: none;
+    padding-left: 0;
+    display: inline-block;
+    margin: 0;
+    background: #f5f8fd;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(36,54,140,0.04);
+    overflow: hidden;
+}
+.classic-pagination li {
+    display: inline-block;
+    margin: 0;
+}
+.classic-pagination a, .classic-pagination span {
+    display: inline-block;
+    color: #204886;
+    padding: 8px 16px;
+    font-size: 16px;
+    text-decoration: none;
+    font-weight: 600;
+    outline: none;
+    transition: color .13s;
+    background: none;
+}
+.classic-pagination a:hover {
+    color: #fff;
+    background: #387add;
+}
+.classic-pagination .active {
+    background: #2a70b4;
+    color: #fff !important;
+    border-radius: 0;
+}
+.classic-pagination .disabled {
+    color: #8d97ab;
+    pointer-events: none;
+    background: #f5f8fd;
+}
+@media (max-width:1150px) {
+    .service-table-container {padding: 4vw;}
+    .internal-services-h1 {font-size: 1.38rem;}
+    table.service-table {min-width: 780px;}
+    .service-table th, .service-table td {font-size: 15px;}
+}
+@media (max-width: 750px) {
+    .service-table-container {padding: 9px 1vw;}
+    .service-table th, .service-table td {font-size: 13px;}
+    .internal-services-h1 {font-size: 1.08rem;}
+    .add-service-btn {padding: 7px 10px;font-size:14px;}
+}

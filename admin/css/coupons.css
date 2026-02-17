@@ -1,0 +1,137 @@
+body {
+    margin: 0;
+    background: #f4f6fb;
+    overflow-x: hidden;
+}
+
+/* Main Layout */
+.dashboard-main {
+    padding: 40px;
+}
+
+.events-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.internal-header {
+    margin: 0;
+    color: #322053;
+}
+
+/* Create Button */
+.create-event-btn {
+    background: linear-gradient(90deg, #2d397a, #594285 90%);
+    color: #fff;
+    padding: 8px 20px;
+    border: none;
+    border-radius: 7px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .18s;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 9px rgb(82 58 213 / 8%);
+}
+.create-event-btn:hover {
+    background: linear-gradient(90deg, #594285, #2d397a 100%);
+}
+.create-event-link {
+    text-decoration: none;
+    display: inline-block;
+}
+
+
+/* Table Container */
+.event-table-container {
+    overflow-x: auto;
+    margin-top: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 10px rgba(44,62,80,0.09);
+    padding: 16px;
+}
+
+/* Table */
+table.event-table {
+    border-collapse: collapse;
+    min-width: 1000px;
+    width: 100%;
+}
+
+.event-table th,
+.event-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e6e7f0;
+    font-size: 15px;
+    white-space: nowrap;
+}
+
+.event-table th {
+    background: #f4f6fb;
+    color: #322053;
+    font-weight: 600;
+}
+
+.event-table tr:nth-child(even) {
+    background: #f9fafe;
+}
+
+.event-table tr:hover {
+    background: #f2f4fa;
+    transition: background 0.1s;
+}
+
+/* Buttons */
+.edit-btn {
+    border: none;
+    border-radius: 5px;
+    padding: 7px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    background: linear-gradient(90deg, #327ac5 20%, #225085 80%);
+    color: #fff;
+    margin-right: 6px;
+    transition: background 0.16s;
+    text-decoration: none;
+    display: inline-block;
+}
+.edit-btn:hover {
+    background: linear-gradient(90deg, #225085, #327ac5 60%);
+}
+
+.delete-btn {
+    border: none;
+    border-radius: 5px;
+    padding: 7px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    background: linear-gradient(90deg, #e94242 20%, #b02626 80%);
+    color: #fff;
+    transition: background 0.16s;
+    text-decoration: none;
+    display: inline-block;
+}
+.delete-btn:hover {
+    background: linear-gradient(90deg, #a51818, #e94242 60%);
+}
+
+
+/* Status colors */
+.status-used {
+    color: #c82f2f;
+    font-weight: 600;
+}
+.status-unused {
+    color: #197655;
+    font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    table.event-table { min-width: 800px; }
+}

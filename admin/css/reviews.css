@@ -1,0 +1,117 @@
+.review-table-container {
+    margin: 40px auto 0;
+    width: 98%;
+    max-width: 1100px;
+    background: #fff;
+    border-radius: 13px;
+    box-shadow: 0 1px 8px rgba(44,62,80,0.09);
+    padding: 34px 28px 32px;
+}
+.review-table th, .review-table td {
+    text-align: left;
+    padding: 11px 13px;
+    vertical-align: middle;
+}
+.review-table th {
+    background: #fafaff;
+    color: #473b6f;
+    font-weight: 700;
+    border-bottom: 2px solid #f1f1f9;
+}
+.review-table {
+    border-collapse: collapse;
+    width: 100%;
+    background: #fff;
+}
+.review-table tbody tr:nth-child(even) {
+    background: #faf8ff;
+}
+.review-table td {
+    border-bottom: 1px solid #f2f2f6;
+}
+.star {
+    color: #ffd234;
+    font-size: 20px;
+    margin-right: 1px;
+}
+/* Button Styles - Match events.php (from events.css/index.css) */
+.delete-btn {
+    border: none;
+    border-radius: 5px;
+    padding: 7px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 15px;
+    transition: background 0.16s;
+    background: linear-gradient(90deg, #e94242 20%, #b02626 80%);
+    color: #fff;
+    margin-left: 0;
+    box-shadow: 0 1px 3px rgba(200,55,55,0.07);
+}
+.delete-btn:hover {
+    background: linear-gradient(90deg, #a51818, #e94242 60%);
+}
+.edit-btn {
+    text-decoration:none;   
+    border: none;
+    border-radius: 5px;
+    padding: 7px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 15px;
+    transition: background 0.16s;
+    background: linear-gradient(90deg, #327ac5 20%, #225085 80%);
+    color: #fff;
+    margin-right: 8px;
+    box-shadow: 0 1px 3px rgba(50,122,197,0.07);
+}
+.edit-btn:hover {
+    background: linear-gradient(90deg, #225085, #327ac5 60%);
+}
+.create-review-btn {
+    background: linear-gradient(90deg, #2d397a, #594285 90%);
+    color: #fff;
+    padding: 8px 20px;
+    border: none;
+    border-radius: 7px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-left: 6px;
+    transition: background .18s;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 9px rgb(82 58 213 / 8%);
+}
+.create-review-btn:hover {
+    background: linear-gradient(90deg, #594285, #2d397a 100%);
+}
+@media (max-width: 700px) {
+    .review-table-container {
+        padding: 11px 3px 13px;
+    }
+    .review-table th, .review-table td {
+        padding: 9px 5px;
+        font-size: 15px;
+    }
+    .create-review-btn {
+        font-size: 14px;
+        padding: 7px 11px;
+    }
+    .edit-btn,
+    .delete-btn {
+        font-size: 13px;
+        padding: 7px 10px;
+    }
+}
+.reviews-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+.review-table .id-label {
+    color: #9982c5; 
+    font-size: 90%; 
+    font-family: 'Menlo', 'Consolas', monospace;
+    margin-right: 4px;
+}

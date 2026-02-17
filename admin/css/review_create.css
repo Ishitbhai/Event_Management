@@ -1,0 +1,109 @@
+.review-form-wrapper {
+    margin:40px auto 0;
+    background:#fff;
+    border-radius:14px;
+    box-shadow:0 1px 8px rgba(44,62,80,0.09);
+    padding:35px 25px 30px;
+    max-width: 480px;
+}
+.review-form-wrapper h2 {
+    color:#322053;
+    margin-top:0;
+    font-size: 1.6rem;
+}
+.rf-label {
+    font-weight:600;
+    display:block;
+    margin-bottom:6px;
+    color: #322053;
+}
+.rf-input, .rf-select, .rf-textarea {
+    width:100%;
+    padding:10px 12px;
+    font-size:15px;
+    border-radius: 7px;
+    border:1px solid #dad7f6;
+    margin-bottom:18px;
+    box-sizing: border-box;
+}
+.rf-select {
+    background: #f8f6ff;
+    color: #38285d;
+}
+.rf-textarea {
+    min-height: 70px;
+    resize: vertical;
+    font-family: inherit;
+}
+.success-message {
+    color: #228a36;
+    background: #e8fdeb;
+    border: 1px solid #a8dfb1;
+    padding: 9px 15px;
+    border-radius: 7px;
+    margin: 13px 0 16px 0;
+    font-weight: 600;
+    font-size: 16px;
+    max-width: 390px;
+    display: block;
+}
+.error-message-inline {
+    color: #b70c26;
+    background: #fff0f0;
+    border: 1px solid #e1c2c7;
+    padding: 9px 15px;
+    border-radius: 7px;
+    margin: 10px 0 14px 0;
+    font-weight: 600;
+    font-size: 15px;
+    max-width: 460px;
+    display: block;
+}
+.rf-error {
+    color: #b70c26;
+    background: #fff0f0;
+    border: 1px solid #e1c2c7;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    margin: -11px 0 11px 0;
+    display: none;
+}
+.rf-btn-row {
+    margin-top: 18px;
+    display: flex;
+    gap: 10px;
+}
+.create-btn {
+    background: linear-gradient(90deg, #2d397a, #594285 90%);
+    color: #fff;
+    padding: 9px 25px;
+    border: none;
+    border-radius: 7px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .18s;
+    letter-spacing: 0.01em;
+    box-shadow: 0 2px 9px rgb(82 58 213 / 8%);
+}
+.create-btn:hover { background: linear-gradient(90deg, #594285, #2d397a 100%);}
+.cancel-btn {
+    background: #f5f5f7;
+    color: #58526b;
+    border: none;
+    border-radius: 7px;
+    padding: 9px 20px;
+    font-size:16px;
+    font-weight:600;
+    cursor:pointer;
+    text-decoration:none;
+    transition: background .15s;
+}
+.cancel-btn:hover {
+    background: #e5e4ee;
+}
+@media (max-width: 600px) {
+    .review-form-wrapper { padding: 14px 7px 16px; }
+}
