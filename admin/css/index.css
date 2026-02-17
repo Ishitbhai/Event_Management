@@ -39,17 +39,23 @@ body {
     transition: box-shadow 0.3s ease, transform 0.5s cubic-bezier(.68,-0.55,.27,1.55);
     cursor: pointer;
     opacity: 0;
-    transform: translateY(20px) scale(0.96);
-    animation: fadeInUp 1s forwards;
+    transform: translateY(40px) scale(0.93);
+    animation: fadeInUp 0.8s cubic-bezier(.68,-0.55,.27,1.55) forwards;
 }
-.dashboard-card:nth-child(1) { animation-delay: 0.20s; }
-.dashboard-card:nth-child(2) { animation-delay: 0.32s; }
-.dashboard-card:nth-child(3) { animation-delay: 0.44s; }
-.dashboard-card:nth-child(4) { animation-delay: 0.56s; }
-.dashboard-card:nth-child(5) { animation-delay: 0.68s; }
-.dashboard-card:nth-child(6) { animation-delay: 0.8s; }
+.dashboard-card:nth-child(1) { animation-delay: 0.10s; }
+.dashboard-card:nth-child(2) { animation-delay: 0.20s; }
+.dashboard-card:nth-child(3) { animation-delay: 0.30s; }
+.dashboard-card:nth-child(4) { animation-delay: 0.40s; }
+.dashboard-card:nth-child(5) { animation-delay: 0.50s; }
+.dashboard-card:nth-child(6) { animation-delay: 0.60s; }
+.dashboard-card:nth-child(7) { animation-delay: 0.70s; }
+.dashboard-card:nth-child(8) { animation-delay: 0.80s; }
 @keyframes fadeInUp {
-    to {
+    0% {
+        opacity: 0;
+        transform: translateY(40px) scale(0.93);
+    }
+    100% {
         opacity: 1;
         transform: translateY(0) scale(1);
     }
@@ -57,6 +63,7 @@ body {
 .dashboard-card:hover {
     transform: translateY(-6px) scale(1.04);
     box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+    z-index: 1;
 }
 .card-title {
     font-size: 18px;
@@ -82,7 +89,7 @@ body {
 .reviews { border-left: 6px solid #c82f2f; }
 .categories { border-left: 6px solid #5236d6; }
 .coupons { border-left: 6px solid #c82f2f; }
-
+.settings { border-left: 6px solid #5236d6; }
 
 .events .card-title { color: #5236d6; }
 .bookings .card-title { color: #197655; }
@@ -91,3 +98,4 @@ body {
 .reviews .card-title { color: #c82f2f; }
 .categories .card-title { color: #5236d6; }
 .coupons .card-title { color: #c82f2f; }
+.settings .card-title { color: #5236d6; }

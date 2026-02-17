@@ -21,7 +21,8 @@ $dashboard_counts = [
     'services' => 0,
     'reviews' => 0,
     'categories' => 0,
-    'coupons' => 0 // Added for coupons
+    'coupons' => 0,
+    'settings' => 0 // Added for settings
 ];
 
 // Total Events
@@ -32,29 +33,40 @@ if ($row = $res->fetch_assoc()) $dashboard_counts['events'] = (int)$row['cnt'];
 $res = $conn->query("SELECT COUNT(*) as cnt FROM bookings");
 if ($row = $res->fetch_assoc()) $dashboard_counts['bookings'] = (int)$row['cnt'];
 
-
+// Total Users
 $res = $conn->query("SELECT COUNT(*) as cnt FROM users");
 if ($row = $res->fetch_assoc()) $dashboard_counts['users'] = (int)$row['cnt'];
 
-
+// Total Services
 $res = $conn->query("SELECT COUNT(*) as cnt FROM services");
 if ($row = $res->fetch_assoc()) $dashboard_counts['services'] = (int)$row['cnt'];
 
-
+// Total Reviews
 $res = $conn->query("SELECT COUNT(*) as cnt FROM reviews");
 if ($row = $res->fetch_assoc()) $dashboard_counts['reviews'] = (int)$row['cnt'];
 
-
+// Total Categories
 $res = $conn->query("SELECT COUNT(*) as cnt FROM category");
 if ($row = $res->fetch_assoc()) $dashboard_counts['categories'] = (int)$row['cnt'];
 
 // Total Coupons
 // $res = $conn->query("SELECT COUNT(*) as cnt FROM coupons");
-if ($res && ($row = $res->fetch_assoc())) $dashboard_counts['coupons'] = (int)$row['cnt'];
+if ($row = $res->fetch_assoc()) $dashboard_counts['coupons'] = (int)$row['cnt'];
+
+// Total Settings (if there's a settings table, otherwise just show as 1 for presence)
+// $res = $conn->query("SELECT COUNT(*) as cnt FROM settings");
+if ($res && ($row = $res->fetch_assoc())) {
+    $dashboard_counts['settings'] = (int)$row['cnt'];
+} else {
+    $dashboard_counts['settings'] = 1; // Fallback if table does not exist or for non-count settings
+}
 ?>
 
 
 <link rel="stylesheet" href="css/index.css">
+
+
+
 
 
 <div class="dashboard-main">
@@ -98,6 +110,11 @@ if ($res && ($row = $res->fetch_assoc())) $dashboard_counts['coupons'] = (int)$r
             <div class="card-number" data-num="<?php echo $dashboard_counts['coupons']; ?>">0</div>
             <a href="coupons.php" class="card-link">Manage Coupons →</a>
         </div>
+        <div class="dashboard-card settings shadow-sm">
+            <div class="card-title">Settings</div>
+            <div class="card-number" data-num="<?php echo $dashboard_counts['settings']; ?>">0</div>
+            <a href="settings.php" class="card-link">Manage Settings →</a>
+        </div>
     </div>
 </div>
 
@@ -108,26 +125,22 @@ if ($res && ($row = $res->fetch_assoc())) $dashboard_counts['coupons'] = (int)$r
 document.addEventListener('DOMContentLoaded', function () {
     // Animate each card-number element using a count up
     document.querySelectorAll('.card-number').forEach(function(el) {
-        const target = +el.getAttribute('data-num');
+        const target = parseInt(el.getAttribute('data-num'), 10);
         if (isNaN(target)) return;
-        let count = 0;
-        const duration = 1000;
-        const frameRate = 40;
-        const totalFrames = Math.round(duration / frameRate);
-        let frame = 0;
+        let start = 0;
+        const duration = 1000; // ms
+        const startTimestamp = performance.now();
 
-        function animate() {
-            frame++;
-            const progress = frame / totalFrames;
-            const current = Math.floor(target * progress);
-            el.textContent = (progress < 1) ? current : target;
+        function step(currentTime) {
+            const progress = Math.min((currentTime - startTimestamp) / duration, 1);
+            el.textContent = Math.floor(progress * (target - start) + start);
             if (progress < 1) {
-                requestAnimationFrame(animate);
+                requestAnimationFrame(step);
             } else {
                 el.textContent = target;
             }
         }
-        animate();
+        requestAnimationFrame(step);
     });
 });
 </script>

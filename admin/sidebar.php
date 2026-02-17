@@ -32,6 +32,7 @@ if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== 1) {
                 <a href="services.php" <?php if ($current_page == 'services.php' || $current_page == 'services.php') echo 'class="active"'; ?>>Services</a>
                 <a href="reviews.php" <?php if ($current_page == 'reviews.php' || $current_page == 'reviews.php') echo 'class="active"'; ?>>Reviews</a>
                 <a href="coupons.php" <?php if ($current_page == 'coupons.php') echo 'class="active"'; ?>>Coupons</a>
+                <a href="Settings.php" <?php if ($current_page == 'Settings.php') echo 'class="active"'; ?>>Settings</a>
                 <a href="logout.php">Logout</a>
             </nav>
             <div class="sidebar-footer">

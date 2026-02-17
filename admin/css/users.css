@@ -1,0 +1,74 @@
+body {
+    font-size: 16px;
+}
+.dashboard-main {
+    /* Ref: bookings.php plus more width, NOT full width (room for sidebar) */
+    max-width: 1600px;
+    min-width: 1020px;
+    margin: 40px auto 0 auto;
+    padding: 0 38px 38px 38px;
+    font-size: 16px;
+}
+.event-table-container {
+    overflow-x:auto;
+    margin-top:10px;
+    background:#fff;
+    border-radius:12px;
+    box-shadow:0 1px 10px rgba(44,62,80,0.09);
+    padding:24px 20px 24px 20px;
+}
+table.event-table {
+    border-collapse: collapse;
+    min-width:1500px;
+    width:100%;
+    font-size: 16px;
+}
+.event-table th, .event-table td {
+    padding:10px 13px;
+    border-bottom:1px solid #e6e7f0;
+    font-size: 16px;
+    white-space:nowrap;
+}
+.event-table th{
+    background:#f4f6fb;
+    color:#322053;
+    font-weight:600;
+    font-size: 16px;
+}
+.event-table tr:nth-child(even){
+    background:#f9fafe;
+}
+.create-event-btn{
+    background:linear-gradient(90deg,#2d397a,#594285);
+    color:#fff;
+    padding:7px 20px;
+    border:none;
+    border-radius:7px;
+    font-weight:700;
+    cursor:pointer;
+    font-size: 16px;
+}
+.table-edit-select {
+    padding:7px 13px;
+    border-radius:6px;
+    border:1px solid #ccc;
+    font-size: 16px;
+}
+.edit-btn{
+    background:#327ac5;
+    color:#fff;
+    border:none;
+    padding:7px 14px;
+    border-radius:5px;
+    cursor:pointer;
+    font-size: 16px;
+}
+.delete-btn{
+    background:#e94242;
+    color:#fff;
+    border:none;
+    padding:7px 14px;
+    border-radius:5px;
+    cursor:pointer;
+    font-size: 16px;
+}

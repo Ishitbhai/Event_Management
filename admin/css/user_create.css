@@ -1,0 +1,38 @@
+.event-create-main-box {
+    background: #fff;
+    max-width: 560px;
+    margin: 0 auto 0 auto;
+    border-radius: 12px;
+    padding: 40px 38px 38px 38px;
+    box-shadow: 0 1px 10px rgba(44,62,80,0.09);
+}
+.form-label {
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+.form-section {
+    margin-bottom: 22px;
+}
+.form-control {
+    padding: 9px 15px;
+    font-size: 16px;
+    border: 1px solid #dddddd;
+    border-radius: 7px;
+    width: 100%;
+}
+.btn-save {
+    background: linear-gradient(90deg,#2d397a,#594285);
+    color: #fff;
+    border: none;
+    padding: 9px 26px;
+    border-radius: 7px;
+    font-weight: 700;
+    font-size: 17px;
+    cursor: pointer;
+}
+.form-error, .text-danger {
+    color: #e94242;
+    margin-top: 3px;
+    font-size: 13px;
+}
+.is-invalid { border-color: #e94242 !important; }
