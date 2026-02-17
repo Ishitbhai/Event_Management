@@ -50,11 +50,29 @@ if (isset($_GET['delete_id']) && is_numeric($_GET['delete_id'])) {
     exit();
 }
 
+// Pagination logic
+$reviews = [];
+$res = $conn->query("SELECT * FROM reviews ORDER BY reviewed_at DESC");
+if ($res && $res->num_rows > 0) {
+    while ($row = $res->fetch_assoc()) {
+        $reviews[] = $row;
+    }
+}
+
+$page = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0
+    ? (int)$_GET['page']
+    : 1;
+$per_page = 10;
+$total_reviews = count($reviews);
+$total_pages = ceil($total_reviews / $per_page);
+$start_index = ($page - 1) * $per_page;
+$paged_reviews = array_slice($reviews, $start_index, $per_page);
+$serial_start = $start_index + 1;
+
 $msg = "";
 if (isset($_GET['msg'])) {
     if ($_GET['msg'] === "deleted") $msg = "<div class='success-message'>Review deleted successfully.</div>";
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -90,11 +108,9 @@ if (isset($_GET['msg'])) {
         </thead>
         <tbody>
         <?php
-        $result = $conn->query("SELECT * FROM reviews ORDER BY reviewed_at DESC");
-        // Counter for Sr No
-        $sr_no = 1;
-        if ($result && $result->num_rows > 0) {
-            while ($row = $result->fetch_assoc()) {
+        if (!empty($paged_reviews)) {
+            $sr_no = $serial_start;
+            foreach ($paged_reviews as $row) {
                 $review_id = (int)$row['review_id'];
                 $user_html = getUserNameWithId($conn, $row['user_id']); // Shows [id] Name
                 $event_html = getEventTitleWithId($conn, $row['event_id']); // Shows [id] Title
@@ -129,6 +145,78 @@ if (isset($_GET['msg'])) {
         ?>
         </tbody>
     </table>
+
+    <?php if ($total_pages > 1): ?>
+        <div class="classic-pagination">
+            <ul>
+            <?php
+                // Classic paging: prev, 1 2 3 ... n, next
+                // Previous Button
+                if ($page > 1) {
+                    echo '<li><a href="?page=' . ($page-1) . '">&laquo; Prev</a></li>';
+                } else {
+                    echo '<li><span class="disabled">&laquo; Prev</span></li>';
+                }
+
+                // Show all page numbers for <=15, else window & first/last/ellipsis (classic style)
+                if ($total_pages <= 15) {
+                    for ($p = 1; $p <= $total_pages; $p++) {
+                        if ($page == $p) {
+                            echo '<li><span class="active">' . $p . '</span></li>';
+                        } else {
+                            echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
+                        }
+                    }
+                } else {
+                    // Classic window: always show first, prev, ... window ..., last, next
+                    if ($page < 6) {
+                        // 1 2 3 4 5 ... n
+                        for ($p = 1; $p <= 6; $p++) {
+                            if ($page == $p) {
+                                echo '<li><span class="active">' . $p . '</span></li>';
+                            } else {
+                                echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
+                            }
+                        }
+                        echo '<li><span>...</span></li>';
+                        echo '<li><a href="?page=' . $total_pages . '">' . $total_pages . '</a></li>';
+                    } elseif ($page > $total_pages - 5) {
+                        // 1 ... n-5 n-4 n-3 n-2 n-1 n
+                        echo '<li><a href="?page=1">1</a></li>';
+                        echo '<li><span>...</span></li>';
+                        for ($p = $total_pages-5; $p <= $total_pages; $p++) {
+                            if ($page == $p) {
+                                echo '<li><span class="active">' . $p . '</span></li>';
+                            } else {
+                                echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
+                            }
+                        }
+                    } else {
+                        // 1 ... page-2 page-1 page page+1 page+2 ... n
+                        echo '<li><a href="?page=1">1</a></li>';
+                        echo '<li><span>...</span></li>';
+                        for ($p = $page-2; $p <= $page+2; $p++) {
+                            if ($page == $p) {
+                                echo '<li><span class="active">' . $p . '</span></li>';
+                            } else {
+                                echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
+                            }
+                        }
+                        echo '<li><span>...</span></li>';
+                        echo '<li><a href="?page=' . $total_pages . '">' . $total_pages . '</a></li>';
+                    }
+                }
+
+                // Next Button
+                if ($page < $total_pages) {
+                    echo '<li><a href="?page=' . ($page+1) . '">Next &raquo;</a></li>';
+                } else {
+                    echo '<li><span class="disabled">Next &raquo;</span></li>';
+                }
+            ?>
+            </ul>
+        </div>
+    <?php endif; ?>
 </div>
 </body>
 </html>

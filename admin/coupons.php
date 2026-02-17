@@ -9,7 +9,25 @@ if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== 1) {
     exit();
 }
 
-// Fetch all coupons
+function esc($str) {
+    return htmlspecialchars($str ?? '', ENT_QUOTES, 'UTF-8');
+}
+
+// --- Pagination Setup ---
+$page = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0 ? (int)$_GET['page'] : 1;
+$per_page = 10;
+
+// For pagination, fetch COUNT(*) first for total coupons
+$count_sql = "SELECT COUNT(*) as total FROM coupons";
+$count_result = $conn->query($count_sql);
+$total_coupons = 0;
+if ($count_result && $row = $count_result->fetch_assoc()) {
+    $total_coupons = (int)$row['total'];
+}
+$total_pages = max(ceil($total_coupons / $per_page), 1);
+$start_index = ($page - 1) * $per_page;
+
+// Main coupon SELECT with LIMIT/OFFSET for pagination
 $sql = "SELECT 
             c.coupon_id,
             c.coupon_code,
@@ -28,15 +46,12 @@ $sql = "SELECT
             LEFT JOIN events e1 ON c.coupon_from_event_id = e1.event_id
             LEFT JOIN events e2 ON c.coupon_applied_to_event_id = e2.event_id
             LEFT JOIN users u ON c.coupon_user_id = u.user_id
-        ORDER BY c.coupon_created_at DESC";
+        ORDER BY c.coupon_created_at DESC
+        LIMIT $per_page OFFSET $start_index";
 
 $result = $conn->query($sql);
 
-function esc($str) {
-    return htmlspecialchars($str ?? '', ENT_QUOTES, 'UTF-8');
-}
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -45,11 +60,9 @@ function esc($str) {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="css/coupons.css">
 </head>
-
 <body>
 
 <div class="dashboard-main">
-
     <div class="events-header">
         <h2 class="internal-header">Coupons Management</h2>
         <a class="create-event-link" href="coupon_create.php">
@@ -79,7 +92,7 @@ function esc($str) {
                 </tr>
             </thead>
             <tbody>
-                <?php $sr = 1; ?>
+                <?php $sr = $start_index + 1; ?>
                 <?php while($row = $result->fetch_assoc()): ?>
                 <tr>
                     <td><?= $sr++; ?></td>
@@ -146,6 +159,73 @@ function esc($str) {
                 <?php endwhile; ?>
             </tbody>
         </table>
+
+            <?php if ($total_pages > 1): ?>
+            <div class="classic-pagination">
+                <ul>
+                <?php
+                    // Previous Button
+                    if ($page > 1) {
+                        echo '<li><a href="?page=' . ($page-1) . '">&laquo; Prev</a></li>';
+                    } else {
+                        echo '<li><span class="disabled">&laquo; Prev</span></li>';
+                    }
+
+                    // Show all page numbers for <=15, else window & first/last/ellipsis (classic style)
+                    if ($total_pages <= 15) {
+                        for ($p = 1; $p <= $total_pages; $p++) {
+                            if ($page == $p) {
+                                echo '<li><span class="active">' . $p . '</span></li>';
+                            } else {
+                                echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
+                            }
+                        }
+                    } else {
+                        if ($page < 6) {
+                            for ($p = 1; $p <= 6; $p++) {
+                                if ($page == $p) {
+                                    echo '<li><span class="active">' . $p . '</span></li>';
+                                } else {
+                                    echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
+                                }
+                            }
+                            echo '<li><span>...</span></li>';
+                            echo '<li><a href="?page=' . $total_pages . '">' . $total_pages . '</a></li>';
+                        } elseif ($page > $total_pages - 5) {
+                            echo '<li><a href="?page=1">1</a></li>';
+                            echo '<li><span>...</span></li>';
+                            for ($p = $total_pages-5; $p <= $total_pages; $p++) {
+                                if ($page == $p) {
+                                    echo '<li><span class="active">' . $p . '</span></li>';
+                                } else {
+                                    echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
+                                }
+                            }
+                        } else {
+                            echo '<li><a href="?page=1">1</a></li>';
+                            echo '<li><span>...</span></li>';
+                            for ($p = $page-2; $p <= $page+2; $p++) {
+                                if ($page == $p) {
+                                    echo '<li><span class="active">' . $p . '</span></li>';
+                                } else {
+                                    echo '<li><a href="?page=' . $p . '">' . $p . '</a></li>';
+                                }
+                            }
+                            echo '<li><span>...</span></li>';
+                            echo '<li><a href="?page=' . $total_pages . '">' . $total_pages . '</a></li>';
+                        }
+                    }
+
+                    // Next Button
+                    if ($page < $total_pages) {
+                        echo '<li><a href="?page=' . ($page+1) . '">Next &raquo;</a></li>';
+                    } else {
+                        echo '<li><span class="disabled">Next &raquo;</span></li>';
+                    }
+                ?>
+                </ul>
+            </div>
+            <?php endif; ?>
 
         <?php else: ?>
             <div style="text-align:center;padding:30px;color:#322053;">

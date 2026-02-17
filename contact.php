@@ -61,7 +61,8 @@ if ($result && $result->num_rows > 0) {
         "address" => $row['contact_address'] ?? '',
         "phone"   => $row['contact_phone'] ?? '',
         "email"   => $row['contact_email'] ?? '',
-        "hours"   => $row['working_hours'] ?? '',
+        // Add newlines for each new line character in hours
+        "hours"   => nl2br($row['working_hours'] ?? ''),
         // Add any other fields as needed
     ];
 } else {

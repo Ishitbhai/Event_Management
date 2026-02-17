@@ -3,6 +3,49 @@ body {
     margin: 0;
     overflow-x: hidden;
 }
+
+/* Animation for sequential "come in" effect */
+@keyframes tableValueIn {
+    from {
+        opacity: 0;
+        transform: translateY(25px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Add animation to th and td in .service-table */
+table.service-table th,
+table.service-table td {
+    /* animation will be set via nth-child for delay */
+    opacity: 0;
+    animation: tableValueIn 0.48s cubic-bezier(0.25,0.45,0.45,0.96) forwards;
+}
+
+/* Animate TH "come in" one by one */
+table.service-table th:nth-child(1) { animation-delay: 0.06s; }
+table.service-table th:nth-child(2) { animation-delay: 0.16s; }
+table.service-table th:nth-child(3) { animation-delay: 0.26s; }
+table.service-table th:nth-child(4) { animation-delay: 0.36s; }
+table.service-table th:nth-child(5) { animation-delay: 0.46s; }
+/* Add more nth-child rules if more columns exist */
+
+/* Animate TDs "come in" one by one per row */
+table.service-table tr {
+    /* Used for more readable selectors below */
+}
+
+table.service-table td:nth-child(1) { animation-delay: 0.06s;}
+table.service-table td:nth-child(2) { animation-delay: 0.16s;}
+table.service-table td:nth-child(3) { animation-delay: 0.26s;}
+table.service-table td:nth-child(4) { animation-delay: 0.36s;}
+table.service-table td:nth-child(5) { animation-delay: 0.46s;}
+/* Add more nth-child rules if more columns exist */
+
+/* Apply subsequent row delays with JS, or simply set them all at once for initial load using the above for visual effect */
+
 .service-table-container {
     overflow-x: auto;
     margin-top: 22px;

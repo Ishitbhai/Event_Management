@@ -60,6 +60,18 @@ table.event-table {
     width: 100%;
 }
 
+/* Keyframes for row fade-in animation */
+@keyframes fadeInRow {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .event-table th,
 .event-table td {
     padding: 10px 12px;
@@ -83,6 +95,27 @@ table.event-table {
     background: #f2f4fa;
     transition: background 0.1s;
 }
+
+/* Animate table rows to come in one by one */
+.event-table tr {
+    opacity: 0;
+    animation-name: fadeInRow;
+    animation-duration: 0.55s;
+    animation-timing-function: cubic-bezier(0.27, 0.8, 0.43, 1.01);
+    animation-fill-mode: forwards;
+}
+
+.event-table tr:nth-child(1) { animation-delay: 0.09s; }
+.event-table tr:nth-child(2) { animation-delay: 0.18s; }
+.event-table tr:nth-child(3) { animation-delay: 0.27s; }
+.event-table tr:nth-child(4) { animation-delay: 0.36s; }
+.event-table tr:nth-child(5) { animation-delay: 0.45s; }
+.event-table tr:nth-child(6) { animation-delay: 0.54s; }
+.event-table tr:nth-child(7) { animation-delay: 0.63s; }
+.event-table tr:nth-child(8) { animation-delay: 0.72s; }
+.event-table tr:nth-child(9) { animation-delay: 0.81s; }
+.event-table tr:nth-child(10) { animation-delay: 0.90s; }
+/* Add more if you expect more rows */
 
 /* Buttons */
 .edit-btn {
@@ -134,4 +167,94 @@ table.event-table {
 /* Responsive */
 @media (max-width: 900px) {
     table.event-table { min-width: 800px; }
+}
+
+.classic-pagination {
+    margin: 20px 0 0 0;
+    text-align: center;
+    opacity: 0;
+    animation: fadeInUpRowStagger 0.35s 0.33s both;
+}
+.classic-pagination ul {
+    display: inline-block;
+    padding: 0;
+    margin: 0;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    background: #fafafa;
+}
+.classic-pagination li {
+    display: inline;
+}
+.classic-pagination a, .classic-pagination span {
+    color: #222;
+    float: left;
+    padding: 6px 16px;
+    text-decoration: none;
+    background: none;
+    border-right: 1px solid #ddd;
+    font-size: 15px;
+    line-height: 24px;
+    min-width: 30px;
+    box-sizing: border-box;
+    border-radius: 0;
+    transition: background 0.13s;
+    opacity: 0;
+    animation: fadeInCellStagger 0.17s both;
+}
+.classic-pagination li:nth-child(1) a, .classic-pagination li:nth-child(1) span { animation-delay: 0.09s; opacity: 1;}
+.classic-pagination li:nth-child(2) a, .classic-pagination li:nth-child(2) span { animation-delay: 0.15s; opacity: 1;}
+.classic-pagination li:nth-child(3) a, .classic-pagination li:nth-child(3) span { animation-delay: 0.21s; opacity: 1;}
+.classic-pagination li:nth-child(4) a, .classic-pagination li:nth-child(4) span { animation-delay: 0.27s; opacity: 1;}
+.classic-pagination li:nth-child(5) a, .classic-pagination li:nth-child(5) span { animation-delay: 0.33s; opacity: 1;}
+/* Add more for more paginated buttons */
+
+.classic-pagination li:last-child a,
+.classic-pagination li:last-child span {
+    border-right: 0;
+}
+.classic-pagination a:hover {
+    background: #e9e9e9;
+    color: #111;
+}
+.classic-pagination .active, .classic-pagination .active:hover, .classic-pagination .active:focus {
+    background: #f1f1f1;
+    font-weight: 700;
+    color: #184090;
+    cursor: default;
+}
+.classic-pagination .disabled,
+.classic-pagination .disabled:hover {
+    background: none !important;
+    color: #bbb !important;
+    cursor: default;
+    pointer-events: none;
+}
+
+@media (max-width: 600px) {
+    .classic-pagination ul { display: block; }
+    .classic-pagination a, .classic-pagination span {
+        float: none;
+        display: inline-block;
+        padding: 7px 10px;
+        font-size: 15px;
+    }
+}
+/* --- Used/Unused status for table --- */
+.status-used {
+    color: #356b19;
+    font-weight: bold;
+}
+.status-unused {
+    color: #bd5806;
+    font-weight: bold;
+}
+
+@keyframes fadeInUpRowStagger {
+    from { transform: translate3d(0, 12px, 0); opacity: 0; }
+    to   { transform: translate3d(0, 0, 0); opacity: 1; }
+}
+@keyframes fadeInCellStagger {
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }

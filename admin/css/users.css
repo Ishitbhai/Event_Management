@@ -1,3 +1,25 @@
+/* --- Animations for user table, values come in "one by one" --- */
+@keyframes fadeInUpRowStaggerUser {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fadeInCellStaggerUser {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
 body {
     font-size: 16px;
 }
@@ -8,6 +30,9 @@ body {
     margin: 40px auto 0 auto;
     padding: 0 38px 38px 38px;
     font-size: 16px;
+    /* Animate container */
+    opacity: 0;
+    animation: fadeInUpRowStaggerUser 0.60s 0.08s both;
 }
 .event-table-container {
     overflow-x:auto;
@@ -16,19 +41,46 @@ body {
     border-radius:12px;
     box-shadow:0 1px 10px rgba(44,62,80,0.09);
     padding:24px 20px 24px 20px;
+    /* Animate container */
+    opacity: 0;
+    animation: fadeInUpRowStaggerUser 0.45s 0.10s both;
 }
 table.event-table {
     border-collapse: collapse;
     min-width:1500px;
     width:100%;
     font-size: 16px;
+    /* Animate table coming in */
+    opacity: 0;
+    animation: fadeInUpRowStaggerUser 0.45s 0.15s both;
 }
-.event-table th, .event-table td {
+/* Animate rows one by one */
+.event-table tr {
+    opacity: 0;
+    animation: fadeInUpRowStaggerUser 0.37s both;
+}
+.event-table tr:nth-child(1) { animation-delay: 0.18s; }
+.event-table tr:nth-child(2) { animation-delay: 0.23s; }
+.event-table tr:nth-child(3) { animation-delay: 0.28s; }
+.event-table tr:nth-child(4) { animation-delay: 0.33s; }
+.event-table tr:nth-child(5) { animation-delay: 0.38s; }
+.event-table tr:nth-child(n+6) { animation-delay: 0.43s; }
+/* Animate each cell staggered inside their row */
+.event-table th,
+.event-table td {
     padding:10px 13px;
     border-bottom:1px solid #e6e7f0;
     font-size: 16px;
     white-space:nowrap;
+    opacity: 0;
+    animation: fadeInCellStaggerUser 0.28s both;
 }
+.event-table th:nth-child(1), .event-table td:nth-child(1) { animation-delay: 0.14s; }
+.event-table th:nth-child(2), .event-table td:nth-child(2) { animation-delay: 0.19s; }
+.event-table th:nth-child(3), .event-table td:nth-child(3) { animation-delay: 0.24s; }
+.event-table th:nth-child(4), .event-table td:nth-child(4) { animation-delay: 0.29s; }
+.event-table th:nth-child(5), .event-table td:nth-child(5) { animation-delay: 0.34s; }
+.event-table th:nth-child(n+6), .event-table td:nth-child(n+6) { animation-delay: 0.39s; }
 .event-table th{
     background:#f4f6fb;
     color:#322053;
@@ -47,12 +99,16 @@ table.event-table {
     font-weight:700;
     cursor:pointer;
     font-size: 16px;
+    opacity: 0;
+    animation: fadeInUpRowStaggerUser 0.39s 0.32s both;
 }
 .table-edit-select {
     padding:7px 13px;
     border-radius:6px;
     border:1px solid #ccc;
     font-size: 16px;
+    opacity: 0;
+    animation: fadeInUpRowStaggerUser 0.36s 0.36s both;
 }
 .edit-btn{
     background:#327ac5;
@@ -62,6 +118,8 @@ table.event-table {
     border-radius:5px;
     cursor:pointer;
     font-size: 16px;
+    opacity: 0;
+    animation: fadeInUpRowStaggerUser 0.33s 0.40s both;
 }
 .delete-btn{
     background:#e94242;
@@ -71,4 +129,6 @@ table.event-table {
     border-radius:5px;
     cursor:pointer;
     font-size: 16px;
+    opacity: 0;
+    animation: fadeInUpRowStaggerUser 0.33s 0.44s both;
 }

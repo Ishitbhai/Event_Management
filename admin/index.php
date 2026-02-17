@@ -21,8 +21,7 @@ $dashboard_counts = [
     'services' => 0,
     'reviews' => 0,
     'categories' => 0,
-    'coupons' => 0,
-    'settings' => 0 // Added for settings
+    'coupons' => 0
 ];
 
 // Total Events
@@ -50,16 +49,8 @@ $res = $conn->query("SELECT COUNT(*) as cnt FROM category");
 if ($row = $res->fetch_assoc()) $dashboard_counts['categories'] = (int)$row['cnt'];
 
 // Total Coupons
-// $res = $conn->query("SELECT COUNT(*) as cnt FROM coupons");
+$res = $conn->query("SELECT COUNT(*) as cnt FROM coupons");
 if ($row = $res->fetch_assoc()) $dashboard_counts['coupons'] = (int)$row['cnt'];
-
-// Total Settings (if there's a settings table, otherwise just show as 1 for presence)
-// $res = $conn->query("SELECT COUNT(*) as cnt FROM settings");
-if ($res && ($row = $res->fetch_assoc())) {
-    $dashboard_counts['settings'] = (int)$row['cnt'];
-} else {
-    $dashboard_counts['settings'] = 1; // Fallback if table does not exist or for non-count settings
-}
 ?>
 
 
@@ -109,11 +100,6 @@ if ($res && ($row = $res->fetch_assoc())) {
             <div class="card-title">All Coupons</div>
             <div class="card-number" data-num="<?php echo $dashboard_counts['coupons']; ?>">0</div>
             <a href="coupons.php" class="card-link">Manage Coupons →</a>
-        </div>
-        <div class="dashboard-card settings shadow-sm">
-            <div class="card-title">Settings</div>
-            <div class="card-number" data-num="<?php echo $dashboard_counts['settings']; ?>">0</div>
-            <a href="settings.php" class="card-link">Manage Settings →</a>
         </div>
     </div>
 </div>
