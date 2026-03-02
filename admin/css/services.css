@@ -164,6 +164,8 @@ table.service-table {
     float:right;
 }
 .add-service-btn:hover {
+    text-decoration: none;
+    color:#fff;
     background: linear-gradient(90deg, #594285, #2d397a 100%);
 }
 .internal-services-h1 {

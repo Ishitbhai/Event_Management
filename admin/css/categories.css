@@ -128,7 +128,6 @@
   margin-top: 28px;
   margin-bottom: 10px;
   gap: 6px;
-  font-family: inherit;
   opacity: 0;
   animation: fadeInUpRowStagger 0.5s 0.18s both;
 }
@@ -226,14 +225,28 @@ body {
 }
 .categories-head {
   font-size: 2rem;
-  font-weight: 700;
+  /* font-weight: 700; */
   color: #312053;
   margin: 0;
   opacity: 0;
   animation: fadeInUpRowStagger 0.55s 0.21s both;
 }
 .add-cat-btn {
-  background: linear-gradient(90deg, #4c53e2 30%, #5239d5 92%);
+  background: linear-gradient(90deg, #2d397a, #594285 90%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 10px 27px;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 9px rgb(82 58 213 / 8%);
+  opacity: 0;
+  animation: fadeInUpRowStagger 0.45s 0.29s both;
+}
+.add-cat-btn:hover {
+  background: linear-gradient(90deg, #594285, #2d397a 100%);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -302,8 +315,17 @@ table.category-table {
   color: #fff;
   margin-right: 8px;
 }
+.cat-edit-btn:hover {
+  background: linear-gradient(90deg, #225085, #327ac5 60%);
+  color: #fff;
+  margin-right: 8px;
+}
 .cat-del-btn {
   background: linear-gradient(90deg, #e94242 20%, #b02626 80%);
+  color: #fff;
+}
+.cat-del-btn:hover {
+  background: linear-gradient(90deg, #a51818, #e94242 60%);
   color: #fff;
 }
 .pop-overlay {
@@ -408,3 +430,213 @@ table.category-table {
 }
 
 /* End animation for staggered appearance */
+
+
+/* Responsive Styles Added (in addition to existing styles) */
+@media (max-width: 1050px) {
+  .categories-container {
+    padding: 20px 10px 28px 10px;
+    min-width: 0;
+  }
+}
+@media (max-width: 900px) {
+  .categories-header-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .categories-head {
+    font-size: 1.25rem;
+    margin-bottom: 6px;
+  }
+  .add-cat-btn {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 0;
+  }
+  table.category-table, .category-table th, .category-table td {
+    min-width: 0;
+    max-width: none;
+    white-space: normal;
+    font-size: 15px;
+  }
+}
+@media (max-width: 720px) {
+    .categories-container {
+        max-width: 100vw;
+        box-shadow: none;
+        border-radius: 5px;
+        margin: 11px 0 0 0;
+        padding: 5px 0 16px 0;
+    }
+    .categories-header-row {
+        flex-direction: column;
+        gap: 7px;
+        margin-bottom: 9px;
+        align-items: stretch;
+    }
+    .categories-head {
+      font-size: 1.12rem;
+      margin: 0;
+      text-align: left;
+    }
+    .add-cat-btn {
+      font-size: 15px;
+      padding: 8px 0;
+      width: 100%;
+      min-width: unset;
+    }
+    .classic-pagination ul {
+      font-size: 13px;
+      padding: 0;
+      width: 99vw;
+      min-width: unset;
+    }
+    .pop-modal {
+      max-width: 99vw;
+      width: 98vw;
+      padding: 18px 4vw 16px 4vw;
+      min-width: 0;
+    }
+}
+
+/* Mobile table: stack fields vertically, no horizontal scroll */
+@media (max-width: 600px) {
+  .categories-container {
+    padding: 0;
+  }
+  .category-table, .category-table thead, .category-table tbody, .category-table th, .category-table td, .category-table tr {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+    border-radius: 0 !important;
+  }
+  .category-table {
+    border: none;
+    margin-top: 3px;
+    background: transparent;
+    box-shadow: none;
+  }
+  .category-table thead {
+    display: none !important;
+  }
+  .category-table tr {
+    background: #f9f8ff;
+    margin-bottom: 13px;
+    border-radius: 9px;
+    box-shadow: 0 0.5px 5px #e9e8fa;
+    border: 1.5px solid #ededfb;
+    display: block;
+    padding: 9px 14px 9px 9px;
+    opacity: 1 !important; /* Animation may be strange, so force visible */
+    animation: none !important;
+  }
+  .category-table td {
+    padding: 7px 12px 7px 7px;
+    border-bottom: none;
+    border: none;
+    max-width: 100vw !important;
+    white-space: normal !important;
+    overflow-wrap: break-word;
+    opacity: 1 !important;
+    animation: none !important;
+    background: none;
+    position: relative;
+    font-size: 14.25px;
+    width: auto;
+  }
+  .category-table td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    float: left;
+    width: 54%;
+    color: #554995;
+    display: inline-block;
+    margin-bottom: 2px;
+  }
+  .category-table td:last-child {
+    padding-bottom: 8px;
+  }
+  .cat-edit-btn, .cat-del-btn {
+    display: inline-block;
+    margin-top: 7px;
+    font-size: 14px !important;
+    padding: 7px 10px !important;
+    width: 48%;
+    min-width: 0;
+  }
+  .cat-edit-btn { margin-right: 0 !important; }
+  .pop-modal {
+    max-width: 100vw !important;
+    border-radius: 7px !important;
+    padding: 17px 3vw 11px 3vw !important;
+  }
+  .modal-close {
+    top: 7px !important;
+    right: 8px !important;
+    font-size: 1.4rem !important;
+  }
+}
+
+/* Form fields adapt for mobile */
+@media (max-width: 600px){
+  .form-group label {
+    font-size: 0.98em !important;
+  }
+  .form-group input {
+    font-size: 14px !important;
+    padding: 7px 8px !important;
+  }
+}
+
+/* Responsive: container for horizontal scrolling at xs/sm screens */
+@media (max-width: 600px) {
+  .categories-container {
+    overflow-x: visible !important;
+  }
+}
+
+/* Additional improvements for usability */
+@media (max-width: 450px) {
+  .pop-modal {
+    padding: 10px 2vw 10px 2vw !important;
+  }
+  .form-group input {
+    font-size: 13px !important;
+    padding: 7px 3px !important;
+  }
+}
+
+/* Remove the min-width:900px for table on all viewports - rely on overflow-x for desktop, stacking for mobile */
+table.category-table {
+    min-width: 0 !important;
+}
+
+/* End custom responsive styles */
+
+/* --- Classic Pagination Style --- */
+
+/* Animation for staggered appearance (one by one, fade-in-up) */
+@keyframes fadeInUpRowStagger {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation for cells, slight scale and fade for more effect */
+@keyframes fadeInCellStagger {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

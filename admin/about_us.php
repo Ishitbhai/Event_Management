@@ -201,12 +201,7 @@ if (isset($_GET['success']) && $_GET['success'] == 1) {
 }
 
 // Ensure $images_arr is synced with DB/state
-$stmt = $conn->prepare("SELECT about_us_images FROM about_us WHERE about_us_id = 1 LIMIT 1");
-$stmt->execute();
-$stmt->bind_result($about_us_images);
-$stmt->fetch();
-$stmt->close();
-$images_arr = get_images_array($about_us_images);
+// $stmt = $conn->prepare("SELECT about_us_images FR 
 
 ?>
 <!DOCTYPE html>

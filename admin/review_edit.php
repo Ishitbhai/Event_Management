@@ -124,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // If not posted or errors, repopulate with old or current db values:
-$display = [];
+$display = [];  
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $display = $_POST;
 } else {

@@ -157,9 +157,10 @@ function esc($x) { return htmlspecialchars($x ?? '', ENT_QUOTES, 'UTF-8'); }
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Manage Categories</title>
+<title>Manage Categories</title>    
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="css/categories.css">
+
 </head>
 <body>
 <div class="categories-container">
@@ -167,7 +168,7 @@ function esc($x) { return htmlspecialchars($x ?? '', ENT_QUOTES, 'UTF-8'); }
         <h2 class="categories-head">Manage Categories</h2>
         <button class="add-cat-btn" id="openModalBtn">+ Add Category</button>
     </div>
-    <div style="overflow-x:auto;">
+    <div class="category-table-wrapper" style="overflow-x: auto;">
         <table class="category-table">
             <thead>
                 <tr>
@@ -184,12 +185,12 @@ function esc($x) { return htmlspecialchars($x ?? '', ENT_QUOTES, 'UTF-8'); }
                 $sr = 1 + $perPage * ($page-1);
                 foreach($categories as $cat): ?>
                 <tr>
-                    <td><?= $sr++ ?></td>
-                    <td><?= esc($cat['category_id']) ?></td>
-                    <td><?= esc($cat['category_name']) ?></td>
-                    <td><?= esc($cat['category_seats']) ?></td>
-                    <td>₹<?= esc($cat['category_price_per_hour']) ?></td>
-                    <td>
+                    <td data-label="Sr No."><?= $sr++ ?></td>
+                    <td data-label="ID"><?= esc($cat['category_id']) ?></td>
+                    <td data-label="Category Name"><?= esc($cat['category_name']) ?></td>
+                    <td data-label="Seats Capacity"><?= esc($cat['category_seats']) ?></td>
+                    <td data-label="Price per Hour">₹<?= esc($cat['category_price_per_hour']) ?></td>
+                    <td data-label="Actions">
                         <button class="cat-edit-btn editBtn"
                             data-id="<?= esc($cat['category_id']) ?>"
                             data-name="<?= esc($cat['category_name']) ?>"
@@ -202,7 +203,7 @@ function esc($x) { return htmlspecialchars($x ?? '', ENT_QUOTES, 'UTF-8'); }
                 </tr>
             <?php endforeach; ?>
             <?php if(count($categories) == 0): ?>
-            <tr><td colspan="6" style="text-align:center;color:#8f84c3;font-style:italic;">No categories found</td></tr>
+            <tr><td colspan="6" style="text-align:center;color:#8f84c3;font-style:italic;" data-label="No data">No categories found</td></tr>
             <?php endif; ?>
             </tbody>
         </table>

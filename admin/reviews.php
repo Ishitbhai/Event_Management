@@ -9,7 +9,8 @@ if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== 1) {
     exit();
 }
 
-function getEventTitleWithId($conn, $event_id) {
+// Get only the event title (no id)
+function getEventTitle($conn, $event_id) {
     $stmt = $conn->prepare("SELECT event_title FROM events WHERE event_id = ?");
     if (!$stmt) return 'Unknown';
     $stmt->bind_param("i", $event_id);
@@ -17,23 +18,22 @@ function getEventTitleWithId($conn, $event_id) {
     $stmt->bind_result($event_title);
     if ($stmt->fetch()) {
         $stmt->close();
-        // Show as [id] title
-        return "<span style='color:#9982c5;'>[{$event_id}]</span> " . htmlspecialchars($event_title);
+        return htmlspecialchars($event_title);
     }
     $stmt->close();
     return 'Unknown';
 }
 
-function getUserNameWithId($conn, $user_id) {
-    $stmt = $conn->prepare("SELECT user_name FROM users WHERE user_id = ?");
+// Get only the user email (no id)
+function getUserEmail($conn, $user_id) {
+    $stmt = $conn->prepare("SELECT user_email FROM users WHERE user_id = ?");
     if (!$stmt) return 'Unknown';
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
-    $stmt->bind_result($user_name);
+    $stmt->bind_result($user_email);
     if ($stmt->fetch()) {
         $stmt->close();
-        // Show as [id] name
-        return "<span style='color:#9982c5;'>[{$user_id}]</span> " . htmlspecialchars($user_name);
+        return htmlspecialchars($user_email);
     }
     $stmt->close();
     return 'Unknown';
@@ -112,8 +112,8 @@ if (isset($_GET['msg'])) {
             $sr_no = $serial_start;
             foreach ($paged_reviews as $row) {
                 $review_id = (int)$row['review_id'];
-                $user_html = getUserNameWithId($conn, $row['user_id']); // Shows [id] Name
-                $event_html = getEventTitleWithId($conn, $row['event_id']); // Shows [id] Title
+                $user_html = getUserEmail($conn, $row['user_id']); // Shows user email only
+                $event_html = getEventTitle($conn, $row['event_id']); // Shows event title only
                 $rating = intval($row['review_rating']);
                 $review = htmlspecialchars($row['review_review']);
                 $reviewed_at = date("Y-m-d H:i", strtotime($row['reviewed_at']));

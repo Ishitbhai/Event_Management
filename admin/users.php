@@ -47,8 +47,9 @@ $serial_start = $start + 1;
 <head>
 <meta charset="UTF-8">
 <title>Manage Users</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="css/index.css">
-<link rel="stylesheet" href="css/users.css">
+    <link rel="stylesheet" href="css/users.css">
 
 <script>
 document.addEventListener('DOMContentLoaded', function(){
@@ -88,92 +89,91 @@ document.addEventListener('DOMContentLoaded', function(){
 
 });
 </script>
-
 </head>
 <body>
 
 <div class="dashboard-main">
 
-<div style="display:flex;justify-content:space-between;align-items:center;">
-    <h2 style="font-size:1.45em; margin-bottom: 0;">Manage Users</h2>
-    <button class="create-event-btn">Create User</button>
-</div>
+    <div class="responsive-manage-header">
+        <h2>Manage Users</h2>
+        <button class="create-event-btn">Create User</button>
+    </div>
 
-<div class="event-table-container">
+    <div class="event-table-container">
 
-<?php if($total_users==0): ?>
-    <p style="font-size: 15px;">No users found.</p>
-<?php else: ?>
+    <?php if($total_users==0): ?>
+        <p class="no-user-msg">No users found.</p>
+    <?php else: ?>
 
-<table class="event-table">
-<thead>
-<tr>
-<th>Sr No</th>
-<th>User ID</th>
-<th>Name</th>
-<th>Email</th>
-<th>Phone</th>
-<th>Address</th>
-<th>Status</th>
-<th>Type</th>
-<th>Registered At</th>
-<th>Last Login</th>
-<th>Action</th>
-</tr>
-</thead>
+    <table class="event-table">
+    <thead>
+    <tr>
+    <th>Sr No</th>
+    <th>User ID</th>
+    <th>Name</th>
+    <th>Email</th>
+    <th>Phone</th>
+    <th>Address</th>
+    <th>Status</th>
+    <th>Type</th>
+    <th>Registered At</th>
+    <th>Last Login</th>
+    <th>Action</th>
+    </tr>
+    </thead>
 
-<tbody>
-<?php 
-$s=$serial_start;
-foreach($paged_users as $u): ?>
-<tr data-uid="<?= (int)$u['user_id'] ?>">
-<td><?= $s++ ?></td>
-<td><?= esc($u['user_id']) ?></td>
-<td><?= esc($u['user_name']) ?></td>
-<td><?= esc($u['user_email']) ?></td>
-<td><?= esc($u['user_phone_number']) ?></td>
-<td><?= esc($u['user_address']) ?></td>
+    <tbody>
+    <?php 
+    $s=$serial_start;
+    foreach($paged_users as $u): ?>
+    <tr data-uid="<?= (int)$u['user_id'] ?>">
+    <td><?= $s++ ?></td>
+    <td><?= esc($u['user_id']) ?></td>
+    <td><?= esc($u['user_name']) ?></td>
+    <td><?= esc($u['user_email']) ?></td>
+    <td><?= esc($u['user_phone_number']) ?></td>
+    <td><?= esc($u['user_address']) ?></td>
 
-<td>
-    <form method="post" style="display:inline;">
-        <input type="hidden" name="dropdown_update" value="1">
-        <input type="hidden" name="user_id" value="<?= (int)$u['user_id'] ?>">
-        <input type="hidden" name="col" value="user_status">
-        <select class="table-edit-select" name="val">
-            <option value="active" <?= $u['user_status']=='active'?'selected':'' ?>>Active</option>
-            <option value="inactive" <?= $u['user_status']=='inactive'?'selected':'' ?>>Inactive</option>
-        </select>
-    </form>
-</td>
+    <td>
+        <form method="post" style="display:inline;">
+            <input type="hidden" name="dropdown_update" value="1">
+            <input type="hidden" name="user_id" value="<?= (int)$u['user_id'] ?>">
+            <input type="hidden" name="col" value="user_status">
+            <select class="table-edit-select" name="val">
+                <option value="active" <?= $u['user_status']=='active'?'selected':'' ?>>Active</option>
+                <option value="inactive" <?= $u['user_status']=='inactive'?'selected':'' ?>>Inactive</option>
+            </select>
+        </form>
+    </td>
 
-<td>
-    <form method="post" style="display:inline;">
-        <input type="hidden" name="dropdown_update" value="1">
-        <input type="hidden" name="user_id" value="<?= (int)$u['user_id'] ?>">
-        <input type="hidden" name="col" value="user_type">
-        <select class="table-edit-select" name="val">
-            <option value="user" <?= $u['user_type']=='user'?'selected':'' ?>>User</option>
-            <option value="owner" <?= $u['user_type']=='owner'?'selected':'' ?>>Owner</option>
-            <option value="admin" <?= $u['user_type']=='admin'?'selected':'' ?>>Admin</option>
-        </select>
-    </form>
-</td>
+    <td>
+        <form method="post" style="display:inline;">
+            <input type="hidden" name="dropdown_update" value="1">
+            <input type="hidden" name="user_id" value="<?= (int)$u['user_id'] ?>">
+            <input type="hidden" name="col" value="user_type">
+            <select class="table-edit-select" name="val">
+                <option value="user" <?= $u['user_type']=='user'?'selected':'' ?>>User</option>
+                <option value="owner" <?= $u['user_type']=='owner'?'selected':'' ?>>Owner</option>
+                <option value="admin" <?= $u['user_type']=='admin'?'selected':'' ?>>Admin</option>
+            </select>
+        </form>
+    </td>
 
-<td><?= esc($u['registered_at']) ?></td>
-<td><?= esc($u['last_login']) ?></td>
+    <td><?= esc($u['registered_at']) ?></td>
+    <td><?= esc($u['last_login']) ?></td>
 
-<td>
-<button class="edit-btn">Edit</button>
-<button class="delete-btn">Delete</button>
-</td>
+    <td>
+    <button class="edit-btn">Edit</button>
+    <button class="delete-btn">Delete</button>
+    </td>
 
-</tr>
-<?php endforeach; ?>
-</tbody>
-</table>
+    </tr>
+    <?php endforeach; ?>
+    </tbody>
+    </table>
 
-<?php endif; ?>
-</div>
+    <?php endif; ?>
+    </div>
 </div>
 
 <?php

@@ -10,6 +10,19 @@ if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== 1) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel</title>
+    <!-- Load all Bootstrap CSS files from ../bootstrap/css/ -->
+    <?php
+    $bootstrap_css_dir = realpath(__DIR__ . '/../bootstrap/css/');
+    if ($bootstrap_css_dir && is_dir($bootstrap_css_dir)) {
+        $css_files = glob($bootstrap_css_dir . '/*.css');
+        foreach ($css_files as $css_file) {
+            $relative_path = str_replace(realpath($_SERVER['DOCUMENT_ROOT']), '', $css_file);
+            // Adapt path to relative-for-inclusion: output as "../bootstrap/css/..."
+            $href = "../bootstrap/css/" . basename($css_file);
+            echo '<link rel="stylesheet" href="' . htmlspecialchars($href) . '">' . "\n";
+        }
+    }
+    ?>
     <link rel="stylesheet" href="css/sidebar.css">
     <script src="js/sidebar.js"></script>
 </head>

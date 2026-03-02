@@ -194,7 +194,7 @@ section { scroll-margin-top: 76px; }
     animation: fadeInDown 1s;
 }
 .hero-glass h1 {
-    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    /* font-family: 'Inter', 'Segoe UI', Arial, sans-serif; */
     font-weight: 800;
     font-size: 2.3rem;
     letter-spacing: .021em;

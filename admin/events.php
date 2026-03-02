@@ -8,6 +8,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 require_once('../database/db_connect.php');
 
+// Add event_price to the fields list
 $fields = [
     'event_id',
     'owner_id',
@@ -23,6 +24,7 @@ $fields = [
     'event_approval_status',
     'event_status',
     'event_paymeny_status',
+    'event_price', // <-- new column
     'event_banner_image',
     'event_gallery_images',
     'event_is_featured',
@@ -247,6 +249,7 @@ $serial_start = $start_index + 1;
                             'event_approval_status' => 'Approval Status',
                             'event_status' => 'Status',
                             'event_paymeny_status' => 'Payment Status',
+                            'event_price' => 'Event Price', // Add heading for event_price
                             'event_banner_image' => 'Banner',
                             'event_gallery_images' => 'Gallery',
                             'event_is_featured' => 'Featured',
@@ -351,6 +354,15 @@ $serial_start = $start_index + 1;
                                             echo '<span class="internal-created-updated">'. $dt .'</span>';
                                         } else {
                                             echo '-';
+                                        }
+                                    }
+                                    // Custom cell for event_price: display as money if numeric
+                                    else if ($col === 'event_price') {
+                                        $price = $ev[$col];
+                                        if (is_numeric($price)) {
+                                            echo '<span class="internal-event-price">&#8377; '.esc(number_format($price, 2)).'</span>';
+                                        } else {
+                                            echo esc($price);
                                         }
                                     }
                                     else {
