@@ -48,8 +48,496 @@ $serial_start = $start + 1;
 <meta charset="UTF-8">
 <title>Manage Users</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="css/index.css">
-    <link rel="stylesheet" href="css/users.css">
+<style>
+    body {
+    margin: 0;
+    background: #f4f6fb;
+}
+.dashboard-main {
+    padding: 40px;
+}
+.dashboard-header {
+    margin-bottom: 30px;
+}
+.dashboard-header h2 {
+    margin: 0;
+    color: #322053;
+}
+.dashboard-header p {
+    color: #6c757d;
+    margin-top: 8px;
+}
+.dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+}
+@media (max-width: 980px) {
+    .dashboard-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 700px) {
+    .dashboard-cards {
+        grid-template-columns: 1fr;
+    }
+}
+.dashboard-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    transition: box-shadow 0.3s ease, transform 0.5s cubic-bezier(.68,-0.55,.27,1.55);
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(40px) scale(0.93);
+    animation: fadeInUp 0.8s cubic-bezier(.68,-0.55,.27,1.55) forwards;
+}
+.dashboard-card:nth-child(1) { animation-delay: 0.10s; }
+.dashboard-card:nth-child(2) { animation-delay: 0.20s; }
+.dashboard-card:nth-child(3) { animation-delay: 0.30s; }
+.dashboard-card:nth-child(4) { animation-delay: 0.40s; }
+.dashboard-card:nth-child(5) { animation-delay: 0.50s; }
+.dashboard-card:nth-child(6) { animation-delay: 0.60s; }
+.dashboard-card:nth-child(7) { animation-delay: 0.70s; }
+.dashboard-card:nth-child(8) { animation-delay: 0.80s; }
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(40px) scale(0.93);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+.dashboard-card:hover {
+    transform: translateY(-6px) scale(1.04);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+    z-index: 1;
+}
+.card-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+.card-number {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    transition: color 0.5s;
+}
+.card-link {
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: black;
+}
+.events { border-left: 6px solid #5236d6; }
+.bookings { border-left: 6px solid #197655; }
+.users { border-left: 6px solid #c82f2f; }
+.services { border-left: 6px solid #197655; }
+.reviews { border-left: 6px solid #c82f2f; }
+.categories { border-left: 6px solid #5236d6; }
+.coupons { border-left: 6px solid #c82f2f; }
+.settings { border-left: 6px solid #5236d6; }
+
+.events .card-title { color: #5236d6; }
+.bookings .card-title { color: #197655; }
+.users .card-title { color: #c82f2f; }
+.services .card-title { color: #197655; }
+.reviews .card-title { color: #c82f2f; }
+.categories .card-title { color: #5236d6; }
+.coupons .card-title { color: #c82f2f; }
+.settings .card-title { color: #5236d6; }
+/* --- Animations for user table, values come in "one by one" --- */
+@keyframes fadeInUpRowStaggerUser {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fadeInCellStaggerUser {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+body {
+    font-size: 16px;
+}
+.dashboard-main {
+    /* Ref: bookings.php plus more width, NOT full width (room for sidebar) */
+    max-width: 1600px;
+    min-width: 1020px;
+    margin: 40px auto 0 auto;
+    padding: 0 38px 38px 38px;
+    font-size: 16px;
+    /* Animate container */
+    opacity: 0;
+    animation: fadeInUpRowStaggerUser 0.60s 0.08s both;
+}
+.event-table-container {
+    overflow-x:auto;
+    margin-top:10px;
+    background:#fff;
+    border-radius:12px;
+    box-shadow:0 1px 10px rgba(44,62,80,0.09);
+    padding:24px 20px 24px 20px;
+    /* Animate container */
+    opacity: 0;
+    animation: fadeInUpRowStaggerUser 0.45s 0.10s both;
+}
+table.event-table {
+    border-collapse: collapse;
+    min-width:1500px;
+    width:100%;
+    font-size: 16px;
+    /* Animate table coming in */
+    opacity: 0;
+    animation: fadeInUpRowStaggerUser 0.45s 0.15s both;
+}
+/* Animate rows one by one */
+.event-table tr {
+    opacity: 0;
+    animation: fadeInUpRowStaggerUser 0.37s both;
+}
+.event-table tr:nth-child(1) { animation-delay: 0.18s; }
+.event-table tr:nth-child(2) { animation-delay: 0.23s; }
+.event-table tr:nth-child(3) { animation-delay: 0.28s; }
+.event-table tr:nth-child(4) { animation-delay: 0.33s; }
+.event-table tr:nth-child(5) { animation-delay: 0.38s; }
+.event-table tr:nth-child(n+6) { animation-delay: 0.43s; }
+/* Animate each cell staggered inside their row */
+.event-table th,
+.event-table td {
+    padding:10px 13px;
+    border-bottom:1px solid #e6e7f0;
+    font-size: 16px;
+    white-space:nowrap;
+    opacity: 0;
+    animation: fadeInCellStaggerUser 0.28s both;
+}
+.event-table th:nth-child(1), .event-table td:nth-child(1) { animation-delay: 0.14s; }
+.event-table th:nth-child(2), .event-table td:nth-child(2) { animation-delay: 0.19s; }
+.event-table th:nth-child(3), .event-table td:nth-child(3) { animation-delay: 0.24s; }
+.event-table th:nth-child(4), .event-table td:nth-child(4) { animation-delay: 0.29s; }
+.event-table th:nth-child(5), .event-table td:nth-child(5) { animation-delay: 0.34s; }
+.event-table th:nth-child(n+6), .event-table td:nth-child(n+6) { animation-delay: 0.39s; }
+.event-table th{
+    background:#f4f6fb;
+    color:#322053;
+    font-weight:600;
+    font-size: 16px;
+}
+.event-table tr:nth-child(even){
+    background:#f9fafe;
+}
+.create-event-btn{
+    background:linear-gradient(90deg,#2d397a,#594285);
+    color:#fff;
+    padding:7px 20px;
+    border:none;
+    border-radius:7px;
+    font-weight:700;
+    cursor:pointer;
+    font-size: 16px;
+    opacity: 0;
+    animation: fadeInUpRowStaggerUser 0.39s 0.32s both;
+}
+.table-edit-select {
+    padding:7px 13px;
+    border-radius:6px;
+    border:1px solid #ccc;
+    font-size: 16px;
+    opacity: 0;
+    animation: fadeInUpRowStaggerUser 0.36s 0.36s both;
+}
+.edit-btn{
+    background:#327ac5;
+    color:#fff;
+    border:none;
+    padding:7px 14px;
+    border-radius:5px;
+    cursor:pointer;
+    font-size: 16px;
+    opacity: 0;
+    animation: fadeInUpRowStaggerUser 0.33s 0.40s both;
+}
+.delete-btn{
+    background:#e94242;
+    color:#fff;
+    border:none;
+    padding:7px 14px;
+    border-radius:5px;
+    cursor:pointer;
+    font-size: 16px;
+    opacity: 0;
+    animation: fadeInUpRowStaggerUser 0.33s 0.44s both;
+}
+
+    /* Animations for user table, values come in "one by one" */
+    @keyframes fadeInUpRowStaggerUser {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    @keyframes fadeInCellStaggerUser {
+      from {
+        opacity: 0;
+        transform: scale(0.97) translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    html, body {
+        font-size: 16px;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        width: 100%;
+    }
+
+    body {
+        min-height: 100vh;
+        background: #f4f6fb;
+    }
+
+    .dashboard-main {
+        max-width: 1600px;
+        width: 100%;
+        margin: 40px auto 0 auto;
+        padding: 0 24px 24px 24px;
+        font-size: 16px;
+        box-sizing: border-box;
+        background: transparent; /* Don't force bg, only for the table-container */
+        opacity: 0;
+        animation: fadeInUpRowStaggerUser 0.60s 0.08s both;
+    }
+
+    .event-table-container {
+        overflow-x: auto;
+        margin-top: 16px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 1px 10px rgba(44,62,80,0.09);
+        padding: 24px 12px 24px 12px;
+        opacity: 0;
+        animation: fadeInUpRowStaggerUser 0.45s 0.10s both;
+        transition: box-shadow 0.2s;
+    }
+
+    table.event-table {
+        border-collapse: collapse;
+        min-width: 1200px;
+        width: 100%;
+        font-size: 16px;
+        background: #fff;
+        opacity: 0;
+        animation: fadeInUpRowStaggerUser 0.45s 0.15s both;
+        transition: font-size 0.25s;
+    }
+    /* Responsive: Table min-width is 900px on small screens, but can scroll. */
+    @media (max-width: 1020px) {
+        .dashboard-main {
+            min-width: 0;
+            padding: 0 4vw 24px 4vw;
+        }
+        .event-table-container {
+            padding: 12px 3vw 16px 3vw;
+            overflow-x: auto;
+        }
+        table.event-table {
+            min-width: 900px;
+            font-size: 15px;
+        }
+    }
+    @media (max-width: 700px) {
+        .dashboard-main {
+            min-width: 0;
+            padding: 0 1vw 8vw 1vw;
+        }
+        .event-table-container {
+            padding: 4px 0 10px 0;
+        }
+        table.event-table {
+            min-width:650px;
+            font-size: 14px;
+        }
+    }
+    /* Hide some columns on small screens with horizontal scrolling */
+    @media (max-width: 600px) {
+        .event-table th:nth-child(2), .event-table td:nth-child(2),
+        .event-table th:nth-child(5), .event-table td:nth-child(5),
+        .event-table th:nth-child(6), .event-table td:nth-child(6),
+        .event-table th:nth-child(9), .event-table td:nth-child(9),
+        .event-table th:nth-child(10), .event-table td:nth-child(10)
+        {
+            display: none;
+        }
+        .dashboard-main {
+            padding: 0 0vw 14vw 0vw;
+        }
+    }
+
+    /* Animations */
+    .event-table tr {
+        opacity: 0;
+        animation: fadeInUpRowStaggerUser 0.37s both;
+    }
+    .event-table tr:nth-child(1) { animation-delay: 0.18s; }
+    .event-table tr:nth-child(2) { animation-delay: 0.23s; }
+    .event-table tr:nth-child(3) { animation-delay: 0.28s; }
+    .event-table tr:nth-child(4) { animation-delay: 0.33s; }
+    .event-table tr:nth-child(5) { animation-delay: 0.38s; }
+    .event-table tr:nth-child(n+6) { animation-delay: 0.43s; }
+    .event-table th,
+    .event-table td {
+        padding: 8px 6px;
+        border-bottom: 1px solid #e6e7f0;
+        font-size: inherit;
+        white-space: nowrap;
+        overflow: auto;
+        opacity: 0;
+        animation: fadeInCellStaggerUser 0.28s both;
+    }
+    .event-table th:nth-child(1), .event-table td:nth-child(1) { animation-delay: 0.14s; }
+    .event-table th:nth-child(2), .event-table td:nth-child(2) { animation-delay: 0.19s; }
+    .event-table th:nth-child(3), .event-table td:nth-child(3) { animation-delay: 0.24s; }
+    .event-table th:nth-child(4), .event-table td:nth-child(4) { animation-delay: 0.29s; }
+    .event-table th:nth-child(5), .event-table td:nth-child(5) { animation-delay: 0.34s; }
+    .event-table th:nth-child(n+6), .event-table td:nth-child(n+6) { animation-delay: 0.39s; }
+    .event-table th{
+        background: #f4f6fb;
+        color: #322053;
+        font-weight: 600;
+        font-size: inherit;
+        text-align: left;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+    .event-table tr:nth-child(even){
+        background: #f9fafe;
+    }
+
+    .create-event-btn{
+        background: linear-gradient(90deg,#2d397a,#594285);
+        color: #fff;
+        padding: 7px 20px;
+        border: none;
+        border-radius: 7px;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 16px;
+        opacity: 0;
+        animation: fadeInUpRowStaggerUser 0.39s 0.32s both;
+        transition: background 0.15s;
+    }
+    .create-event-btn:hover, .edit-btn:hover {
+        filter: brightness(1.13);
+    }
+    .edit-btn, .delete-btn {
+        font-size: 16px;
+        padding: 7px 14px;
+        border-radius:5px;
+        border:none;
+        cursor:pointer;
+        opacity: 0;
+        animation: fadeInUpRowStaggerUser 0.33s 0.40s both;
+        transition: filter 0.13s;
+    }
+    .edit-btn {
+        background: #327ac5;
+        color: #fff;
+        margin-right: 4px;
+    }
+    .delete-btn {
+        background: #e94242;
+        color: #fff;
+        margin-right: 0;
+        animation-delay: 0.44s;
+    }
+    .table-edit-select {
+        padding: 7px 13px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        font-size: inherit;
+        min-width: 80px;
+        opacity: 0;
+        animation: fadeInUpRowStaggerUser 0.36s 0.36s both;
+    }
+
+    /* Responsive Header/Button row */
+    .responsive-manage-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 0;
+    }
+    .responsive-manage-header h2 {
+        font-size: 1.25em;
+        margin: 0 0 8px 0;
+    }
+    @media (max-width: 700px) {
+        .responsive-manage-header h2 {
+            font-size: 1.1em;
+        }
+        .create-event-btn {
+            font-size: 14px;
+            padding: 7px 10px;
+        }
+    }
+    @media (max-width: 480px) {
+        .responsive-manage-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+    /* Responsive Message for no users */
+    .no-user-msg {
+        font-size: 15px;
+        padding: 6vw 2vw 6vw 2vw;
+        text-align: center;
+        color: #722a2a;
+    }
+
+    /* Scrollbar styling for table containers */
+    .event-table-container {
+        scrollbar-width: thin;
+        scrollbar-color: #b3b3e7 #f4f6fb;
+    }
+    .event-table-container::-webkit-scrollbar {
+        height: 8px;
+        background: #f4f6fb;
+    }
+    .event-table-container::-webkit-scrollbar-thumb {
+        background: #babdea;
+        border-radius: 4px;
+    }
+
+</style>
+<!-- <link rel="stylesheet" href="css/index.css"> -->
+    <!-- <link rel="stylesheet" href="css/users.css"> -->
 
 <script>
 document.addEventListener('DOMContentLoaded', function(){

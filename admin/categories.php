@@ -159,7 +159,652 @@ function esc($x) { return htmlspecialchars($x ?? '', ENT_QUOTES, 'UTF-8'); }
 <meta charset="UTF-8">
 <title>Manage Categories</title>    
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="css/categories.css">
+<!-- <link rel="stylesheet" href="css/categories.css"> -->
+<style>
+    /* --- Classic Pagination Style --- */
+
+/* Animation for staggered appearance (one by one, fade-in-up) */
+@keyframes fadeInUpRowStagger {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation for cells, slight scale and fade for more effect */
+@keyframes fadeInCellStagger {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.classic-pagination {
+  margin: 20px 0 0 0;
+  text-align: center;
+  /* make sure pagination is hidden at first and then animates in */
+  opacity: 0;
+  animation: fadeInUpRowStagger 0.5s 0.13s both;
+}
+.classic-pagination ul {
+  display: inline-block;
+  padding: 0;
+  margin: 0;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  background: #fafafa;
+}
+.classic-pagination li {
+  display: inline;
+  /* Animate each li delayed by index using CSS selectors */
+  opacity: 0;
+  animation: fadeInUpRowStagger 0.42s both;
+}
+.classic-pagination li:nth-child(1) { animation-delay: 0.07s; }
+.classic-pagination li:nth-child(2) { animation-delay: 0.14s; }
+.classic-pagination li:nth-child(3) { animation-delay: 0.21s; }
+.classic-pagination li:nth-child(4) { animation-delay: 0.28s; }
+.classic-pagination li:nth-child(5) { animation-delay: 0.35s; }
+.classic-pagination li:nth-child(6) { animation-delay: 0.42s; }
+.classic-pagination li:nth-child(7) { animation-delay: 0.49s; }
+.classic-pagination li:nth-child(8) { animation-delay: 0.56s; }
+.classic-pagination li:nth-child(9) { animation-delay: 0.63s; }
+.classic-pagination li:nth-child(10) { animation-delay: 0.7s; }
+.classic-pagination li:nth-child(n+11) { animation-delay: 0.75s; }
+.classic-pagination a,
+.classic-pagination span {
+  color: #222;
+  float: left;
+  padding: 6px 16px;
+  text-decoration: none;
+  background: none;
+  border-right: 1px solid #ddd;
+  font-size: 15px;
+  line-height: 24px;
+  min-width: 30px;
+  box-sizing: border-box;
+  border-radius: 0;
+  transition: background 0.13s;
+  opacity: 0;
+  animation: fadeInCellStagger 0.29s both;
+}
+/* Stagger a and span animation inside the li for one by one effect */
+.classic-pagination li:nth-child(1) a,
+.classic-pagination li:nth-child(1) span { animation-delay: 0.13s; }
+.classic-pagination li:nth-child(2) a,
+.classic-pagination li:nth-child(2) span { animation-delay: 0.21s; }
+.classic-pagination li:nth-child(3) a,
+.classic-pagination li:nth-child(3) span { animation-delay: 0.29s; }
+.classic-pagination li:nth-child(4) a,
+.classic-pagination li:nth-child(4) span { animation-delay: 0.37s; }
+.classic-pagination li:nth-child(5) a,
+.classic-pagination li:nth-child(5) span { animation-delay: 0.45s; }
+.classic-pagination li:nth-child(6) a,
+.classic-pagination li:nth-child(6) span { animation-delay: 0.53s; }
+.classic-pagination li:nth-child(7) a,
+.classic-pagination li:nth-child(7) span { animation-delay: 0.61s; }
+.classic-pagination li:nth-child(8) a,
+.classic-pagination li:nth-child(8) span { animation-delay: 0.69s; }
+.classic-pagination li:nth-child(9) a,
+.classic-pagination li:nth-child(9) span { animation-delay: 0.76s; }
+.classic-pagination li:nth-child(10) a,
+.classic-pagination li:nth-child(10) span { animation-delay: 0.83s; }
+.classic-pagination li:nth-child(n+11) a,
+.classic-pagination li:nth-child(n+11) span { animation-delay: 0.90s; }
+.classic-pagination li:last-child a,
+.classic-pagination li:last-child span {
+  border-right: 0;
+}
+.classic-pagination a:hover {
+  background: #e9e9e9;
+  color: #111;
+}
+.classic-pagination .active,
+.classic-pagination .active:hover,
+.classic-pagination .active:focus {
+  background: #f1f1f1;
+  font-weight: 700;
+  color: #184090;
+  cursor: default;
+}
+.classic-pagination .disabled,
+.classic-pagination .disabled:hover {
+  background: none !important;
+  color: #bbb !important;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* --- FROM events.css (181-233), adapted for this table --- */
+.paging-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 28px;
+  margin-bottom: 10px;
+  gap: 6px;
+  opacity: 0;
+  animation: fadeInUpRowStagger 0.5s 0.18s both;
+}
+.paging-bar a,
+.paging-bar span {
+  display: inline-block;
+  padding: 7px 16px;
+  margin: 0 0.5px;
+  border-radius: 7px;
+  font-size: 16px;
+  text-decoration: none;
+  color: #423074;
+  background: #f5f4fb;
+  font-weight: 600;
+  border: 1.3px solid #ece9f7;
+  transition: 0.09s;
+  min-width: 35px;
+  text-align: center;
+  opacity: 0;
+  animation: fadeInCellStagger 0.32s both;
+}
+.paging-bar a:nth-child(1),
+.paging-bar span:nth-child(1) { animation-delay: 0.11s; }
+.paging-bar a:nth-child(2),
+.paging-bar span:nth-child(2) { animation-delay: 0.18s; }
+.paging-bar a:nth-child(3),
+.paging-bar span:nth-child(3) { animation-delay: 0.25s; }
+.paging-bar a:nth-child(4),
+.paging-bar span:nth-child(4) { animation-delay: 0.32s; }
+.paging-bar a:nth-child(5),
+.paging-bar span:nth-child(5) { animation-delay: 0.39s; }
+.paging-bar a:nth-child(6),
+.paging-bar span:nth-child(6) { animation-delay: 0.46s; }
+.paging-bar a:nth-child(7),
+.paging-bar span:nth-child(7) { animation-delay: 0.53s; }
+.paging-bar a:nth-child(8),
+.paging-bar span:nth-child(8) { animation-delay: 0.60s; }
+.paging-bar a:nth-child(9),
+.paging-bar span:nth-child(9) { animation-delay: 0.67s; }
+.paging-bar a:nth-child(10),
+.paging-bar span:nth-child(10) { animation-delay: 0.74s; }
+.paging-bar a:nth-child(n+11),
+.paging-bar span:nth-child(n+11) { animation-delay: 0.80s; }
+.paging-bar a:hover {
+  background: linear-gradient(90deg, #4c53e2 0, #5239d5 97%);
+  color: #fff;
+  border-color: #4c53e2;
+}
+.paging-bar .active,
+.paging-bar span.active {
+  color: #fff;
+  background: linear-gradient(90deg, #4c53e2 0, #5239d5 97%);
+  border-color: #4c53e2;
+  pointer-events: none;
+}
+.paging-bar .arrow {
+  padding: 7px 13px;
+  font-size: 17px;
+  background: none;
+  color: #626092;
+  border: 1px solid #ece9f7;
+  opacity: 0;
+  animation: fadeInCellStagger 0.32s both;
+}
+.paging-bar .arrow:nth-child(1) { animation-delay: 0.01s; }
+.paging-bar .arrow:nth-child(2) { animation-delay: 0.05s; }
+.paging-bar .arrow.disabled {
+  opacity: 0.39;
+  pointer-events: none;
+}
+/* --- END: Staggered animation for pagination bars --- */
+
+body {
+  overflow-x: hidden;
+}
+.categories-container {
+  max-width: 1200px;
+  margin: 40px auto 0;
+  background: #f8fafd;
+  border-radius: 14px;
+  box-shadow: 0 1px 18px rgba(80, 80, 130, 0.13);
+  padding: 26px 32px 40px 32px;
+  /* Container animation */
+  opacity: 0;
+  animation: fadeInUpRowStagger 0.6s 0.11s both;
+}
+.categories-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  /* Stagger */
+  opacity: 0;
+  animation: fadeInUpRowStagger 0.45s 0.16s both;
+}
+.categories-head {
+  font-size: 2rem;
+  /* font-weight: 700; */
+  color: #312053;
+  margin: 0;
+  opacity: 0;
+  animation: fadeInUpRowStagger 0.55s 0.21s both;
+}
+.add-cat-btn {
+  background: linear-gradient(90deg, #2d397a, #594285 90%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 10px 27px;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 9px rgb(82 58 213 / 8%);
+  opacity: 0;
+  animation: fadeInUpRowStagger 0.45s 0.29s both;
+}
+.add-cat-btn:hover {
+  background: linear-gradient(90deg, #594285, #2d397a 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 10px 27px;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 9px rgb(82 58 213 / 8%);
+  opacity: 0;
+  animation: fadeInUpRowStagger 0.45s 0.29s both;
+}
+table.category-table {
+  border-collapse: collapse;
+  min-width: 900px;
+  width: 100%;
+  margin-top: 8px;
+  opacity: 0;
+  animation: fadeInUpRowStagger 0.52s 0.21s both;
+}
+.category-table th,
+.category-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid #e6e7f0;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 360px;
+  vertical-align: middle;
+  opacity: 0;
+  animation: fadeInCellStagger 0.34s both;
+}
+.category-table th { /* Headings, staggered left-to-right */
+  background: #f4f6fb;
+  color: #322053;
+  font-weight: 600;
+  border-top: 1px solid #e6e7f0;
+}
+.category-table th:nth-child(1) { animation-delay: 0.11s; }
+.category-table th:nth-child(2) { animation-delay: 0.17s; }
+.category-table th:nth-child(3) { animation-delay: 0.23s; }
+.category-table th:nth-child(4) { animation-delay: 0.29s; }
+.category-table th:nth-child(5) { animation-delay: 0.35s; }
+.category-table th:nth-child(n+6) { animation-delay: 0.38s; }
+.category-table td:nth-child(1) { animation-delay: 0.16s; }
+.category-table td:nth-child(2) { animation-delay: 0.22s; }
+.category-table td:nth-child(3) { animation-delay: 0.28s; }
+.category-table td:nth-child(4) { animation-delay: 0.34s; }
+.category-table td:nth-child(5) { animation-delay: 0.40s; }
+.category-table td:nth-child(n+6) { animation-delay: 0.44s; }
+.cat-edit-btn,
+.cat-del-btn {
+  border: none;
+  border-radius: 5px;
+  padding: 7px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  opacity: 0;
+  animation: fadeInUpRowStagger 0.35s 0.16s both;
+}
+.cat-edit-btn {
+  background: linear-gradient(90deg, #327ac5 20%, #225085 80%);
+  color: #fff;
+  margin-right: 8px;
+}
+.cat-edit-btn:hover {
+  background: linear-gradient(90deg, #225085, #327ac5 60%);
+  color: #fff;
+  margin-right: 8px;
+}
+.cat-del-btn {
+  background: linear-gradient(90deg, #e94242 20%, #b02626 80%);
+  color: #fff;
+}
+.cat-del-btn:hover {
+  background: linear-gradient(90deg, #a51818, #e94242 60%);
+  color: #fff;
+}
+.pop-overlay {
+  display: none;
+  position: fixed;
+  z-index: 3999;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(20, 25, 51, 0.27);
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  animation: fadeInUpRowStagger 0.5s 0.12s both;
+}
+.pop-overlay.open {
+  display: flex;
+  opacity: 1;
+}
+.pop-modal {
+  background: #fff;
+  border-radius: 15px;
+  box-shadow: 0 2px 18px rgba(50, 80, 130, 0.17);
+  max-width: 410px;
+  width: 100%;
+  padding: 34px 28px 30px 28px;
+  position: relative;
+  opacity: 0;
+  animation: fadeInUpRowStagger 0.38s 0.13s both;
+}
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.45rem;
+  color: #7066c8;
+  cursor: pointer;
+  opacity: 0;
+  animation: fadeInCellStagger 0.28s 0.18s both;
+}
+.form-group {
+  margin-bottom: 19px;
+  opacity: 0;
+  animation: fadeInCellStagger 0.24s both;
+}
+.form-group:nth-child(1) { animation-delay: 0.08s; }
+.form-group:nth-child(2) { animation-delay: 0.13s; }
+.form-group:nth-child(3) { animation-delay: 0.19s; }
+.form-group:nth-child(4) { animation-delay: 0.25s; }
+.form-group:nth-child(n+5) { animation-delay: 0.3s; }
+.form-group label {
+  display: block;
+  font-size: 1.02em;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #2e2252;
+  opacity: 0;
+  animation: fadeInCellStagger 0.18s 0.09s both;
+}
+.form-group input {
+  padding: 8px 13px;
+  border: 1.2px solid #dcddf7;
+  border-radius: 6px;
+  font-size: 15px;
+  width: 100%;
+  box-sizing: border-box;
+  opacity: 0;
+  animation: fadeInCellStagger 0.17s 0.15s both;
+}
+.form-group input.error {
+  border-color: #dc2323;
+  background: #fff2f2;
+}
+.form-feedback {
+  color: #b52b34;
+  min-height: 21px;
+  margin-bottom: 12px;
+  opacity: 0;
+  animation: fadeInCellStagger 0.21s 0.21s both;
+}
+.success-msg-modal {
+  color: #247e40;
+  font-weight: 600;
+  font-size: 1.07em;
+  opacity: 0;
+  animation: fadeInUpRowStagger 0.23s 0.22s both;
+}
+.cat-modal-submit {
+  background: linear-gradient(90deg, #4c53e2 30%, #5239d5 92%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 10px 24px;
+  cursor: pointer;
+  opacity: 0;
+  animation: fadeInUpRowStagger 0.37s 0.27s both;
+}
+
+/* End animation for staggered appearance */
+
+
+/* Responsive Styles Added (in addition to existing styles) */
+@media (max-width: 1050px) {
+  .categories-container {
+    padding: 20px 10px 28px 10px;
+    min-width: 0;
+  }
+}
+@media (max-width: 900px) {
+  .categories-header-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .categories-head {
+    font-size: 1.25rem;
+    margin-bottom: 6px;
+  }
+  .add-cat-btn {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 0;
+  }
+  table.category-table, .category-table th, .category-table td {
+    min-width: 0;
+    max-width: none;
+    white-space: normal;
+    font-size: 15px;
+  }
+}
+@media (max-width: 720px) {
+    .categories-container {
+        max-width: 100vw;
+        box-shadow: none;
+        border-radius: 5px;
+        margin: 11px 0 0 0;
+        padding: 5px 0 16px 0;
+    }
+    .categories-header-row {
+        flex-direction: column;
+        gap: 7px;
+        margin-bottom: 9px;
+        align-items: stretch;
+    }
+    .categories-head {
+      font-size: 1.12rem;
+      margin: 0;
+      text-align: left;
+    }
+    .add-cat-btn {
+      font-size: 15px;
+      padding: 8px 0;
+      width: 100%;
+      min-width: unset;
+    }
+    .classic-pagination ul {
+      font-size: 13px;
+      padding: 0;
+      width: 99vw;
+      min-width: unset;
+    }
+    .pop-modal {
+      max-width: 99vw;
+      width: 98vw;
+      padding: 18px 4vw 16px 4vw;
+      min-width: 0;
+    }
+}
+
+/* Mobile table: stack fields vertically, no horizontal scroll */
+@media (max-width: 600px) {
+  .categories-container {
+    padding: 0;
+  }
+  .category-table, .category-table thead, .category-table tbody, .category-table th, .category-table td, .category-table tr {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+    border-radius: 0 !important;
+  }
+  .category-table {
+    border: none;
+    margin-top: 3px;
+    background: transparent;
+    box-shadow: none;
+  }
+  .category-table thead {
+    display: none !important;
+  }
+  .category-table tr {
+    background: #f9f8ff;
+    margin-bottom: 13px;
+    border-radius: 9px;
+    box-shadow: 0 0.5px 5px #e9e8fa;
+    border: 1.5px solid #ededfb;
+    display: block;
+    padding: 9px 14px 9px 9px;
+    opacity: 1 !important; /* Animation may be strange, so force visible */
+    animation: none !important;
+  }
+  .category-table td {
+    padding: 7px 12px 7px 7px;
+    border-bottom: none;
+    border: none;
+    max-width: 100vw !important;
+    white-space: normal !important;
+    overflow-wrap: break-word;
+    opacity: 1 !important;
+    animation: none !important;
+    background: none;
+    position: relative;
+    font-size: 14.25px;
+    width: auto;
+  }
+  .category-table td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    float: left;
+    width: 54%;
+    color: #554995;
+    display: inline-block;
+    margin-bottom: 2px;
+  }
+  .category-table td:last-child {
+    padding-bottom: 8px;
+  }
+  .cat-edit-btn, .cat-del-btn {
+    display: inline-block;
+    margin-top: 7px;
+    font-size: 14px !important;
+    padding: 7px 10px !important;
+    width: 48%;
+    min-width: 0;
+  }
+  .cat-edit-btn { margin-right: 0 !important; }
+  .pop-modal {
+    max-width: 100vw !important;
+    border-radius: 7px !important;
+    padding: 17px 3vw 11px 3vw !important;
+  }
+  .modal-close {
+    top: 7px !important;
+    right: 8px !important;
+    font-size: 1.4rem !important;
+  }
+}
+
+/* Form fields adapt for mobile */
+@media (max-width: 600px){
+  .form-group label {
+    font-size: 0.98em !important;
+  }
+  .form-group input {
+    font-size: 14px !important;
+    padding: 7px 8px !important;
+  }
+}
+
+/* Responsive: container for horizontal scrolling at xs/sm screens */
+@media (max-width: 600px) {
+  .categories-container {
+    overflow-x: visible !important;
+  }
+}
+
+/* Additional improvements for usability */
+@media (max-width: 450px) {
+  .pop-modal {
+    padding: 10px 2vw 10px 2vw !important;
+  }
+  .form-group input {
+    font-size: 13px !important;
+    padding: 7px 3px !important;
+  }
+}
+
+/* Remove the min-width:900px for table on all viewports - rely on overflow-x for desktop, stacking for mobile */
+table.category-table {
+    min-width: 0 !important;
+}
+
+/* End custom responsive styles */
+
+/* --- Classic Pagination Style --- */
+
+/* Animation for staggered appearance (one by one, fade-in-up) */
+@keyframes fadeInUpRowStagger {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation for cells, slight scale and fade for more effect */
+@keyframes fadeInCellStagger {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+</style>
 
 </head>
 <body>

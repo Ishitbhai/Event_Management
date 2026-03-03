@@ -470,8 +470,272 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
     </div>
 </div>
-<link rel="stylesheet" href="css/index.css">
-<link rel="stylesheet" href="css/event_create.css">
+<style>
+body {
+    margin: 0;
+    background: #f4f6fb;
+}
+.dashboard-main {
+    padding: 40px;
+}
+.dashboard-header {
+    margin-bottom: 30px;
+}
+.dashboard-header h2 {
+    margin: 0;
+    color: #322053;
+}
+.dashboard-header p {
+    color: #6c757d;
+    margin-top: 8px;
+}
+.dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+}
+@media (max-width: 980px) {
+    .dashboard-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 700px) {
+    .dashboard-cards {
+        grid-template-columns: 1fr;
+    }
+}
+.dashboard-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    transition: box-shadow 0.3s ease, transform 0.5s cubic-bezier(.68,-0.55,.27,1.55);
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(40px) scale(0.93);
+    animation: fadeInUp 0.8s cubic-bezier(.68,-0.55,.27,1.55) forwards;
+}
+.dashboard-card:nth-child(1) { animation-delay: 0.10s; }
+.dashboard-card:nth-child(2) { animation-delay: 0.20s; }
+.dashboard-card:nth-child(3) { animation-delay: 0.30s; }
+.dashboard-card:nth-child(4) { animation-delay: 0.40s; }
+.dashboard-card:nth-child(5) { animation-delay: 0.50s; }
+.dashboard-card:nth-child(6) { animation-delay: 0.60s; }
+.dashboard-card:nth-child(7) { animation-delay: 0.70s; }
+.dashboard-card:nth-child(8) { animation-delay: 0.80s; }
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(40px) scale(0.93);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+.dashboard-card:hover {
+    transform: translateY(-6px) scale(1.04);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+    z-index: 1;
+}
+.card-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+.card-number {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    transition: color 0.5s;
+}
+.card-link {
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: black;
+}
+.events { border-left: 6px solid #5236d6; }
+.bookings { border-left: 6px solid #197655; }
+.users { border-left: 6px solid #c82f2f; }
+.services { border-left: 6px solid #197655; }
+.reviews { border-left: 6px solid #c82f2f; }
+.categories { border-left: 6px solid #5236d6; }
+.coupons { border-left: 6px solid #c82f2f; }
+.settings { border-left: 6px solid #5236d6; }
+
+.events .card-title { color: #5236d6; }
+.bookings .card-title { color: #197655; }
+.users .card-title { color: #c82f2f; }
+.services .card-title { color: #197655; }
+.reviews .card-title { color: #c82f2f; }
+.categories .card-title { color: #5236d6; }
+.coupons .card-title { color: #c82f2f; }
+.settings .card-title { color: #5236d6; }
+.create-event-wrapper {
+    position: relative;
+    max-width: 860px;
+    margin: 0 auto;
+}
+.outside-back-btn-wrapper {
+    margin-top: 16px;
+    margin-bottom: 15px;
+}
+.create-event-btn {
+    background: #246be4;
+    color: white;
+    border: 0;
+    border-radius: 5px;
+    padding: 0.55em 1.5em;
+    transition: background 0.17s;
+    font-size: 1.09em;
+    text-align: center;
+    display: inline-block;
+    text-decoration: none;
+    cursor: pointer;
+}
+.create-event-btn:hover, .create-event-btn:focus {
+    background: #1855b7;
+    text-decoration: none;
+    color: #fff;
+}
+.create-event-btn.back-btn {
+    background: #888;
+    color: #eee;
+    margin-bottom: 8px;
+}
+.create-event-btn.back-btn:hover {
+    background: #444;
+    color: #fff;
+}
+
+.msg-error {
+    background: #ffecee;
+    border-left: 5px solid #e01e37;
+    color: #a2001c;
+    padding: 13px 15px 10px 15px;
+    border-radius: 4px;
+    font-size: 1.07em;
+    margin-bottom: 14px;
+    margin-top: 15px;
+}
+
+.msg-success {
+    border-left: 5px solid #278946;
+    background: #eafaea;
+    color: #185b28;
+    border-radius: 4px;
+    padding: 14px 16px 12px 16px;
+    font-size: 1.12em;
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+.create-container-centered {
+    background: #fff;
+    border-radius: 8px;
+    border: 1.5px solid #e6f0ff;
+    box-shadow: 0 5px 30px rgba(34, 73, 139, 0.09), 0 1.5px 6px rgba(34, 73, 139, 0.13);
+    margin-bottom: 35px;
+    max-width: 660px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 10px;
+    padding: 32px 34px 36px 34px;
+}
+
+.form-table {
+    width: 100%;
+    max-width: 610px;
+    border-collapse: collapse;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #334;
+    display: block;
+    margin-bottom: 0.25em;
+    font-size: 1.02em;
+}
+.input-select, .input-text, .input-number, .input-area, .input-file {
+    width: 98%;
+    padding: 8px 9px;
+    border: 1.4px solid #acbadc;
+    border-radius: 4px;
+    font-size: 1.01em;
+    background: #fafdff;
+    margin-bottom: 4px;
+    box-sizing: border-box;
+}
+.input-select:focus, .input-text:focus, .input-number:focus, .input-area:focus, .input-file:focus {
+    outline: 2px solid #3c89ee;
+    border-color: #3476ba;
+    background: #f2f7fe;
+}
+.input-number, .input-text {
+    display: inline-block;
+    width: 50%;
+}
+
+.input-area {
+    width: 97.5%;
+    min-height: 74px;
+    max-width: 99%;
+    resize: vertical;
+}
+
+.field-error {
+    font-size: 0.98em;
+    color: #cd233f;
+    display: none;
+    margin-top: 3px;
+}
+
+.input-invalid {
+    border: 1.5px solid #cd233f !important;
+    background: #fff8f7 !important;
+}
+#max-seats-caption {
+    font-weight: 600;
+    margin-left: 5px;
+    color: #2363b9;
+}
+.field-hint, .form-label .field-hint {
+    font-size: .95em;
+    color: #377fd9;
+    font-weight: normal;
+    margin-left: 2px;
+}
+.form-label .field-hint2 {
+    color: #6ca3f7;
+}
+#available-seats-span {
+    font-size: .98em;
+    color: #196bb5;
+}
+.msg-success h3 {
+    margin-top: 2px;
+}
+.msg-success .create-event-btn {
+    width: auto;
+    display: inline-block;
+    margin-top: 13px;
+}
+@media (max-width: 650px) {
+    .create-container-centered {
+        padding: 9px 5.5vw 19px 5.5vw;
+    }
+    .form-table td, .form-table th {
+        padding: 0.6em 0.1em;
+    }
+
+}
+body {
+    overflow-x: hidden;
+}
+
+</style>
+<!-- <link rel="stylesheet" href="css/index.css"> -->
+<!-- <link rel="stylesheet" href="css/event_create.css"> -->
 <script src="js/jquery-4.0.0.min.js"></script>
 <script>
     function updateMaxSeats() {

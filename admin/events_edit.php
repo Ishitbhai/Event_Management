@@ -373,8 +373,260 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_event'])) {
     <meta charset="UTF-8">
     <title>Edit Event</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="stylesheet" href="css/event_edit.css">
-    <link rel="stylesheet" href="css/index.css">
+    <style>
+        body {
+    background: #f7f7fa;
+}
+
+.edit-event-form {
+    max-width: 900px;
+    margin: 32px auto;
+    background: #fff;
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 1px 14px #553ad506;
+}
+
+.edit-event-form h2 {
+    margin-top: 0;
+    color: #322053;
+}
+
+.form-row {
+    margin-bottom: 18px;
+    display: flex;
+    gap: 18px;
+    align-items: center;
+}
+
+.form-row label {
+    width: 220px;
+    flex: 0 0 220px;
+    font-weight: 600;
+    color: #322053;
+    margin-bottom: 0;
+}
+
+.form-row input[type="text"],
+.form-row input[type="date"],
+.form-row input[type="datetime-local"],
+.form-row input[type="time"],
+.form-row input[type="number"],
+.form-row select,
+.form-row textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 5px;
+    border: 1px solid #bfc4d1;
+    font-size: 15px;
+    background: #f9faff;
+}
+
+.form-row textarea {
+    resize: vertical;
+}
+
+.form-row select {
+    min-width: 115px;
+}
+
+.form-row .error-msg {
+    margin-bottom: 0;
+    margin-top: 5px;
+}
+
+.form-submit-row {
+    margin-top: 27px;
+}
+
+.btn-primary {
+    background: linear-gradient(90deg, #327ac5 20%, #225085 80%);
+    color: #fff;
+    border: none;
+    padding: 10px 26px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(90deg, #225085, #327ac5 60%);
+}
+
+.success-msg {
+    color: #26ad51;
+    margin-bottom: 18px;
+}
+
+.error-msg {
+    color: #cf2525;
+    margin-bottom: 18px;
+}
+
+.form-row .readonly-event-id {
+    background: #ececec;
+    font-weight: bold;
+}
+
+.max-seats-info {
+    font-size: 0.95em;
+    color: #666;
+    margin-left: 8px;
+}
+
+.updated-at-desc {
+    color: #8b8894;
+    font-size: 13px;
+    margin-left: 8px;
+}
+
+.file-desc-message {
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+    color: #6b6d77;
+    width: 100%;
+}
+
+.file-current-info {
+    display: block;
+    margin-top: 6px;
+    font-size: 90%;
+    color: #888;
+    width: 100%;
+}
+
+.error-message-inline {
+    margin: 2em;
+    color: red;
+}
+
+.back-link-wrap {
+    margin-top: 20px;
+}
+
+.back-link {
+    color: #384ead;
+}
+
+@media (max-width: 680px) {
+    .edit-event-form {
+        padding: 8px;
+        max-width: 100%;
+    }
+    .form-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .form-row label {
+        width: auto;
+    }
+}body {
+    margin: 0;
+    background: #f4f6fb;
+}
+.dashboard-main {
+    padding: 40px;
+}
+.dashboard-header {
+    margin-bottom: 30px;
+}
+.dashboard-header h2 {
+    margin: 0;
+    color: #322053;
+}
+.dashboard-header p {
+    color: #6c757d;
+    margin-top: 8px;
+}
+.dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+}
+@media (max-width: 980px) {
+    .dashboard-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 700px) {
+    .dashboard-cards {
+        grid-template-columns: 1fr;
+    }
+}
+.dashboard-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    transition: box-shadow 0.3s ease, transform 0.5s cubic-bezier(.68,-0.55,.27,1.55);
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(40px) scale(0.93);
+    animation: fadeInUp 0.8s cubic-bezier(.68,-0.55,.27,1.55) forwards;
+}
+.dashboard-card:nth-child(1) { animation-delay: 0.10s; }
+.dashboard-card:nth-child(2) { animation-delay: 0.20s; }
+.dashboard-card:nth-child(3) { animation-delay: 0.30s; }
+.dashboard-card:nth-child(4) { animation-delay: 0.40s; }
+.dashboard-card:nth-child(5) { animation-delay: 0.50s; }
+.dashboard-card:nth-child(6) { animation-delay: 0.60s; }
+.dashboard-card:nth-child(7) { animation-delay: 0.70s; }
+.dashboard-card:nth-child(8) { animation-delay: 0.80s; }
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(40px) scale(0.93);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+.dashboard-card:hover {
+    transform: translateY(-6px) scale(1.04);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+    z-index: 1;
+}
+.card-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+.card-number {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    transition: color 0.5s;
+}
+.card-link {
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: black;
+}
+.events { border-left: 6px solid #5236d6; }
+.bookings { border-left: 6px solid #197655; }
+.users { border-left: 6px solid #c82f2f; }
+.services { border-left: 6px solid #197655; }
+.reviews { border-left: 6px solid #c82f2f; }
+.categories { border-left: 6px solid #5236d6; }
+.coupons { border-left: 6px solid #c82f2f; }
+.settings { border-left: 6px solid #5236d6; }
+
+.events .card-title { color: #5236d6; }
+.bookings .card-title { color: #197655; }
+.users .card-title { color: #c82f2f; }
+.services .card-title { color: #197655; }
+.reviews .card-title { color: #c82f2f; }
+.categories .card-title { color: #5236d6; }
+.coupons .card-title { color: #c82f2f; }
+.settings .card-title { color: #5236d6; }
+
+    </style>
+    <!-- <link rel="stylesheet" href="css/event_edit.css"> -->
+    <!-- <link rel="stylesheet" href="css/index.css"> -->
     <script src="js/jquery-4.0.0.min.js"></script>
     <script>
     var categoryMaxSeats = <?php echo json_encode($category_max_seats); ?>;

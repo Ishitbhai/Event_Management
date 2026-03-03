@@ -203,8 +203,191 @@ function esc($str) {
 }
 ?>
 
-<link rel="stylesheet" href="css/booking_edit.css">
+<!-- <link rel="stylesheet" href="css/booking_edit.css"> -->
+<style>
+    .booking-form-container {
+    max-width: 470px;
+    margin: 35px auto 0 auto;
+    background: #f8faff;
+    border-radius: 18px;
+    box-shadow: 0 4px 20px 0 rgb(118 95 193 / 12%);
+    padding: 32px 36px 30px 36px;
+    min-width: 0;
+}
 
+@media (max-width: 767px) {
+    .booking-form-container {
+        padding: 22px 10px 20px 10px;
+        max-width: 97vw;
+        border-radius: 11px;
+    }
+    .booking-form label, .booking-form input, .booking-form select, .booking-form button {
+        font-size: 0.98em !important;
+    }
+}
+
+@media (max-width:480px) {
+    .booking-form-container {
+        padding: 10px 3vw 20px 3vw;
+        box-shadow: none;
+    }
+    .booking-form button {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+.booking-form-container h2 {
+    margin: 0 0 22px 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #483774;
+    text-align: center;
+}
+
+.back-to-bookings-btn {
+    display: inline-block;
+    margin-bottom: 19px;
+    color: #6a61d0;
+    font-size: 1rem;
+    text-decoration: none;
+    border-radius: 15px;
+    background: #f0f0fa;
+    padding: 6px 17px;
+    transition: background .13s, color .13s;
+}
+
+.back-to-bookings-btn:hover {
+    background: #e6e8ff;
+    color: #3b26b7;
+}
+
+.booking-error {
+    color: #af2838;
+    background: #ffeaea;
+    border: 1px solid #ffe1e1;
+    padding: 10px 16px;
+    border-radius: 7px;
+    margin-bottom: 14px;
+    font-size: 1rem;
+    text-align: center;
+}
+
+.booking-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.booking-form label {
+    font-weight: 500;
+    margin-bottom: 4px;
+    margin-top: 3px;
+    color: #593a8d;
+    font-size: 1.05em;
+}
+
+.booking-form input[type="text"],
+.booking-form input[type="number"],
+.booking-form select {
+    border: 1.2px solid #dbe1e7;
+    border-radius: 7px;
+    padding: 9px 13px;
+    font-size: 1.04em;
+    margin-bottom: 1.5px;
+    background: #fff;
+    transition: border-color .13s;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.booking-form input:read-only {
+    background: #f6f5fb !important;
+    color: #8d8d9f;
+}
+
+.booking-form input[type="number"]::-webkit-inner-spin-button,
+.booking-form input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.booking-form input[type="number"] {
+    appearance: textfield;
+    -webkit-appearance: none;
+}
+
+.booking-form input:focus,
+.booking-form select:focus {
+    border-color: #a3bbde;
+    background: #f9faff;
+}
+
+.booking-form select {
+    cursor: pointer;
+    background: #f7f7fd;
+}
+
+.booking-form button {
+    background: linear-gradient(90deg, #7270e8, #9b53ce);
+    color: #fff;
+    font-weight: 600;
+    border: none;
+    border-radius: 9px;
+    font-size: 1.1rem;
+    padding: 13px 0;
+    cursor: pointer;
+    margin-top: 18px;
+    transition: box-shadow .15s, background .18s;
+    box-shadow: 0 2px 7px 0 rgb(144 120 236 / 12%);
+    min-width: 150px;
+    align-self: center;
+}
+
+.booking-form button:hover,
+.booking-form button:focus {
+    background: linear-gradient(90deg, #847ff2, #b884ea);
+    box-shadow: 0 3px 12px 0 rgb(144 120 236 / 17%);
+}
+
+.form-desc {
+    margin-bottom: 14px;
+    font-size: 1.02em;
+    color: #817fc5;
+    display: block;
+    text-align: center;
+}
+
+#max-val {
+    font-weight: bold;
+    color: #6a5ace;
+}
+
+@media (max-width: 530px) {
+    .booking-form input, .booking-form select, .booking-form button {
+        font-size: 0.99em !important;
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+    .booking-form label, .form-desc {
+        font-size: 0.98em !important;
+    }
+    .booking-form-container h2 {
+        font-size: 1.22rem;
+    }
+}
+
+@media (max-width: 370px) {
+    .booking-form-container {
+        padding-left: 1vw;
+        padding-right: 1vw;
+    }
+    .booking-form label, .form-desc {
+        font-size: 0.94em !important;
+    }
+}
+
+</style>
 <div class="booking-form-container">
     <h2>Edit Booking</h2>
     <a href="bookings.php" class="back-to-bookings-btn">&larr; Back to Bookings</a>

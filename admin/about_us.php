@@ -211,7 +211,87 @@ if (isset($_GET['success']) && $_GET['success'] == 1) {
     <title>Edit About Us</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <script src="js/jquery-4.0.0.min.js"></script>
-    <link rel="stylesheet" href="css/about_us.css">
+    <!-- <link rel="stylesheet" href="css/about_us.css"> -->
+    <style>
+body {margin:0; background: #f4f6fb; overflow-x:hidden;}
+.dashboard-main {padding: 40px;}
+.internal-header {margin: 0 0 18px 0; color: #322053;}
+.coupon-form-wrap {
+    max-width: 920px;
+    min-width: 350px;
+    margin: 40px auto;
+    background: #fff; 
+    border-radius: 12px;
+    box-shadow: 0 1px 10px rgba(44,62,80,0.10);
+    padding: 35px 38px 22px 38px;
+}
+.form-group {margin-bottom: 22px;}
+.form-group label {display:block; font-weight:600; margin-bottom:5px; color:#594285;}
+.form-group input[type=text],
+.form-group input[type=number],
+.form-group input[type=date],
+.form-group input[type=datetime-local],
+.form-group select,
+textarea {
+    width:100%; border-radius:6px; border:1px solid #ddd; padding: 8px 10px; font-size:15px;
+    box-sizing: border-box; background: #fafbff;
+}
+.form-group input[type=text]:focus,
+.form-group input[type=number]:focus,
+.form-group input[type=date]:focus,
+.form-group input[type=datetime-local]:focus,
+.form-group select:focus,
+textarea:focus {
+    outline: none;
+    border-color: #7090f5;
+    background: #fff;
+}
+.form-actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 18px;
+    justify-content: flex-end;
+}
+.btn {
+    background: linear-gradient(90deg, #2d397a, #594285 90%);
+    color: #fff;
+    padding: 8px 24px;
+    border: none;
+    border-radius: 7px; font-size: 15px; font-weight: 700;
+    cursor: pointer;
+    transition: background .16s;
+}
+.btn:hover {background: linear-gradient(90deg, #594285, #2d397a 100%);}
+.btn-del-img {
+    color: #a5092c; background:none;border:none; border-radius:3px; padding:2px 7px; margin-left:7px; font-weight:700; font-size:16px; vertical-align:middle; cursor: pointer;
+    transition: background 0.12s;
+}
+.btn-del-img:hover {background: #fde8e4;}
+.about-us-img-row { display:flex; align-items:center; margin-bottom:9px;}
+.about-us-img-thumb { width: 70px; height: 70px; object-fit:cover; border-radius: 7px; border:1px solid #e0e0e0; margin-right:12px; background: #fafbff;}
+.error-msg {background: #fde8e4; color: #a5092c; border-radius: 4px; padding:9px 14px;margin-bottom:14px;}
+.success-msg {background: #dbfadd;color: #18793a; border-radius: 4px; padding:9px 14px;margin-bottom:14px;}
+.form-error {
+    color: #a5092c;
+    font-size: 14px;
+    padding: 6px 0 0 2px;
+    margin: 0;
+    min-height: 0;
+    display: block;
+    height: auto;
+}
+.form-error:empty {
+    padding: 0;
+    min-height: 0;
+    height: 0;
+    margin: 0;
+}
+.img-upload-wrap {margin: 13px 0;}
+.img-upload-input-row {display: flex; gap: 12px;}
+.about-us-img-list-col{margin-bottom:0; padding-bottom:0;}
+textarea { resize: vertical; }
+#about_us_who_we_are { min-height: 120px; }
+    </style>
 
 </head>
 <body>
