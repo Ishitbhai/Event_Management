@@ -282,7 +282,212 @@ $stmt->close();
 <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
 <!-- Animate.css for subtle element animations -->
 <link rel="stylesheet" href="bootstrap/css/animate.min.css"/>
-<link rel="stylesheet" href="css/event_requests.css">
+
+
+<style>
+    body {
+    background: linear-gradient(110deg, #f4f7fa 0%, #e0e3f6 100%);
+}
+.card-glass {
+    background: rgba(255,255,255,.87);
+    border-radius: 1.1rem;
+    box-shadow: 0 6px 32px 0 #8181c733, 0 1.5px 5px #3a289025;
+    backdrop-filter: blur(1.5px);
+    margin-top: 38px;
+    margin-bottom: 44px;
+    padding: 2.4rem 1.2rem 2.5rem 1.2rem;
+    animation: fadeInUpB 0.98s cubic-bezier(.23,1.19,.61,.91) both;
+}
+@media (min-width: 600px) {
+    .card-glass { padding: 3.2rem 3.9rem 3.5rem 3.9rem; }
+}
+@media (max-width:540px) {
+    .card-glass { padding: 1.2rem 0.2rem 1.2rem 0.2rem; box-shadow: 0 3px 15px #8181c71a; }
+}
+@keyframes fadeInUpB {
+    from { opacity: 0; transform: translateY(48px); }
+    to { opacity: 1; transform: translateY(0);}
+}
+.glow-header {
+    background: linear-gradient(93deg, #658bf2 5%, #e18dfe 90%);
+    color: #fff;
+    font-weight: 900;
+    padding: 1.6rem 2.3rem;
+    border-radius: 0 0 48px 0;
+    margin-bottom: 22px;
+    text-shadow: 0 2px 13px #66598944;
+    box-shadow: 0 1.5px 7px #6158ec11;
+    text-align: center;
+    letter-spacing: 0.2px;
+    font-size: 1.37em;
+    animation: fadeInGlow .8s 0.08s both;
+}
+@keyframes fadeInGlow {
+    from { opacity: 0; filter: blur(3.5px);}
+    to { opacity: 1; filter: blur(0);}
+}
+.back-to-events-link {
+    color: #7a56de; font-weight: 500; font-size: 1.13em;
+    text-decoration: none; display: inline-flex; align-items: center;
+    margin-bottom: 1.15rem;
+    transition: color 0.18s;
+}
+.back-to-events-link:hover { color: #5c23e2; text-decoration: underline; }
+.status-pill {
+    border-radius: 16px;
+    font-size: 1em;
+    font-weight: 600;
+    padding: 3.5px 16px;
+    text-align: center;
+    transition: background 0.2s;
+    animation: fadeInStatus 0.65s;
+}
+@keyframes fadeInStatus {
+    from { opacity: 0;}
+    to {opacity:1;}
+}
+.status-pending { background: #fef6be; color: #9e8702; border: 1.5px solid #e4d958;}
+.status-approved { background: #d9fadb; color: #068b25; border: 1.5px solid #97dd91;}
+.status-rejected { background: #fedfdf; color: #db3049; border: 1.5px solid #f8b4b4;}
+.animate-btn-glow {
+    box-shadow: 0 0 18px #6262ce55 !important;
+    filter: brightness(1.15);
+    animation: btnPulse .8s alternate infinite;
+}
+@keyframes btnPulse {
+    0% { box-shadow:0 0 18px #6262ce38;}
+    100% { box-shadow:0 0 34px #6262ce80;}
+}
+.img-msg-success,.msg-success { color: #068b25;}
+.img-msg-error,.msg-error { color: #db3049;}
+/* Modal style overriding bootstrap for custom glass look */
+#images-manage-modal .modal-dialog {
+    max-width: 730px;
+    margin: 40px auto;
+}
+#images-manage-modal .modal-content {
+    background: rgba(255,255,255,0.97);
+    border-radius: 18px;
+    box-shadow: 0 6px 32px #c4bcef44;
+    padding: 1.1rem 1.5rem;
+    border: none;
+    animation: fadeInUpB 0.69s both;
+}
+#images-manage-modal .modal-header {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+.gallery-images-box {
+    flex-wrap: wrap;
+    gap: 16px;
+    display: flex;
+    margin-top: 10px;
+}
+.gallery-img-container {
+    display:inline-block;
+    text-align:center;
+    position:relative;
+    margin-bottom: 7px;
+    animation: fadeInScale 0.55s;
+}
+@keyframes fadeInScale {
+    from { transform: scale(.85); opacity:0;}
+    to   { transform: scale(1); opacity:1;}
+}
+.gallery-img {
+    width: 115px;
+    height: 86px;
+    object-fit: cover;
+    border-radius: 11px;
+    border: 1px solid #e4e8f7;
+    box-shadow: 0 2px 10px #e4d6fc26;
+    transition: scale .14s, border 0.14s;
+}
+.gallery-img:hover {
+    scale: 1.04;
+    border-color: #728aec;
+}
+.delete-gallery-btn {
+    background: #e84a3f !important;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding:2.5px 13px;
+    font-size:0.98em;
+    margin-top:5px;
+    cursor:pointer;
+    transition: box-shadow .18s;
+}
+.delete-gallery-btn:hover {
+    box-shadow:0 2px 7px #e94a3f55,0 1px 3px #e84a3f44;
+}
+.gallery-add-btn {
+    margin-left:9px;
+    padding:5px 22px;
+    font-weight: 600;
+    background: #5d82ec;
+    color:#fff;
+    border-radius: 7px;
+    border: none;
+    box-shadow: 0 1.5px 6px #7f7ecf38;
+    transition: background 0.15s, box-shadow 0.18s;
+}
+.gallery-add-btn:hover { background: #456cff; }
+.replace-banner-btn {
+    margin-left:9px;
+    padding:5px 18px;
+    font-weight: 600;
+    background: #ffb44f;
+    color:#372401;
+    border-radius: 7px;
+    border: none;
+    box-shadow: 0 1.5px 6px #e8ca8d38;
+    transition: background 0.15s, box-shadow 0.18s;
+}
+.replace-banner-btn:hover { background: #ffaa20; color: #312000;}
+.banner-manage-img {
+    max-width:260px;
+    max-height:130px;
+    border-radius:7px;
+    box-shadow:0 2px 8px #dfe0f2;
+    margin-bottom: 1rem;
+}
+.banner-missing { color: #e06622; }
+.banner-none { color: #aaa;}
+.req-table-info {
+    margin: 15px 0 2px 0; font-size: 1.07em;
+    color: #555889;
+    text-align: right;
+    font-weight: 500;
+    letter-spacing:0.25px;
+}
+.no-bookings-yet {
+    text-align:center;
+    color:#888;
+    font-size:1.16em;
+    padding:40px 0;
+    font-weight:500;
+    opacity:0.93;
+    animation: fadeInUpB .67s;
+}
+input[type="file"]::-webkit-file-upload-button,
+input[type="file"]::file-selector-button {
+    font-family: inherit;
+    background: #ededfd;
+    border: 1.1px solid #b6b8e6;
+    border-radius: 5px;
+    padding: 3px 9px;
+    font-size:0.96em;
+    color: #46538c;
+    margin-right: 8px;
+}
+
+/* Responsive tweaks for tables/cards/forms on mobile */
+@media (max-width:650px) {
+    .glow-header { font-size: 1.02em; padding:0.95rem 0.5rem;}
+    .req-table-info { text-align:center;}
+}
+</style>
 
 
 
@@ -519,5 +724,29 @@ $stmt->close();
 </noscript>
 
 <link rel="stylesheet" href="bootstrap/css/bootstrap-icons.min.css">
-<script src="js/event_requests.js"></script>
+<!-- <script src="js/event_requests.js"></script> -->
+<script>
+    (function() {
+    var imagesModal = document.getElementById("images-manage-modal");
+    var openBtn = document.getElementById("open-images-modal");
+    var closeBtn = document.getElementById("close-images-modal");
+    if (imagesModal && openBtn && closeBtn) {
+        openBtn.addEventListener('click', function(e){
+            imagesModal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        });
+        closeBtn.addEventListener('click', function(){
+            imagesModal.style.display = 'none';
+            document.body.style.overflow = '';
+        });
+        imagesModal.addEventListener('click', function(ev){
+            if (ev.target === imagesModal) {
+                imagesModal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        });
+    }
+})();
+
+</script>
 <?php require_once('footer.php'); ?>

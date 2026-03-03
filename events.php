@@ -44,7 +44,201 @@ function render_gallery($event_gallery_images) {
 
 <link rel="stylesheet" href="bootstrap/css/animate.min.css"/>
 
-<link rel="stylesheet" href="css/events.css">
+<!-- <link rel="stylesheet" href="css/events.css"> -->
+ <style>
+    .events-header-banner {
+    background: linear-gradient(90deg, #ffe4e1 0%, #e0eaff 100%);
+    color: #342355;
+    padding: 2.5rem 0 1rem 0;
+    text-align: center;
+    border-radius: 0 0 2rem 2rem;
+    box-shadow: 0 4px 30px #cab0ffc9;
+    margin-bottom: 2.5rem;
+    font-family: 'Montserrat',sans-serif;
+    animation: fadeInDown 1s;
+}
+
+.events-header-banner h1 {
+    font-size: 2.2rem;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+}
+.events-header-banner p {
+    font-size: 1.12rem;
+    color: #344057;
+    margin-bottom: 0;
+}
+
+.events-btn-create {
+    background: linear-gradient(85deg, #e070a8 0%, #62c0f6 100%);
+    color: #fff !important;
+    border: none;
+    border-radius: 30px;
+    font-size: 1.18rem;
+    font-weight:600;
+    padding: .85rem 2.5rem;
+    box-shadow: 0 2px 18px #c083e166;
+    transition: background 0.22s, box-shadow 0.13s;
+    margin-bottom: 17px;
+}
+.events-btn-create:hover, 
+.events-btn-create:focus {
+    background:linear-gradient(85deg, #c95b96 0%, #378cae 100%);
+    color:#fff!important;
+    box-shadow:0 5px 20px #e2c5fd82;
+}
+.event-section-card {
+    border-radius: 1rem;
+    background: #ffffffcb;
+    box-shadow: 0px 10px 36px #d5e3ff54;
+    margin-bottom: 3rem;
+    padding: 2rem 2rem 1.5rem 2rem;
+    animation: fadeInUp 0.8s;
+}
+.event-section-title {
+    font-family: 'Montserrat',sans-serif;
+    font-weight: 700;
+    font-size: 1.28rem;
+    letter-spacing:.6px;
+    color: #425472;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.events-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(340px, 1fr));
+    gap: 1.45rem;
+}
+@media (max-width: 700px) {
+    .event-section-card {
+        padding: 1.05rem .7rem;
+    }
+    .events-header-banner h1 {
+        font-size: 1.35rem;
+    }
+    .events-btn-create {
+        padding: .55rem 1.2rem;
+        font-size: 1rem;
+    }
+}
+.event-card {
+    border-radius: 0.92rem;
+    overflow:hidden;
+    background: #fff;
+    box-shadow: 0 2px 18px #c4d7fa28;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s, transform 0.13s;
+    cursor: pointer;
+    animation:fadeIn 0.64s;
+    min-height: 100%;
+    height:100%;
+    position: relative;
+}
+.event-card:hover {
+    box-shadow: 0 10px 36px #929cf050;
+    transform: translateY(-6px) scale(1.018);
+}
+.event-card-image {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    background: #f3eaff;
+    border-bottom: 2px solid #e0eafd;
+    transition: filter 0.18s;
+}
+.event-card:hover .event-card-image {
+    filter: brightness(1.06) saturate(1.1);
+}
+.event-card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 1.1rem 1.1rem 1.1rem;
+}
+.event-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0.5rem;
+}
+.event-title {
+    font-size: 1.28rem;
+    font-weight: 700;
+    color: #5e3689;
+    margin-bottom: 0;
+    font-family: inherit;
+}
+.event-badge {
+    display: inline-block;
+    padding: .15rem .85rem;
+    font-weight: 600;
+    border-radius: 12px;
+    font-size: .82em;
+    margin-left: 8px;
+    margin-bottom: 0;
+    letter-spacing: 0.3px;
+}
+.event-badge.ongoing {
+    background: #fffadd;
+    color: #d6b10e;
+    border: 1px solid #fff7ae;
+}
+.event-badge.upcoming {
+    background: #def6e2;
+    color: #038436;
+    border: 1px solid #b8efd3;
+}
+.event-badge.past {
+    background: #e9ecf2;
+    color: #7d8694;
+    border: 1px solid #d2dae4;
+}
+.event-date-row, .event-status-row {
+    color: #45506a;
+    font-size: .94em;
+    margin-bottom: .35rem;
+    font-weight: 500;
+}
+.event-description {
+    color: #505372;
+    font-size: 1.02em;
+    margin-bottom: 0.7rem;
+    flex:1;
+    min-height: 32px;
+    /* line clamp */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.event-card-footer {
+    padding-top: 10px;
+}
+.event-gallery-slider {
+    margin-top: .4rem;
+}
+.event-gallery-slider img {
+    margin-right: 3px;
+    border-radius: 0.45rem;
+    border: 1.5px solid #e0d7fa;
+}
+/* Animation keyframes for fadeInDown and fadeInUp */
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px);}
+    to { opacity: 1; transform: translateY(0);}
+}
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px);}
+    to { opacity: 1; transform: translateY(0);}
+}
+@keyframes fadeIn {
+    from { opacity: 0;}
+    to { opacity: 1;}
+}
+ </style>
     
 
 <div class="container-fluid px-0 events-header-banner shadow animate__animated animate__fadeInDown">
