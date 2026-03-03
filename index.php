@@ -37,8 +37,7 @@
 
 <link rel="stylesheet" href="bootstrap/css/bootstrap.min">
 <link rel="stylesheet" href="bootstrap/css/animate.min.css"/>
-<!-- <link rel="stylesheet" href="bootstrap/css/all.min.css"> -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+<link rel="stylesheet" href="bootstrap/css/all.min.css">
 <link rel="stylesheet" href="bootstrap/css/swiper-bundle.min.css"/>
 
 <main class="main-content">
