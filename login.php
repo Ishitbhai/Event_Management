@@ -37,7 +37,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['ajax_login'])) {
         echo json_encode(['success' => false, 'error' => "Please enter both email and password."]);
         exit;
     } else {
-        $stmt = $conn->prepare("SELECT user_id, user_name,user_type, user_email, user_password, user_status FROM users WHERE user_email = ? LIMIT 1");
+        $stmt = $conn->prepare("SELECT user_id, user_name, user_type, user_email, user_password, user_status FROM users WHERE user_email = ? LIMIT 1");
         $stmt->bind_param("s", $user_email);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -55,11 +55,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['ajax_login'])) {
                     $update_stmt->execute();
                     $update_stmt->close();
 
-                    // Set session variables
+                    // Set session variables for all users
                     $_SESSION['user_id'] = $user['user_id'];
                     $_SESSION['user_name'] = $user['user_name'];
                     $_SESSION['user_email'] = $user['user_email'];
                     $_SESSION['user_type'] = $user['user_type'];
+
+                    // If user is admin, set additional admin sessions
+                    if (isset($user['user_type']) && strtolower($user['user_type']) === 'admin') {
+                        $_SESSION['is_admin'] = 1;
+                        $_SESSION['admin_username'] = $user['user_email'];
+                        $_SESSION['admin_user_name'] = $user['user_name'];
+                        // user_id is already set above, as required
+                    }
 
                     echo json_encode(['success' => true, 'redirect' => 'index.php']);
                     exit;

@@ -59,8 +59,8 @@ $res = $conn->query("SELECT COUNT(*) as cnt FROM about_us");
 if ($res && ($row = $res->fetch_assoc())) $dashboard_counts['about_us'] = (int)$row['cnt'];
 
 // Contact (dummy/optional)
-$res = $conn->query("SELECT COUNT(*) as cnt FROM contact");
-if ($res && ($row = $res->fetch_assoc())) $dashboard_counts['contact'] = (int)$row['cnt'];
+$res = $conn->query("SELECT COUNT(*) as cnt FROM contact_messages");
+if ($res && ($row = $res->fetch_assoc())) $dashboard_counts['contact_messages'] = (int)$row['cnt'];
 ?>
 
 
@@ -152,17 +152,6 @@ body {
     color: black;
 }
 
-/* Color sequence:
-   1. events       - blue
-   2. bookings     - green
-   3. categories   - red
-   4. users        - green
-   5. services     - red
-   6. reviews      - blue
-   7. coupons      - red
-   8. about_us     - blue
-   9. contact      - green
-*/
 
 .dashboard-card.events      { border-left: 6px solid #5236d6; } /* blue */
 .dashboard-card.bookings    { border-left: 6px solid #197655; } /* green */
@@ -193,12 +182,12 @@ body {
         <div class="dashboard-card events shadow-sm">
             <div class="card-title">Total Events</div>
             <div class="card-number" data-num="<?php echo $dashboard_counts['events']; ?>">0</div>
-            <a href="events.php" class="card-link">Manage events →</a>
+            <a href="events.php" class="card-link">Manage Events →</a>
         </div>
         <div class="dashboard-card bookings shadow-sm">
             <div class="card-title">Total Bookings</div>
             <div class="card-number" data-num="<?php echo $dashboard_counts['bookings']; ?>">0</div>
-            <a href="bookings.php" class="card-link">Manage bookings →</a>
+            <a href="bookings.php" class="card-link">Manage Bookings →</a>
         </div>
         <div class="dashboard-card categories shadow-sm">
             <div class="card-title">All Categories</div>
@@ -208,7 +197,7 @@ body {
         <div class="dashboard-card users shadow-sm">
             <div class="card-title">Registered Users</div>
             <div class="card-number" data-num="<?php echo $dashboard_counts['users']; ?>">0</div>
-            <a href="users.php" class="card-link">Manage users →</a>
+            <a href="users.php" class="card-link">Manage Users →</a>
         </div>
         <div class="dashboard-card services shadow-sm">
             <div class="card-title">All Services</div>
@@ -232,7 +221,7 @@ body {
         </div>
         <div class="dashboard-card contact shadow-sm">
             <div class="card-title">Contact</div>
-            <div class="card-number" data-num="<?php echo $dashboard_counts['contact']; ?>">0</div>
+            <div class="card-number" data-num="<?php echo $dashboard_counts['contact_messages']; ?>">0</div>
             <a href="contact.php" class="card-link">Manage Contact →</a>
         </div>
     </div>
