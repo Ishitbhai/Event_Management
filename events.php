@@ -40,6 +40,9 @@ function render_gallery($event_gallery_images) {
     $out .= '</div>';
     return $out;
 }
+
+$user_role = isset($_SESSION['user_type']) ? strtolower($_SESSION['user_type']) : '';
+
 ?>
 
 <link rel="stylesheet" href="bootstrap/css/animate.min.css"/>
@@ -247,7 +250,9 @@ function render_gallery($event_gallery_images) {
 </div>
 <div class="container my-3">
     <div class="d-flex justify-content-end mb-4">
-        <a href="create_event.php" class="btn events-btn-create shadow animate__animated animate__bounceIn"><i class="bi bi-plus-circle"></i>  Create Event</a>
+        <?php if ($user_role === 'owner' || $user_role === 'admin') : ?>
+            <a href="create_event.php" class="btn events-btn-create shadow animate__animated animate__bounceIn"><i class="bi bi-plus-circle"></i>  Create Event</a>
+        <?php endif; ?>
     </div>
 
     <!-- Section: Ongoing & Upcoming -->

@@ -6,10 +6,28 @@ include 'database/db_connect.php';
 date_default_timezone_set('Asia/Kolkata');
 mysqli_query($conn, "SET time_zone = '+05:30'");
 
-/* SESSION CHECK */
+
+
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+    ?>
+    <script>
+        window.location.href="login.php";
+    </script>
+    <?php
     exit();
+}
+else{
+    $user_role = isset($_SESSION['user_type']) ? strtolower($_SESSION['user_type']) : '';
+
+    if ($user_role !== 'owner' && $user_role !== 'admin') {
+        ?>
+        <script>
+            window.location.href="events.php";
+        </script>
+        <?php
+        exit();
+    }
+    
 }
 
 /* FETCH CATEGORIES (also get price_per_hour for each category) */
