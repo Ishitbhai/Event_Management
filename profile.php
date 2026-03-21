@@ -42,17 +42,24 @@ if ($result && mysqli_num_rows($result) === 1) {
     $user = mysqli_fetch_assoc($result);
 } else {
     $user = array_fill_keys($db_fields, '');
+    if (in_array('profile_picture', $db_fields)) {
+        $user['profile_picture'] = 'user.png';
+    }
 }
 
 $field_errors = [];
 $update_msg = '';
 
+// Handle file upload and POST
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['profile_update'])) {
     $updates = [];
     $params = [];
     $param_types = '';
     $has_error = false;
+
+    // Handle other fields
     foreach ($db_fields as $field) {
+        if ($field === 'profile_picture') continue; // Handled separately
         if (in_array($field, $readonly_fields)) continue;
         $val = trim($_POST[$field] ?? '');
 
@@ -82,14 +89,47 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['profile_update'])) {
                 $field_errors[$field] = 'Phone number must be exactly 10 digits.';
                 $has_error = true;
             } else {
-                // Use cleaned value for DB
                 $val = $only_digits;
             }
         }
+        
         $updates[] = "`$field`=?";
         $params[] = $val;
         $param_types .= 's';
     }
+
+    // Profile picture logic: only update if user selected a new image
+    $target_dir = "images/";
+
+    if (
+        in_array('profile_picture', $db_fields) &&
+        isset($_FILES['profile_picture']) &&
+        is_uploaded_file($_FILES['profile_picture']['tmp_name']) &&
+        $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK
+    ) {
+        // Get original extension, sanitize name for security (but keep unique)
+        $ext = strtolower(pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION));
+        $acceptable_exts = ['jpg','jpeg','png','gif','webp','bmp'];
+
+        if (in_array($ext, $acceptable_exts)) {
+            $safe_filename = 'user_' . intval($user_id) . '_' . time() . '.' . $ext;
+            $target_file = $target_dir . $safe_filename;
+            // Save uploaded file
+            if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $target_file)) {
+                $updates[] = "`profile_picture`=?";
+                $params[] = $safe_filename;
+                $param_types .= 's';
+            } else {
+                $field_errors['profile_picture'] = 'Failed to upload image. Please try again.';
+                $has_error = true;
+            }
+        } else {
+            $field_errors['profile_picture'] = 'Only image files (jpg, png, gif, webp, bmp) are allowed.';
+            $has_error = true;
+        }
+    }
+    // If no image is selected, do NOT update profile_picture field; leave as is.
+
     if (!$has_error) {
         if (!empty($updates)) {
             $sql_update = "UPDATE users SET " . implode(", ", $updates) . " WHERE user_id=?";
@@ -114,6 +154,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['profile_update'])) {
         $update_msg = '<div style="color:#c00;">Please correct the highlighted errors below.</div>';
     }
 }
+
 ?>
 
 <?php include 'header.php'; ?>
@@ -145,9 +186,10 @@ body {
 .profile-header {
     text-align: center;
     margin-bottom: 29px;
+    position: relative;
 }
 .profile-header h2 {
-    margin-bottom: 7px;
+    margin-bottom: 13px;
     color: #2262a7;
     font-weight: 700;
     font-family: 'Segoe UI', Arial, sans-serif;
@@ -155,12 +197,16 @@ body {
     font-size: 2.1em;
 }
 
-.profile-row {
-    margin-bottom: 17px;
-    display: flex;
-    align-items: start;
-    gap: 1em;
-    flex-wrap: wrap;
+.profile-picture-circle {
+    display: block;
+    margin: 0 auto 18px auto;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 4px solid #e6f0fa;
+    background: #f7faff;
+    object-fit: cover;
+    box-shadow: 0 0 12px 0 rgba(82,154,188,0.13);
 }
 
 @media (max-width: 600px) {
@@ -175,6 +221,10 @@ body {
     }
     .profile-header h2 {
         font-size: 1.45em;
+    }
+    .profile-picture-circle {
+        width: 80px;
+        height: 80px;
     }
     .profile-container {
         padding: 22px 4vw 20px 4vw;
@@ -361,11 +411,23 @@ body {
 </style>
 <div class="profile-container">
     <div class="profile-header">
+        <?php
+        // Display profile picture (circular)
+        $img_val = "user.png";
+        if (isset($user['profile_picture']) && trim($user['profile_picture'])) {
+            if (file_exists("images/" . $user['profile_picture'])) {
+                $img_val = $user['profile_picture'];
+            }
+        }
+        ?>
+        <img class="profile-picture-circle" src="images/<?php echo h($img_val); ?>" alt="Profile Picture"
+            onerror="this.onerror=null;this.src='images/user.png';">
         <h2><?php echo h($user['user_name']) ?: 'Your'; ?> Profile</h2>
     </div>
     <?php if ($update_msg) echo $update_msg; ?>
-    <form method="post" autocomplete="off">
+    <form method="post" autocomplete="off" enctype="multipart/form-data">
         <?php foreach ($db_fields as $field): ?>
+            <?php if ($field === "profile_picture") continue; // Show separately below ?>
             <div class="profile-row">
                 <?php
                     $label = ucwords(str_replace(['user_', '_'], ['', ' '], $field));
@@ -399,6 +461,20 @@ body {
                 </span>
             </div>
         <?php endforeach; ?>
+        <?php if (in_array('profile_picture', $db_fields)): ?>
+            <div class="profile-row">
+                <span class="profile-label">Profile Picture:</span>
+                <span class="profile-value">
+                    <input style="padding:7px 10px;font-size:1em;" type="file" name="profile_picture" accept="image/*">
+                    <br>
+                    <small>(Select only if you want to change your profile picture.)
+                    </small>
+                    <?php if (isset($field_errors['profile_picture'])): ?>
+                        <div style="color:#c00; font-size:13px;"><?php echo h($field_errors['profile_picture']); ?></div>
+                    <?php endif; ?>
+                </span>
+            </div>
+        <?php endif; ?>
         <div class="profile-actions">
             <button type="submit" name="profile_update">Update Profile</button>
         </div>

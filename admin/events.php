@@ -8,6 +8,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 require_once('../database/db_connect.php');
 
+
 // Add event_price to the fields list
 $fields = [
     'event_id',
@@ -776,6 +777,7 @@ body { overflow-x: hidden; }
                     <tr>
                         <th>Sr. No.</th>
                         <?php
+
                         $col_headings = [
                             'event_id' => 'Event ID',
                             'owner_id' => 'Owner ID',

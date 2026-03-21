@@ -12,19 +12,21 @@ require('../database/db_connect.php');
 $admin_id = (int)$_SESSION['user_id'];
 $success_msg = $error_msg = "";
 
-// Fetch admin user data including address, user_type, registered_at, last_login
-$query = $conn->prepare("SELECT user_name, user_email, user_phone_number, user_address, user_type, registered_at, last_login FROM users WHERE user_id=? LIMIT 1");
+// Fetch admin user data including profile_picture
+$query = $conn->prepare("SELECT user_name, user_email, user_phone_number, user_address, user_type, registered_at, last_login, profile_picture FROM users WHERE user_id=? LIMIT 1");
 $query->bind_param("i", $admin_id);
 $query->execute();
-$query->bind_result($user_name, $user_email, $user_phone_number, $user_address, $user_type, $registered_at, $last_login);
+$query->bind_result($user_name, $user_email, $user_phone_number, $user_address, $user_type, $registered_at, $last_login, $profile_picture);
 $query->fetch();
 $query->close();
 
-// -- INITIALIZE to allow for show on first visit or failed post
+$current_image_filename = $profile_picture;
+
 $field_errors = [
     'user_name' => '',
     'user_phone_number' => '',
-    'user_address' => ''
+    'user_address' => '',
+    'profile_picture' => ''
 ];
 $pw_field_errors = [
     'current_password' => '',
@@ -32,18 +34,19 @@ $pw_field_errors = [
     'confirm_password' => ''
 ];
 
+$profile_image_dir = "../images/";
+$profile_image_web_path = "../images/";
+
 if ($_SERVER['REQUEST_METHOD'] === "POST") {
-    // Edit fields: name/phone/address
     if (isset($_POST['save_profile'])) {
         $new_name = trim($_POST['user_name']);
         $new_phone = trim($_POST['user_phone_number']);
         $new_address = trim($_POST['user_address']);
-
-        // Init error fields
         $field_errors = [
             'user_name' => '',
             'user_phone_number' => '',
-            'user_address' => ''
+            'user_address' => '',
+            'profile_picture' => ''
         ];
 
         $has_error = false;
@@ -69,26 +72,59 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
             $has_error = true;
         }
 
+        // Only process image if submitted, else keep old as it is
+        $new_image_filename = $current_image_filename;
+        if (!empty($_FILES['profile_picture']['name'])) {
+            $img = $_FILES['profile_picture'];
+            $allowed_types = ['jpg', 'jpeg', 'png'];
+            $img_ext = strtolower(pathinfo($img['name'], PATHINFO_EXTENSION));
+
+            if (!in_array($img_ext, $allowed_types)) {
+                $field_errors['profile_picture'] = "Only JPG, JPEG and PNG files are allowed.";
+                $has_error = true;
+            } elseif ($img['size'] > 2*1024*1024) {
+                $field_errors['profile_picture'] = "Image must be less than 2MB.";
+                $has_error = true;
+            } elseif (!getimagesize($img['tmp_name'])) {
+                $field_errors['profile_picture'] = "File is not a valid image.";
+                $has_error = true;
+            }
+
+            if (!$has_error) {
+                $new_image_filename = "profile_".$admin_id."_".time().".".$img_ext;
+                $dest_path = $profile_image_dir . $new_image_filename;
+                if (!move_uploaded_file($img['tmp_name'], $dest_path)) {
+                    $field_errors['profile_picture'] = "Failed to upload image.";
+                    $has_error = true;
+                } else {
+                    // Do not delete/unlink any image from ../images/ as per the requirement!
+                    // Old code for reference (do not use):
+                    // if ($current_image_filename && file_exists($profile_image_dir . $current_image_filename) && $current_image_filename !== $new_image_filename) {
+                    //     @unlink($profile_image_dir . $current_image_filename);
+                    // }
+                }
+            }
+        }
+
         if (!$has_error) {
-            $stmt = $conn->prepare("UPDATE users SET user_name=?, user_phone_number=?, user_address=? WHERE user_id=?");
-            $stmt->bind_param("sssi", $new_name, $new_phone, $new_address, $admin_id);
+            $stmt = $conn->prepare("UPDATE users SET user_name=?, user_phone_number=?, user_address=?, profile_picture=? WHERE user_id=?");
+            $stmt->bind_param("ssssi", $new_name, $new_phone, $new_address, $new_image_filename, $admin_id);
             if ($stmt->execute()) {
                 $success_msg = "Profile updated successfully.";
                 $user_name = $new_name;
                 $user_phone_number = $new_phone;
                 $user_address = $new_address;
+                $profile_picture = $new_image_filename;
+                $current_image_filename = $new_image_filename;
             } else {
                 $error_msg = "Failed to update profile.";
             }
             $stmt->close();
         }
     } else if (isset($_POST['change_password'])) {
-        // Handle password change
         $current_pw = $_POST['current_password'];
         $new_pw = $_POST['new_password'];
         $confirm_pw = $_POST['confirm_password'];
-
-        // be sure to clear for each post
         $pw_field_errors = [
             'current_password' => '',
             'new_password' => '',
@@ -121,7 +157,6 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
         }
 
         if (!$pw_has_error) {
-            // Verify current password
             $stmt = $conn->prepare("SELECT user_password FROM users WHERE user_id=?");
             $stmt->bind_param("i", $admin_id);
             $stmt->execute();
@@ -133,7 +168,6 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
                 $pw_field_errors['current_password'] = "Current password is incorrect.";
                 $pw_has_error = true;
             } else {
-                // Update new password
                 $hashed_new_pw = password_hash($new_pw, PASSWORD_DEFAULT);
                 $stmt = $conn->prepare("UPDATE users SET user_password=? WHERE user_id=?");
                 $stmt->bind_param("si", $hashed_new_pw, $admin_id);
@@ -147,9 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
             }
         }
 
-        // If any error, ensure modal stays open so errors show
         if ($pw_has_error) {
-            // This JS opens modal after form POST with errors
             echo "<script>
             document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(function(){
@@ -166,9 +198,8 @@ $page_heading = "My Profile";
 require('sidebar.php');
 ?>
 
-<!-- <link rel="stylesheet" href="css/profile.css"> -->
 <style>
-    .button-uniform {
+.button-uniform {
     display: inline-flex;
     align-items: center;
     gap: 0.5em;
@@ -196,7 +227,6 @@ require('sidebar.php');
 .button-uniform.secondary {
     background: #1d2327 !important;
     color: #fff !important;
-    /* no border */
 }
 .button-uniform:hover, .button-uniform:focus,
 .button-uniform.secondary:hover, .button-uniform.secondary:focus {
@@ -204,7 +234,6 @@ require('sidebar.php');
     color: #f4f4f4 !important;
     box-shadow: 0 4px 18px #1d232725;
 }
-
 .profile-btn-row {
     margin-top:32px;
     display: flex;
@@ -216,7 +245,6 @@ require('sidebar.php');
 .profile-btn-row.profile-btn-row-modal {
     margin-top: 0 !important;
 }
-
 .profile-main {
     background: #fff;
     border-radius: 18px;
@@ -225,7 +253,6 @@ require('sidebar.php');
     padding: 36px 20px 22px 20px;
     box-shadow: 0 5px 23px -7px #18849030;
 }
-
 .profile-avatar {
     width: 78px; height: 78px;
     border-radius: 50%;
@@ -239,6 +266,14 @@ require('sidebar.php');
     justify-content:center;
     color:#197655;
     box-shadow:0 2px 12px #28b3e223;
+    overflow: hidden;
+}
+.profile-avatar img {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    border-radius:50%;
 }
 .profile-info-table {
     width: 100%; font-size: 1.09em;
@@ -280,7 +315,6 @@ require('sidebar.php');
 #passwordModal.active {
     display: flex;
 }
-
 .modal-content {
     background: #fff;
     border-radius: 18px;
@@ -331,7 +365,6 @@ require('sidebar.php');
 .modal-close-btn:hover, .modal-close-btn:focus {
     background: #e6f8fb;
 }
-
 fieldset.pw-change {
     border-radius:13px; border:1.2px solid #e6edf0;
     padding: 18px 3px 11px 3px; background: #f7fcff;
@@ -346,7 +379,6 @@ legend.pw-legend {
     font-weight:700;
     margin-bottom: 10px;
     letter-spacing: 0.2px;
-    /* Hide original legend visually but retain accessibility */
     position: absolute;
     left: -9999px;
 }
@@ -386,20 +418,16 @@ legend.pw-legend {
 body.modal-open {
     overflow: hidden;
 }
-
-/* Modal bottom button row outside border, aligned with modal, not inside fieldset */
 .profile-btn-row.profile-btn-row-modal {
     margin-top: 12px !important;
     padding-bottom: 4px;
     justify-content: flex-end;
 }
-
 .field-err, .field-err-pw {
     color: #cc0000;
     font-size: 0.95em;
     font-weight: 500;
 }
-/* Modal Styles */
 #passwordModal {
     position: fixed;
     z-index: 10000;
@@ -421,24 +449,16 @@ body.modal-open {
 #passwordModal .modal-close-btn {
     position: absolute; top: 15px; right: 15px; border: none; background: none; font-size: 1.6em; cursor: pointer;
 }
-
 </style>
-
-<!-- jQuery CDN for validation -->
 <script src="js/jquery-4.0.0.min.js"></script>
 <script>
 $(document).ready(function(){
-    // Profile form validation
     $('form#profile-edit-form').on('submit', function(e){
         var name = $.trim($('input[name="user_name"]').val());
         var phone = $.trim($('input[name="user_phone_number"]').val());
         var address = $.trim($('input[name="user_address"]').val());
         var valid = true;
-
-        // Clear previous errors
-        $('.field-err').text(''); 
-
-        // Name
+        $('.field-err').text('');
         if (name.length == 0) {
             $('#err_user_name').text("Name cannot be empty.");
             valid = false;
@@ -446,8 +466,6 @@ $(document).ready(function(){
             $('#err_user_name').text("Name must only contain letters and spaces.");
             valid = false;
         }
-
-        // Phone
         if (phone.length == 0) {
             $('#err_user_phone_number').text("Phone number cannot be empty.");
             valid = false;
@@ -455,8 +473,6 @@ $(document).ready(function(){
             $('#err_user_phone_number').text("Phone number must be exactly 10 digits.");
             valid = false;
         }
-
-        // Address
         if (address.length == 0) {
             $('#err_user_address').text("Address cannot be empty.");
             valid = false;
@@ -464,30 +480,33 @@ $(document).ready(function(){
             $('#err_user_address').text("Address must be at least 5 characters long.");
             valid = false;
         }
-
+        var imgInput = $('input[name="profile_picture"]')[0];
+        if (imgInput && imgInput.files && imgInput.files.length > 0) {
+            var img = imgInput.files[0];
+            var allowed = ['image/jpeg','image/png'];
+            if ($.inArray(img.type, allowed) === -1) {
+                $('#err_profile_picture').text("Only JPG, PNG, GIF, and WEBP images allowed.");
+                valid = false;
+            } else if (img.size > 2*1024*1024) {
+                $('#err_profile_picture').text("Image must be less than 2MB.");
+                valid = false;
+            }
+        }
         if (!valid) {
             e.preventDefault();
             return false;
         }
     });
-
-    // Password modal validation
     $('form#pw-change-form').on('submit', function(e){
         var current = $.trim($('#current_password').val());
         var pw1 = $.trim($('#new_password').val());
         var pw2 = $.trim($('#confirm_password').val());
         var valid = true;
-
-        // Clear previous errors
         $('.field-err-pw').text('');
-
-        // Current Password
         if (!current) {
             $('#err_current_password').text("Current password is required.");
             valid = false;
         }
-
-        // New Password
         if (!pw1) {
             $('#err_new_password').text("New password is required.");
             valid = false;
@@ -495,8 +514,6 @@ $(document).ready(function(){
             $('#err_new_password').text("Password must be minimum 8 characters, include upper and lower case letters, a digit and a special character.");
             valid = false;
         }
-
-        // Confirm Password
         if (!pw2) {
             $('#err_confirm_password').text("Password confirmation is required.");
             valid = false;
@@ -504,30 +521,22 @@ $(document).ready(function(){
             $('#err_confirm_password').text("New password and confirmation do not match.");
             valid = false;
         }
-
         if (!valid) {
             e.preventDefault();
             return false;
         }
     });
-
-    // Move modal open/close functionality here and fix:
     window.openPwModal = function(){
         $("#passwordModal").fadeIn(150);
     }
     window.closePwModal = function(){
         $("#passwordModal").fadeOut(150);
     }
-
-    // Also close modal if user clicks background outside modal-content:
     $('#passwordModal').on('click', function(e){
         if ($(e.target).is('#passwordModal')) {
             closePwModal();
         }
     });
-
-    // Open modal if PHP triggers it (if any error in password form)
-    // (This must match the PHP echo'd script if error occurred)
     if (window.location.hash === "#pwerror") {
         setTimeout(function(){
             if (typeof openPwModal === 'function') openPwModal();
@@ -536,10 +545,15 @@ $(document).ready(function(){
     }
 });
 </script>
-
 <div class="profile-main">
     <div class="profile-avatar">
-        &#128100;
+        <?php
+        if (!empty($profile_picture) && file_exists("../images/" . $profile_picture)) {
+            echo '<img src="' . htmlspecialchars($profile_image_web_path . $profile_picture) . '" alt="Profile Picture">';
+        } else {
+            echo "&#128100;";
+        }
+        ?>
     </div>
     <h2 class="profile-title">
         Edit Profile
@@ -549,7 +563,7 @@ $(document).ready(function(){
     <?php elseif (isset($error_msg) && $error_msg): ?>
         <div class="err-msg"><?php echo htmlspecialchars($error_msg); ?></div>
     <?php endif; ?>
-    <form method="post" autocomplete="off" id="profile-edit-form">
+    <form method="post" autocomplete="off" id="profile-edit-form" enctype="multipart/form-data">
         <table class="profile-info-table">
             <tr>
                 <td class="profile-label">Name:</td>
@@ -579,6 +593,13 @@ $(document).ready(function(){
                 </td>
             </tr>
             <tr>
+                <td class="profile-label">Profile Picture:</td>
+                <td class="profile-value">
+                    <input type="file" name="profile_picture" accept="image/*">
+                    <br><span class="field-err" id="err_profile_picture"><?php if(isset($field_errors) && $field_errors['profile_picture']) echo htmlspecialchars($field_errors['profile_picture']); ?></span>
+                </td>
+            </tr>
+            <tr>
                 <td class="profile-label">User Type:</td>
                 <td class="profile-value">
                     <input type="text" name="user_type" value="<?php echo htmlspecialchars($user_type); ?>" readonly>
@@ -603,12 +624,9 @@ $(document).ready(function(){
         </div>
     </form>
 </div>
-
-<!-- Password Change Modal -->
 <div id="passwordModal" role="dialog" aria-modal="true" style="display:none;">
     <div class="modal-content">
         <button class="modal-close-btn" type="button" onclick="closePwModal()" title="Close">&times;</button>
-        <!-- New Change Password Title -->
         <div class="pw-modal-title">Change Password</div>
         <form method="post" autocomplete="off" style="margin-bottom:0;" id="pw-change-form">
             <fieldset class="pw-change">
@@ -629,7 +647,6 @@ $(document).ready(function(){
                     <br><span class="field-err-pw" id="err_confirm_password"><?php if(isset($pw_field_errors) && $pw_field_errors['confirm_password']) echo htmlspecialchars($pw_field_errors['confirm_password']); ?></span>
                 </div>
             </fieldset>
-            <!-- Modal buttons outside border for Change/Cancel -->
             <div class="profile-btn-row profile-btn-row-modal">
                 <button type="submit" name="change_password" class="button-uniform"><span>&#128274;</span>Change Password</button>
                 <button type="button" class="button-uniform secondary" onclick="closePwModal()"><span>&#10006;</span>Cancel</button>

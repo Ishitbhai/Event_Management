@@ -118,6 +118,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !isset($_POST['ajax_login'])) {
                     $_SESSION['user_name'] = $user['user_name'];
                     $_SESSION['user_email'] = $user['user_email'];
                     $_SESSION['user_type'] = $user['user_type'];
+                    if (isset($user['user_type']) && $user['user_type'] === 'admin') {  
+                        $_SESSION['admin_username'] = $user['user_email'];
+                        $_SESSION['admin_user_name'] = $user['user_name'];
+                    }
 
                     // Redirect to main page or dashboard
                     header("Location: index.php");

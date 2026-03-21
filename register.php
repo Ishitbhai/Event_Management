@@ -19,10 +19,7 @@ if (isset($_SESSION['user_id'])) {
 require 'vendor/autoload.php';
 
 function is_invalid_phone($phone) {
-    // Remove non-numeric characters
     $clean = preg_replace('/\D/', '', $phone);
-
-    // Block by "obvious" patterns
     $blocked = [
         '1234567890',
         '0987654321',
@@ -37,26 +34,17 @@ function is_invalid_phone($phone) {
         '9999999999',
         '0000000000',
     ];
-
     if (in_array($clean, $blocked)) return true;
-
-    // Check for all same digit
-    if (preg_match('/^(\d)\1{9,}$/', $clean)) return true; // e.g. 1111111111, 2222222222
-
-    // Ascending sequence e.g., 1234567890
+    if (preg_match('/^(\d)\1{9,}$/', $clean)) return true;
     if ($clean === implode('', range(1, 9)) . '0') return true;
-
-    // Descending sequence e.g., 9876543210
     if ($clean === '9876543210') return true;
-
-    // Also block two alternating digits repeated
     if (preg_match('/^(\d)(\d)\1\2+$/', $clean)) return true;
-
     return false;
 }
 
 $password_error_message = '';
 $phone_error_message = '';
+$profile_picture_error_message = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
@@ -68,6 +56,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user_password = $_POST['user_password'];
     $confirm_user_password = $_POST['confirm_user_password'];
     $user_token = bin2hex(random_bytes(16)); // secure token
+
+    // Profile picture logic (optional)
+    $profile_picture_uploaded = false;
+    $profile_picture_filename_in_db = null;
+    if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $allowed_types = ['image/jpeg', 'image/png', 'image/jpg'];
+        $allowed_exts = ['jpg', 'jpeg', 'png'];
+        $max_size = 2 * 1024 * 1024;
+        $file_type = $_FILES['profile_picture']['type'];
+        $file_size = $_FILES['profile_picture']['size'];
+        $file_tmp = $_FILES['profile_picture']['tmp_name'];
+        $file_ext = strtolower(pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION));
+
+        if (!in_array($file_type, $allowed_types) || !in_array($file_ext, $allowed_exts)) {
+            $profile_picture_error_message = "Profile picture must be a JPG, JPEG, or PNG file.";
+        } elseif ($file_size > $max_size) {
+            $profile_picture_error_message = "Profile picture must not exceed 2MB.";
+        }
+    }
 
     // Password validation: min 8, 1 upper, 1 lower, 1 digit, 1 special character
     $password_valid = preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/', $user_password);
@@ -87,19 +94,42 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $password_error_message = "Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one digit, and one special character.";
     } elseif ($phone_invalid) {
         $phone_error_message = "Please enter a valid phone number. Sequential, repeated or obviously fake phone numbers are not allowed.";
+    } elseif (!empty($profile_picture_error_message)) {
+        $error = $profile_picture_error_message;
     } else {
+        // Handle optional profile picture upload (store only filename in DB if uploaded)
+        if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] !== UPLOAD_ERR_NO_FILE && empty($profile_picture_error_message)) {
+            $uploads_dir = 'images';
+            if (!file_exists($uploads_dir)) {
+                mkdir($uploads_dir, 0755, true);
+            }
+            $unique_name = uniqid('profile_', true) . '.' . $file_ext;
+            $profile_picture_full_path = $uploads_dir . '/' . $unique_name;
+            if (move_uploaded_file($file_tmp, $profile_picture_full_path)) {
+                $profile_picture_uploaded = true;
+                // Store only the filename in the database (no path)
+                $profile_picture_filename_in_db = mysqli_real_escape_string($conn, $unique_name);
+            } else {
+                $error = "Failed to upload profile picture.";
+            }
+        }
+
         // Hash the password
         $hashed_password = password_hash($user_password, PASSWORD_DEFAULT);
 
-        // Insert into database
-        $sql = "INSERT INTO users (user_name, user_email, user_phone_number, user_address, user_password, user_token)
-                VALUES ('$user_name', '$user_email', '$user_phone_number', '$user_address', '$hashed_password', '$user_token')";
+        // Insert into database: if image uploaded, include the filename, else leave NULL/empty
+        if ($profile_picture_filename_in_db !== null) {
+            $sql = "INSERT INTO users (user_name, user_email, user_phone_number, user_address, user_password, user_token, profile_picture)
+                    VALUES ('$user_name', '$user_email', '$user_phone_number', '$user_address', '$hashed_password', '$user_token', '$profile_picture_filename_in_db')";
+        } else {
+            $sql = "INSERT INTO users (user_name, user_email, user_phone_number, user_address, user_password, user_token)
+                    VALUES ('$user_name', '$user_email', '$user_phone_number', '$user_address', '$hashed_password', '$user_token')";
+        }
 
-        if (mysqli_query($conn, $sql)) {
+        if (empty($error) && mysqli_query($conn, $sql)) {
             // Send verification email using PHPMailer
             $mail = new PHPMailer(true);
             try {
-                // SMTP configuration
                 $mail->isSMTP();
                 $mail->Host = 'smtp.gmail.com'; // your SMTP host
                 $mail->SMTPAuth = true;
@@ -124,7 +154,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $error = "Registration successful, but email could not be sent. Mailer Error: {$mail->ErrorInfo}";
             }
 
-        } else {
+        } elseif (empty($error)) {
             $error = "Error: " . mysqli_error($conn);
         }
     }
@@ -137,11 +167,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <title>AOne Hub</title>
     <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
-    <!-- <link rel="stylesheet" href="css/login.css"> -->
     <script src="js/jquery-4.0.0.min.js"></script>
     <script src="js/jquery.validate.min.js"></script>
-    <!-- <script src="js/register.js"></script> -->
-     <script>
+    <script>
         $(document).ready(function(){
     $.validator.addMethod("strongPassword", function(value, element) {
         return this.optional(element)
@@ -189,6 +217,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 required: true,
                 equalTo: "#password"
             }
+            // profile_picture optional
         },
         messages: {
             fullname: {
@@ -238,29 +267,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     });
 });
-
-     </script>
+    </script>
     <style>
-        body {
+    body {
     min-height: 100vh;
     background: linear-gradient(135deg, #9796f0 0%, #fbc7d4 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-    /* Smooth bg animation */
     animation: bgMove 12s ease-in-out infinite alternate;
 }
-
-@keyframes bgMove {
-    0% {
-        background-position: 0% 50%;
-    }
-    100% {
-        background-position: 100% 50%;
-    }
-}
-
+@keyframes bgMove { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
 .auth-container {
     width: 100vw;
     min-height: 100vh;
@@ -269,27 +287,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Fade-in animation */
     opacity: 0;
     animation: fadeIn 1s ease 0.2s forwards;
     box-sizing: border-box;
 }
-
-@keyframes fadeIn {
-    to {
-        opacity: 1;
-    }
-}
-
+@keyframes fadeIn { to { opacity: 1; } }
 .auth-box {
     background: #fff;
-    padding: 2.5rem 0; /* Remove horizontal padding (symmetric 0 left/right) */
+    padding: 2.5rem 0;
     border-radius: 1rem;
     max-width: 410px;
     width: 100%;
     box-shadow: 0 6px 36px rgba(38, 38, 94, 0.14);
     border: 0;
-    /* Slide-in animation */
     transform: translateY(60px) scale(0.97);
     opacity: 0;
     animation: boxAppear 0.9s cubic-bezier(.6, .11, .42, .98) 0.3s forwards;
@@ -299,22 +309,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     flex-direction: column;
     align-items: center;
 }
-
-@keyframes boxAppear {
-    to {
-        transform: none;
-        opacity: 1;
-    }
-}
-
-.auth-box form,
-.auth-box > form {
+@keyframes boxAppear { to { transform: none; opacity: 1; } }
+.auth-box form, .auth-box > form {
     width: 90%;
     margin-left: auto;
     margin-right: auto;
     box-sizing: border-box;
 }
-
 .auth-box h2 {
     font-size: 2.1rem;
     font-weight: 700;
@@ -335,13 +336,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     transform: translateY(20px);
     animation: fadeUp 0.75s 0.75s forwards;
 }
-@keyframes fadeUp {
-    to {
-        opacity: 1;
-        transform: none;
-    }
-}
-
+@keyframes fadeUp { to { opacity: 1; transform: none; } }
 .input-row {
     display: flex;
     gap: 1rem;
@@ -349,12 +344,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     margin-bottom: 1.25rem;
     flex-wrap: wrap;
 }
-
 .input-row .input-half {
     flex: 1 1 0;
     min-width: 0;
 }
-.input-row .input-half input {
+.input-row .input-half input, .input-row .input-half label {
     width: 100%;
     box-sizing: border-box;
     margin-left: 0;
@@ -362,9 +356,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     padding-left: 0;
     padding-right: 0;
 }
-
-/* Remove textarea styles: Address is now type="text" input, uses input styles */
-
 /* Animations for all input fields */
 .auth-box input[type="text"],
 .auth-box input[type="email"],
@@ -382,7 +373,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     margin-right: 0;
     width: 100%;
 }
-
 .auth-box input[type="text"]:focus,
 .auth-box input[type="email"]:focus,
 .auth-box input[type="password"]:focus,
@@ -392,7 +382,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     outline: none;
     box-shadow: 0 2px 12px rgba(94, 92, 230, 0.12);
 }
-
 .auth-box button,
 .auth-box input[type="submit"] {
     width: 100%;
@@ -411,7 +400,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     margin-right: 0;
     display: block;
 }
-
 .auth-box button:hover,
 .auth-box input[type="submit"]:hover {
     background: linear-gradient(90deg, #34307a 0%, #d53369 100%);
@@ -419,8 +407,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     opacity: 0.97;
     box-shadow: 0 5px 18px rgba(117, 82, 235, 0.14);
 }
-
-/* Link styling */
 .links {
     margin-top: 1.2rem;
     font-size: 0.96rem;
@@ -442,7 +428,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     text-decoration: underline;
     letter-spacing: 0.7px;
 }
-
 /* Validation and error messages */
 .error,
 .fp-error {
@@ -452,17 +437,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     display: block;
     transition: color 0.22s;
 }
-
 input.error,
 textarea.error {
     border-color: #e53935 !important;
     background: #fff5f6;
 }
-.fp-success {
-    color: #25c685;
-    font-size: 1rem;
-    margin-top: 0.2em;
-}
+.fp-success { color: #25c685; font-size: 1rem; margin-top: 0.2em; }
 .fp-input,
 .fp-input-reset,
 .fp-input-reset-confirm {
@@ -494,114 +474,44 @@ textarea.error {
     margin-right: 0;
     box-sizing: border-box;
 }
-.fp-btn:hover {
-    background: #b06ab3;
-}
-
+.fp-btn:hover { background: #b06ab3; }
 .fp-mt20 { margin-top: 1.4rem; }
-
-/* Bootstrap-style responsiveness */
 @media (max-width: 992px) {
-    .auth-box {
-        max-width: 500px;
-        padding: 2rem 0; /* Remove horizontal padding for symmetry */
-    }
-    .auth-box form,
-    .auth-box > form {
-        width: 98%;
-    }
+    .auth-box { max-width: 500px; padding: 2rem 0; }
+    .auth-box form, .auth-box > form { width: 98%; }
 }
 @media (max-width: 768px) {
-    .auth-box {
-        max-width: 98vw;
-        padding: 1.5rem 0; /* Remove horizontal padding */
-        border-radius: 0.7rem;
-    }
-    .auth-box form,
-    .auth-box > form {
-        width: 99%;
-    }
-    .input-row {
-        flex-direction: column;
-        gap: 0.25rem;
-        margin-bottom: 1rem;
-    }
-    .auth-box h2 {
-        font-size: 1.3rem;
-    }
-    .auth-box p {
-        font-size: 0.97rem;
-        margin-bottom: 1.2rem;
-    }
+    .auth-box { max-width: 98vw; padding: 1.5rem 0; border-radius: 0.7rem; }
+    .auth-box form, .auth-box > form { width: 99%; }
+    .input-row { flex-direction: column; gap: 0.25rem; margin-bottom: 1rem; }
+    .auth-box h2 { font-size: 1.3rem; }
+    .auth-box p { font-size: 0.97rem; margin-bottom: 1.2rem; }
 }
 @media (max-width: 480px) {
-    .auth-box {
-        max-width: 99vw;
-        min-width: 0;
-        padding: 1rem 0; /* Zero side padding */
-        border-radius: 0.5rem;
-    }
-    .auth-box form,
-    .auth-box > form {
-        width: 99vw;
-    }
-    .auth-box h2 {
-        font-size: 1rem;
-    }
-    .auth-box p,
-    .links {
-        font-size: 0.88rem;
-    }
-    .fp-btn,
-    .auth-box button,
-    .auth-box input[type="submit"] {
-        font-size: 0.98rem;
-        padding: 0.65rem;
-        border-radius: 0.95rem;
-        margin-left: 0;
-        margin-right: 0;
-    }
-    .fp-input,
-    .fp-input-reset,
-    .fp-input-reset-confirm {
-        font-size: 0.94rem;
-        padding: 0.5rem 0.8rem;
-        width: 100%;
-        margin-left: 0;
-        margin-right: 0;
-    }
+    .auth-box { max-width: 99vw; min-width: 0; padding: 1rem 0; border-radius: 0.5rem; }
+    .auth-box form, .auth-box > form { width: 99vw; }
+    .auth-box h2 { font-size: 1rem; }
+    .auth-box p, .links { font-size: 0.88rem; }
+    .fp-btn, .auth-box button, .auth-box input[type="submit"] { font-size: 0.98rem; padding: 0.65rem; border-radius: 0.95rem; margin-left: 0; margin-right: 0; }
+    .fp-input, .fp-input-reset, .fp-input-reset-confirm { font-size: 0.94rem; padding: 0.5rem 0.8rem; width: 100%; margin-left: 0; margin-right: 0; }
 }
 @media (max-height: 480px) {
-    body {
-        flex-direction: column;
-        padding: 5vw 0;
-    }
+    body { flex-direction: column; padding: 5vw 0; }
 }
-
-.auth-box {
-    padding-left: 1.2rem !important;
-    padding-right: 1.2rem !important;
-}
+.auth-box { padding-left: 1.2rem !important; padding-right: 1.2rem !important; }
 @media (max-width: 768px) {
-    .auth-box {
-        padding-left: 0.7rem !important;
-        padding-right: 0.7rem !important;
-    }
+    .auth-box { padding-left: 0.7rem !important; padding-right: 0.7rem !important; }
 }
-.input-row.row {
-    margin-left: 0;
-    margin-right: 0;
-}
-.auth-box .row {
-    --bs-gutter-x: 0 !important;
-}
+.input-row.row { margin-left: 0; margin-right: 0; }
+.auth-box .row { --bs-gutter-x: 0 !important; }
     </style>
 </head>
 <body>
 
 <div class="auth-container">
 
-    <form class="auth-box" id="registerForm" action="" method="post" novalidate>
+    <!-- Note: multipart/form-data is needed for image upload -->
+    <form class="auth-box" id="registerForm" action="" method="post" enctype="multipart/form-data" novalidate>
         <h2 class="mb-2">Create Account</h2>
         <p class="mb-4">Join Aone Hub today</p>
 
@@ -642,6 +552,17 @@ textarea.error {
                     required
                     value="<?php echo isset($_POST['user_address']) ? htmlspecialchars($_POST['user_address']) : ''; ?>"
                 >
+            </div>
+        </div>
+
+        <!-- Profile Picture input, optional -->
+        <div class="input-row row">
+            <div class="input-half col-12 px-0">
+                <label for="profile_picture" style="font-size: 1rem;">Profile Picture</label>
+                <input type="file" class="form-control" name="profile_picture" id="profile_picture" accept=".jpg,.jpeg,.png" style="background:#fff;">
+                <?php if(!empty($profile_picture_error_message)): ?>
+                    <div class="text-danger mt-1" style="font-size:13px;"><?php echo $profile_picture_error_message; ?></div>
+                <?php endif; ?>
             </div>
         </div>
 

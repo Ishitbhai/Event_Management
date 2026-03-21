@@ -2,6 +2,21 @@
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
+
+// Fetch user's profile_picture from database if logged in
+$user_profile_img = "images/user.png"; // Default profile image
+if (isset($_SESSION['user_id'])) {
+    require_once 'database/db_connect.php';
+    $user_id = $_SESSION['user_id'];
+    $stmt = $conn->prepare("SELECT profile_picture FROM users WHERE user_id = ?");
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $stmt->bind_result($profile_picture);
+    if ($stmt->fetch() && !empty($profile_picture) && file_exists("images/" . $profile_picture)) {
+        $user_profile_img = "images/" . $profile_picture;
+    }
+    $stmt->close();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -355,7 +370,7 @@ if (session_status() == PHP_SESSION_NONE) {
   <div class="container position-relative">
 
     <a class="navbar-brand" href="index.php">
-      <span>Aone</span>Hub
+      <span>A-One</span>_       Hub
     </a>
 
     <button class="navbar-toggler"
@@ -409,7 +424,7 @@ if (session_status() == PHP_SESSION_NONE) {
       <div class="auth-btns">
         <?php if (isset($_SESSION['user_id'])): ?>
             <a href="profile.php" class="btn btn-outline-light me-2" style="border:none;">
-                <img src="images/user.png" class="profile-img"/>
+                <img src="<?= htmlspecialchars($user_profile_img) ?>" class="profile-img"/>
                 <span>Profile</span>
             </a>
             <a href="logout.php" class="btn btn-logout">
@@ -431,4 +446,3 @@ if (session_status() == PHP_SESSION_NONE) {
 
 </body>
 </html>
-            

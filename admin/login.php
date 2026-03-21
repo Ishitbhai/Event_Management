@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($admin_email && $admin_password) {
         // Fetch admin from users table where user_type='admin'
-        $stmt = $conn->prepare("SELECT user_id, user_email, user_name, user_password FROM users WHERE user_email = ? AND user_type = 'admin' LIMIT 1");
+        $stmt = $conn->prepare("SELECT user_id, user_email, user_name, user_password, user_type FROM users WHERE user_email = ? AND user_type = 'admin' LIMIT 1");
         $stmt->bind_param('s', $admin_email);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -29,7 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['is_admin'] = 1;
                 $_SESSION['admin_username'] = $row['user_email'];
                 $_SESSION['admin_user_name'] = $row['user_name'];
+                $_SESSION['user_name'] = $row['user_name'];
+                $_SESSION['user_email'] = $row['user_email'];
                 $_SESSION['user_id'] = $row['user_id'];
+                $_SESSION['user_type'] = $row['user_type'];
                 header('Location: index.php');
                 exit();
             } else {

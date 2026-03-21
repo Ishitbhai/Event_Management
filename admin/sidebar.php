@@ -3,6 +3,24 @@ if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== 1) {
     header('Location: login.php');
     exit();
 }
+require_once('../database/db_connect.php');
+
+// --- Fetch profile picture for logged-in admin from database ---
+$profile_picture = null;
+if (isset($_SESSION['user_id'])) {
+    $user_id = intval($_SESSION['user_id']);
+
+    if ($conn && !$conn->connect_error) {
+        $stmt = $conn->prepare("SELECT profile_picture FROM users WHERE user_id = ?");
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $stmt->bind_result($profile_picture);
+        $stmt->fetch();
+        $stmt->close();
+        
+    }
+    // If not found, $profile_picture will stay null
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -47,10 +65,30 @@ if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== 1) {
     cursor: pointer;
     font-size: 20px;
     margin-left: 12px;
+    position: relative;
+    overflow: hidden;
 }
 .profile-icon {
     font-size: 20px;
     color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+/* corrected: don't use flex/alignment on the img, just size/crop */
+.profile-picture-img {
+    width: 38px;
+    height: 38px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 1px solid #d6d6d6;
+    background: #ccd2e0;
+    display: block;
+    /* Remove flex and font-size props that only apply to .profile-icon */
+    max-width: none;
+    max-height: none;
+    padding: 0;
+    margin: 0;
 }
 html, body {
     margin: 0;
@@ -611,6 +649,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 ?>
                 <button class="profile-btn" title="Profile" onclick="window.location.href='profile.php'">
-                    <span class="profile-icon">&#128100;</span>
+                    <?php if (!empty($profile_picture)): ?>
+                        <img src="../images/<?php echo htmlspecialchars($profile_picture); ?>" alt="Profile" class="profile-picture-img">
+                    <?php else: ?>
+                        <span class="profile-icon">&#128100;</span>
+                    <?php endif; ?>
                 </button>
             </div>
