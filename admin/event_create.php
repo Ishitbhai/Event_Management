@@ -17,8 +17,10 @@ mysqli_query($conn, "SET time_zone = '+05:30'");
 $category_query = "SELECT * FROM category";
 $category_res = mysqli_query($conn, $category_query);
 $categories = [];
+$category_price_per_hour_map = [];
 while ($row = mysqli_fetch_assoc($category_res)) {
     $categories[] = $row;
+    $category_price_per_hour_map[$row['category_id']] = $row['category_price_per_hour'];
 }
 
 $errors = [];
@@ -26,6 +28,7 @@ $success = false;
 
 $title = $description = $category_id = $start_datetime = $end_datetime = $reg_deadline = '';
 $event_seats = $persons = 0;
+$event_price = 0.0;
 
 // Fetch all users who are not user_type='user' (i.e. show possible owners, other than end-users)
 $user_query = "SELECT user_id, user_email, user_name FROM users WHERE user_type != 'user'";
@@ -54,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $reg_deadline   = $_POST['reg_deadline'];
     $event_seats  = (int)$_POST['event_seats'];
     $persons      = (int)$_POST['persons'];
+    $event_price  = isset($_POST['event_price']) ? floatval($_POST['event_price']) : 0.0;
 
     // Required fields check
     if (empty($owner_id) || empty($title) || empty($description) || empty($category_id) ||
@@ -99,10 +103,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // }
 
     // Category seat limit
-    $cat_stmt = mysqli_prepare($conn, "SELECT category_seats FROM category WHERE category_id = ?");
+    $cat_stmt = mysqli_prepare($conn, "SELECT category_seats, category_price_per_hour FROM category WHERE category_id = ?");
     mysqli_stmt_bind_param($cat_stmt, "i", $category_id);
     mysqli_stmt_execute($cat_stmt);
-    mysqli_stmt_bind_result($cat_stmt, $category_max_seats);
+    mysqli_stmt_bind_result($cat_stmt, $category_max_seats, $price_per_hour);
     mysqli_stmt_fetch($cat_stmt);
     mysqli_stmt_close($cat_stmt);
 
@@ -115,6 +119,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $available_seats = $event_seats - $persons;
+
+    // Calculate default price if not manually set
+    if ($event_price <= 0 && !empty($price_per_hour) && $event_start_datetime && $event_end_datetime) {
+        $hours = max(1, ceil((strtotime($event_end_datetime) - strtotime($event_start_datetime)) / 3600));
+        $event_price = $price_per_hour * $hours;
+    }
 
     // Event time conflict check
     if (empty($errors)) {
@@ -224,12 +234,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 event_registration_deadline,
                 event_approval_status,
                 event_status,
-                event_paymeny_status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                event_paymeny_status,
+                event_price
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         );
         mysqli_stmt_bind_param(
             $stmt,
-            "issssssiissssss",
+            "ississsiissssssd",
             $owner_id,
             $title,
             $description,
@@ -244,7 +255,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $event_reg_deadline,
             $event_approval_status,
             $event_status,
-            $event_payment_status
+            $event_payment_status,
+            $event_price
         );
 
         $event_ok = false;
@@ -343,11 +355,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <tr>
                     <td>
                         <label class="form-label" for="category_id">Category</label>
-                        <select name="category_id" id="category_id" required class="input-select" onchange="updateMaxSeats()">
+                        <select name="category_id" id="category_id" required class="input-select" onchange="updateMaxSeatsAndPrice()">
                             <option value="">Select Category</option>
                             <?php foreach ($categories as $cat): ?>
                                 <option value="<?php echo $cat['category_id']; ?>"
                                     data-max-seats="<?php echo $cat['category_seats']; ?>"
+                                    data-price-per-hour="<?php echo isset($cat['category_price_per_hour']) ? htmlspecialchars($cat['category_price_per_hour']) : 0; ?>"
                                     <?php if (isset($category_id) && $category_id == $cat['category_id']) echo ' selected'; ?>>
                                     <?php echo htmlspecialchars($cat['category_name']); ?>
                                 </option>
@@ -458,6 +471,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <label class="form-label" for="reg_deadline">Registration Deadline</label>
                         <input type="date" name="reg_deadline" id="reg_deadline" value="<?php echo isset($reg_deadline)?htmlspecialchars($reg_deadline):'' ?>" required class="input-text">
                         <label id="reg_deadline-error" class="field-error"></label>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label class="form-label" for="event_price">Event Price (&#8377;) <span class="field-hint">(auto-calculated, you can override)</span></label>
+                        <input type="number" step="0.01" min="0" name="event_price" id="event_price" value="<?php echo isset($event_price) ? htmlspecialchars(number_format($event_price, 2, '.', '')) : '0.00'; ?>" class="input-number">
+                        <label id="event_price-error" class="field-error"></label>
                     </td>
                 </tr>
                 <tr>
@@ -738,7 +758,7 @@ body {
 <!-- <link rel="stylesheet" href="css/event_create.css"> -->
 <script src="js/jquery-4.0.0.min.js"></script>
 <script>
-    function updateMaxSeats() {
+    function updateMaxSeatsAndPrice() {
         var sel = document.getElementById('category_id');
         var i = sel.selectedIndex;
         var option = sel.options[i];
@@ -763,11 +783,31 @@ body {
             document.getElementById('available-seats-span').textContent = (available >= 0 ? available : 0);
             personsInput.setAttribute('max', eventSeatsInput.value);
         }
+        updateEventPrice();
+    }
+
+    function updateEventPrice() {
+        var sel = document.getElementById('category_id');
+        var option = sel.options[sel.selectedIndex];
+        var pricePerHour = parseFloat(option.getAttribute('data-price-per-hour')) || 0;
+        var startVal = document.getElementById('start_datetime').value;
+        var endVal = document.getElementById('end_datetime').value;
+        var priceInput = document.getElementById('event_price');
+        if (priceInput && startVal && endVal && pricePerHour) {
+            var start = new Date(startVal);
+            var end = new Date(endVal);
+            var hours = Math.ceil((end - start) / (1000 * 60 * 60));
+            if (hours < 1) hours = 1;
+            priceInput.value = (hours * pricePerHour).toFixed(2);
+        }
     }
 
     document.getElementById('category_id').addEventListener('change', function(){
-        updateMaxSeats();
+        updateMaxSeatsAndPrice();
     });
+
+    document.getElementById('start_datetime').addEventListener('change', updateEventPrice);
+    document.getElementById('end_datetime').addEventListener('change', updateEventPrice);
 
     document.getElementById('event_seats_input').addEventListener('input', function(){
         var max = this.getAttribute('max');
@@ -852,6 +892,7 @@ body {
                 $(this).removeClass("input-invalid");
             }
             $('#end_datetime').trigger('blur');
+            updateEventPrice();
         });
         $('#end_datetime').on('change blur', function() {
             var s = $('#start_datetime').val();
@@ -866,6 +907,7 @@ body {
                 $('#end_datetime-error').hide();
                 $(this).removeClass("input-invalid");
             }
+            updateEventPrice();
         });
 
         $('#event_seats_input').on('input blur', function() {
