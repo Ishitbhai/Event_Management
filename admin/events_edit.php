@@ -30,7 +30,7 @@ $stmt->close();
 
 // Fetch all users for owner_id dropdown EXCEPT those with user_type = 'user'
 $all_users = [];
-$user_query = $conn->query("SELECT user_id, user_name FROM users WHERE user_type <> 'user'");
+$user_query = $conn->query("SELECT user_id, user_name, user_email FROM users WHERE user_type <> 'user'");
 if ($user_query) {
     while ($row = $user_query->fetch_assoc()) {
         $all_users[] = $row;
@@ -806,9 +806,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_event'])) {
         ?>
 
         <?php
-        echo '<div class="form-row">';
-        echo '<label for="event_id">Event ID</label>';
-        echo '<input type="text" name="event_id" id="event_id" class="readonly-event-id" value="'.esc($event['event_id']).'" readonly>';
+        echo '<div style="display:none" class="form-row">';
+        echo '<label  style="display:none" for="event_id">Event ID</label>';
+        echo '<input style="display:none" type="text" name="event_id" id="event_id" class="readonly-event-id" value="'.esc($event['event_id']).'" readonly>';
         echo '</div>';
 
         $field_rows = [];
@@ -824,7 +824,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_event'])) {
                 echo '<select name="owner_id" id="owner_id">';
                 foreach ($all_users as $user) {
                     $selected = ($v == $user['user_id']) ? 'selected' : '';
-                    echo '<option value="'.esc($user['user_id']).'" '.$selected.'>'.esc($user['user_id'])." (".esc($user['user_name']).")</option>";
+                    echo '<option value="'.esc($user['user_email']).'" '.$selected.'>'.esc($user['user_email'])."</option>";
                 }
                 echo '</select>';
                 echo '<div class="error-msg valid-js"></div>';

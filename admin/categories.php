@@ -818,7 +818,7 @@ table.category-table {
             <thead>
                 <tr>
                     <th>Sr No.</th>
-                    <th>ID</th>
+                    <th style="display:none">ID</th>
                     <th>Category Name</th>
                     <th>Seats Capacity</th>
                     <th>Price per Hour</th>
@@ -831,7 +831,7 @@ table.category-table {
                 foreach($categories as $cat): ?>
                 <tr>
                     <td data-label="Sr No."><?= $sr++ ?></td>
-                    <td data-label="ID"><?= esc($cat['category_id']) ?></td>
+                    <td data-label="ID" style="display:none"><?= esc($cat['category_id']) ?></td>
                     <td data-label="Category Name"><?= esc($cat['category_name']) ?></td>
                     <td data-label="Seats Capacity"><?= esc($cat['category_seats']) ?></td>
                     <td data-label="Price per Hour">₹<?= esc($cat['category_price_per_hour']) ?></td>

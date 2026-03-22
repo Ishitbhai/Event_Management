@@ -1105,7 +1105,7 @@ body {
         <thead>
             <tr>
                 <th>Sr No</th>
-                <th>Review ID</th>
+                <th style='display:none'>Review ID</th>
                 <th>User</th>
                 <th>Event</th>
                 <th>Rating</th>
@@ -1127,7 +1127,7 @@ body {
                 $reviewed_at = date("Y-m-d H:i", strtotime($row['reviewed_at']));
                 echo "<tr>";
                 echo "<td>" . $sr_no++ . "</td>";
-                echo "<td>{$review_id}</td>";
+                echo "<td style='display:none'>{$review_id}</td>";
                 echo "<td>{$user_html}</td>";
                 echo "<td>{$event_html}</td>";
                 echo "<td>";

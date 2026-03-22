@@ -342,7 +342,7 @@ table.event-table {
             <thead>
                 <tr>
                     <th>Sr No</th>
-                    <th>ID</th>
+                    <th style="display:none">ID</th>
                     <th>Code</th>
                     <th>From Event</th>
                     <th>Applied To</th>
@@ -359,7 +359,7 @@ table.event-table {
                 <?php while($row = $result->fetch_assoc()): ?>
                 <tr>
                     <td><?= $sr++; ?></td>
-                    <td><?= (int)$row['coupon_id']; ?></td>
+                    <td style="display:none"><?= (int)$row['coupon_id']; ?></td>
                     <td><?= esc($row['coupon_code']); ?></td>
 
                     <td>

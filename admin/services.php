@@ -917,8 +917,8 @@ body { overflow-x: hidden; }
         <table class="service-table">
             <thead>
                 <tr>
-                    <th>#</th>
-                    <th>ID</th>
+                    <th>Sr No</th>
+                    <th style="display:none">ID</th>
                     <th>Service Name</th>
                     <th class="description-cell">Description</th>
                     <th class="service_image">Image</th>
@@ -932,7 +932,7 @@ body { overflow-x: hidden; }
                 foreach ($paged_services as $row): ?>
                 <tr>
                     <td><?= $snum++; ?></td>
-                    <td><?= esc($row['service_id']); ?></td>
+                    <td style="display:none"><?= esc($row['service_id']); ?></td>
                     <td><?= esc($row['service_title']); ?></td>
                     <td class="description-cell">
                         <div style="white-space:pre-line;"><?= esc($row['service_description']); ?></div>
@@ -1044,8 +1044,8 @@ body { overflow-x: hidden; }
         <table class="service-table">
             <thead>
                 <tr>
-                    <th>#</th>
-                    <th>ID</th>
+                    <th>Sr No</th>
+                    <th style="display:none">ID</th>
                     <th>Title</th>
                     <th>Description</th>
                     <th style="text-align:center;min-width:120px;">Action</th>
@@ -1058,7 +1058,7 @@ body { overflow-x: hidden; }
                 foreach ($why_rows as $wrow): ?>
                 <tr>
                     <td><?= $wnum++; ?></td>
-                    <td><?= esc($wrow['why_id']); ?></td>
+                    <td style="display:none"><?= esc($wrow['why_id']); ?></td>
                     <td><?= esc($wrow['why_title']); ?></td>
                     <td>
                         <div style="white-space:pre-line;"><?= esc($wrow['why_description']); ?></div>

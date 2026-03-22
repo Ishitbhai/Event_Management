@@ -597,7 +597,7 @@ document.addEventListener('DOMContentLoaded', function(){
     <thead>
     <tr>
     <th>Sr No</th>
-    <th>User ID</th>
+    <th style="display:none">User ID</th>
     <th>Name</th>
     <th>Email</th>
     <th>Phone</th>
@@ -616,7 +616,7 @@ document.addEventListener('DOMContentLoaded', function(){
     foreach($paged_users as $u): ?>
     <tr data-uid="<?= (int)$u['user_id'] ?>">
     <td><?= $s++ ?></td>
-    <td><?= esc($u['user_id']) ?></td>
+    <td style="display:none"><?= esc($u['user_id']) ?></td>
     <td><?= esc($u['user_name']) ?></td>
     <td><?= esc($u['user_email']) ?></td>
     <td><?= esc($u['user_phone_number']) ?></td>

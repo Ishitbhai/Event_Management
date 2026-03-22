@@ -25,10 +25,10 @@ if ($user_result) {
 
 // Fetch events and available_seats for dropdown and max calculation
 $events = [];
-$event_result = $conn->query("SELECT event_id, event_available_seats FROM events");
+$event_result = $conn->query("SELECT event_id, event_title, event_available_seats FROM events");
 if ($event_result) {
     while ($row = $event_result->fetch_assoc()) {
-        $events[$row['event_id']] = $row['event_available_seats'];
+        $events[$row['event_id']] = ['title' => $row['event_title'], 'avail' => $row['event_available_seats']];
     }
 }
 
@@ -55,7 +55,7 @@ $booking_status_options = ['pending', 'approved', 'rejected'];
 // For current event's max, we want available_seats + the persons currently booked if booking is still approved on this event
 $persons_approved = ($booking && $booking['event_id'] && $booking['booking_status'] === 'approved') ? (int)$booking['persons'] : 0;
 $event_id_current = ($booking) ? (int)$booking['event_id'] : 0;
-$event_max = (isset($events[$event_id_current]) ? ($events[$event_id_current] + $persons_approved) : 1);
+$event_max = (isset($events[$event_id_current]) ? ($events[$event_id_current]['avail'] + $persons_approved) : 1);
 $event_max = max(1, $event_max);
 
 // Handle Form POST (Update booking)
@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $booking) {
     // For validation: calculate the event's new max allowed for this particular edit
     $target_event_avail = 0;
     if (isset($events[$event_id])) {
-        $target_event_avail = (int)$events[$event_id];
+        $target_event_avail = (int)$events[$event_id]['avail'];
     }
 
     // If this booking is approved and it's the same event, add in the existing persons to max for validation
@@ -181,8 +181,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $booking) {
 
             if ($stmt->execute()) {
                 $stmt->close();
-                header("Location: bookings.php?success=1");
-                exit();
+                $success = "Booking updated successfully.";
+                $redirect = true;
             } else {
                 $error = "Failed to update booking: ".$conn->error;
                 $stmt->close();
@@ -391,15 +391,18 @@ function esc($str) {
 <div class="booking-form-container">
     <h2>Edit Booking</h2>
     <a href="bookings.php" class="back-to-bookings-btn">&larr; Back to Bookings</a>
+    <?php if (!empty($redirect)): ?>
+        <script>window.location.href = 'bookings.php';</script>
+    <?php endif; ?>
     <?php if($error): ?>
         <div class="booking-error"><?=esc($error)?></div>
     <?php endif; ?>
     <?php if($booking): ?>
     <form class="booking-form" id="bookingForm" method="post" autocomplete="off">
-        <span class="form-desc">Edit booking details. Persons cannot exceed the event maximum, and approvals require enough available seats.</span>
+        <!-- <span class="form-desc">Edit booking details. Persons cannot exceed the event maximum, and approvals require enough available seats.</span> -->
 
-        <label for="book_id">Booking ID</label>
-        <input type="text" name="book_id" id="book_id" value="<?=esc($booking['book_id'])?>" readonly>
+        <label style="display:none" for="book_id">Booking ID</label>
+        <input style="display:none" type="text" name="book_id" id="book_id" value="<?=esc($booking['book_id'])?>" readonly>
 
         <label for="user_id">User</label>
         <select name="user_id" id="user_id" required>
@@ -411,15 +414,15 @@ function esc($str) {
             <?php endforeach; ?>
         </select>
 
-        <label for="event_id">Event (ID)</label>
+        <label for="event_id">Event</label>
         <select name="event_id" id="event_id" required>
             <option value="">Select event</option>
-            <?php foreach($events as $eid=>$aseats): ?>
+            <?php foreach($events as $eid => $edata): ?>
                 <option
                     value="<?=$eid?>"
                     <?=$booking['event_id'] == $eid ? 'selected' : ''?>
-                    data-avail="<?=$aseats?>"
-                >Event #<?=$eid?> (available seats: <?=$aseats?>)</option>
+                    data-avail="<?=$edata['avail']?>"
+                ><?=esc($edata['title'])?> (available seats: <?=$edata['avail']?>)</option>
             <?php endforeach; ?>
         </select>
 
