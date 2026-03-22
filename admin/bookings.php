@@ -9,9 +9,8 @@ if (!isset($_SESSION['user_id'])) {
 require_once('../database/db_connect.php');
 
 $fields = [
-    'book_id',
-    'event_id',
-    'user_id',
+    'event_title',
+    'user_email',
     'persons',
     'booking_status',
     'booked_at',
@@ -142,18 +141,62 @@ if (
     }
     // If reached here and $error_message was set, we DON'T redirect, instead reload below with error displayed.
 }
+$search_user_email  = isset($_GET['search_user_email'])  ? trim($_GET['search_user_email'])  : '';
+$search_event_title = isset($_GET['search_event_title']) ? trim($_GET['search_event_title']) : '';
+$search_booked_at   = isset($_GET['search_booked_at'])   ? trim($_GET['search_booked_at'])   : '';
+
+$where  = [];
+$params = [];
+$types  = '';
+
+if ($search_user_email !== '') {
+    $where[]  = "u.user_email LIKE ?";
+    $params[] = '%' . $search_user_email . '%';
+    $types   .= 's';
+}
+if ($search_event_title !== '') {
+    $where[]  = "e.event_title LIKE ?";
+    $params[] = '%' . $search_event_title . '%';
+    $types   .= 's';
+}
+if ($search_booked_at !== '') {
+    $where[]  = "DATE(b.booked_at) = ?";
+    $params[] = $search_booked_at;
+    $types   .= 's';
+}
+
+$fetch_sql = "SELECT b.*, e.event_title, u.user_email
+     FROM bookings b
+     LEFT JOIN events e ON b.event_id = e.event_id
+     LEFT JOIN users u ON b.user_id = u.user_id";
+if ($where) {
+    $fetch_sql .= " WHERE " . implode(' AND ', $where);
+}
+$fetch_sql .= " ORDER BY b.booked_at DESC";
 
 $bookings = [];
 $booking_columns = [];
-$fetch_result = $conn->query("SELECT * FROM bookings ORDER BY booked_at DESC");
-if ($fetch_result && $fetch_result->num_rows > 0) {
-    $booking_columns = array_keys($fetch_result->fetch_assoc());
-    $fetch_result->data_seek(0);
-    while ($row = $fetch_result->fetch_assoc()) {
-        $bookings[] = $row;
+
+if ($where) {
+    $stmt = $conn->prepare($fetch_sql);
+    if ($stmt) {
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result && $result->num_rows > 0) {
+            $booking_columns = array_keys($result->fetch_assoc());
+            $result->data_seek(0);
+            while ($row = $result->fetch_assoc()) $bookings[] = $row;
+        }
+        $stmt->close();
     }
-} elseif ($fetch_result) {
-    $booking_columns = [];
+} else {
+    $fetch_result = $conn->query($fetch_sql);
+    if ($fetch_result && $fetch_result->num_rows > 0) {
+        $booking_columns = array_keys($fetch_result->fetch_assoc());
+        $fetch_result->data_seek(0);
+        while ($row = $fetch_result->fetch_assoc()) $bookings[] = $row;
+    }
 }
 
 function esc($str) {
@@ -767,11 +810,19 @@ $serial_start = $start_index + 1;
 </head>
 <body>
 <div class="dashboard-main">
-    <div class="events-header">
-        <h2 class="internal-header">Manage Bookings</h2>
-        <button class="create-booking-btn create-event-btn" type="button">
-            New Booking
-        </button>
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 18px;">
+        <h2 class="internal-header" style="margin: 0; white-space: nowrap;">Manage Bookings</h2>
+        <form method="get" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; justify-content: center;">
+            <input type="text" name="search_user_email" value="<?=esc($search_user_email)?>" placeholder="User Email" style="padding:6px 8px; border-radius:5px; border:1px solid #d1d2dd; font-size:14px;">
+            <input type="text" name="search_event_title" value="<?=esc($search_event_title)?>" placeholder="Event Title" style="padding:6px 8px; border-radius:5px; border:1px solid #d1d2dd; font-size:14px;">
+            <input type="date" name="search_booked_at" value="<?=esc($search_booked_at)?>" style="padding:5px 8px; border-radius:5px; border:1px solid #d1d2dd; font-size:14px;">
+            <button type="submit" style="background:linear-gradient(90deg, #594285, #2d397a 90%);color:#fff;font-weight:700;padding:7px 16px;border-radius:6px;border:none;font-size:14px;">Search</button>
+            <?php if ($search_user_email || $search_event_title || $search_booked_at): ?>
+                <a href="<?=esc($_SERVER['PHP_SELF'])?>" style="background:#f4f6fb;border:1px solid #c9c9de;color:#312053;font-size:14px;padding:6px 11px;border-radius:6px;text-decoration:none;">Clear</a>
+            <?php endif; ?>
+        </form>
+        <button class="create-booking-btn create-event-btn" type="button" style="white-space: nowrap;">New Booking</button>
+    </div>
     </div>
     <div class="event-table-container">
         <?php if (!empty($error_message)): ?>
@@ -800,13 +851,12 @@ $serial_start = $start_index + 1;
                     <th>Sr. No.</th>
                     <?php
                     $col_headings = [
-                        'book_id'     => 'Booking ID',
-                        'event_id'    => 'Event ID',
-                        'user_id'     => 'User ID',
-                        'persons'     => 'Persons',
+                        'event_title'    => 'Event Title',
+                        'user_email'     => 'User Email',
+                        'persons'        => 'Persons',
                         'booking_status' => 'Booking Status',
-                        'booked_at'   => 'Booked At',
-                        'updated_at'  => 'Updated At'
+                        'booked_at'      => 'Booked At',
+                        'updated_at'     => 'Updated At'
                     ];
                     foreach ($fields as $col): ?>
                         <th class="<?= esc($col) ?>">
@@ -854,51 +904,41 @@ $serial_start = $start_index + 1;
             <?php if ($total_pages > 1): ?>
                 <div class="classic-pagination">
                     <ul>
-                        <?php if ($page > 1): ?>
-                            <li>
-                                <a href="?page=<?= ($page-1) ?>" class="pagination-btn-go prev">Prev</a>
-                            </li>
-                        <?php endif; ?>
-                        
                         <?php
-                        // Calculate pages displayed for pagination bar (windowed, e.g., show ... if many pages)
+                        $sp = $_GET;
                         $max_page_links = 5;
                         $page_window = floor($max_page_links / 2);
                         $start_page = max(1, $page - $page_window);
                         $end_page = min($total_pages, $page + $page_window);
                         if ($end_page - $start_page + 1 < $max_page_links) {
-                            // Expand window as needed
                             if ($start_page == 1) $end_page = min($total_pages, $start_page + $max_page_links - 1);
                             if ($end_page == $total_pages) $start_page = max(1, $end_page - $max_page_links + 1);
                         }
-                        if ($start_page > 1): ?>
-                            <li><a href="?page=1">1</a></li>
-                            <?php if ($start_page > 2): ?>
-                                <li><span>…</span></li>
-                            <?php endif; ?>
+                        if ($page > 1): $sp['page'] = $page - 1; ?>
+                            <li><a href="?<?=http_build_query($sp)?>" class="pagination-btn-go prev">Prev</a></li>
                         <?php endif; ?>
-                        <?php for ($p = $start_page; $p <= $end_page; $p++): ?>
+                        <?php if ($start_page > 1): $sp['page'] = 1; ?>
+                            <li><a href="?<?=http_build_query($sp)?>"><?= 1 ?></a></li>
+                            <?php if ($start_page > 2): ?><li><span>&#8230;</span></li><?php endif; ?>
+                        <?php endif; ?>
+                        <?php for ($p = $start_page; $p <= $end_page; $p++): $sp['page'] = $p; ?>
                             <li>
                                 <?php if ($p == $page): ?>
                                     <span class="current-page"><?= $p ?></span>
                                 <?php else: ?>
-                                    <a href="?page=<?= $p ?>"><?= $p ?></a>
+                                    <a href="?<?=http_build_query($sp)?>"><?= $p ?></a>
                                 <?php endif; ?>
                             </li>
                         <?php endfor; ?>
                         <?php if ($end_page < $total_pages): ?>
-                            <?php if ($end_page < $total_pages - 1): ?>
-                                <li><span>…</span></li>
-                            <?php endif; ?>
-                            <li><a href="?page=<?= $total_pages ?>"><?= $total_pages ?></a></li>
+                            <?php if ($end_page < $total_pages - 1): ?><li><span>&#8230;</span></li><?php endif; ?>
+                            <?php $sp['page'] = $total_pages; ?>
+                            <li><a href="?<?=http_build_query($sp)?>"><?= $total_pages ?></a></li>
                         <?php endif; ?>
-                        
-                        <?php if ($page < $total_pages): ?>
-                            <li>
-                                <a href="?page=<?= ($page+1) ?>" class="pagination-btn-go next">Next</a>
-                            </li>
+                        <?php if ($page < $total_pages): $sp['page'] = $page + 1; ?>
+                            <li><a href="?<?=http_build_query($sp)?>" class="pagination-btn-go next">Next</a></li>
                         <?php endif; ?>
-                    </ul>
+                    </ul>   
                 </div>
             <?php endif; ?>
         <?php endif; ?>
