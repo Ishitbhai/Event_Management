@@ -5,7 +5,11 @@ require('sidebar.php');
 
 // Only admins allowed
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== 1) {
-    header("Location: login.php");
+    ?>
+    <script>
+        window.location.href = 'login.php';
+    </script>
+    <?php
     exit();
 }
 
@@ -20,9 +24,12 @@ $success = false;
 
 // Get ID and load data
 $id = isset($_GET['id']) && is_numeric($_GET['id']) ? intval($_GET['id']) : 0;
-if ($id <= 0) {
-    header("Location: services.php");
-    exit();
+if ($id <= 0) {    
+    ?>
+    <script>
+        window.location.href = 'services.php';
+    </script>
+    <?php
 }
 
 $stmt = $conn->prepare("SELECT why_title, why_description FROM why_aone_hub WHERE why_id = ?");
@@ -31,7 +38,11 @@ $stmt->execute();
 $stmt->bind_result($title, $description);
 if (!$stmt->fetch()) {
     $stmt->close();
-    header("Location: services.php");
+    ?>
+    <script>
+        window.location.href = 'services.php';
+    </script>
+    <?php
     exit();
 }
 $stmt->close();
@@ -58,7 +69,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = true;
                 $title = $ptitle;
                 $description = $pdesc;
-                header("Location: services.php?why_aone_hub_created=1");
+                ?>
+                <script>
+                    window.location.href = 'services.php?why_aone_hub_created=1';
+                </script>
+                <?php
                 exit();
             } else {
                 $errors[] = "Failed to update entry. Please try again.";

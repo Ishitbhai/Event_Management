@@ -1,7 +1,11 @@
 <?php
 session_start();
 if (!isset($_SESSION['user_id']) && !isset($_SESSION['admin_id'])) {
-    header("Location: login.php"); // Redirect to login page
+    ?>
+    <script>
+        window.location.href = 'login.php';
+    </script>
+    <?php
     exit();
 }
 
@@ -65,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Redirect to bookings.php after successful booking
-            header("Location: bookings.php?success=1");
+            echo "<script>window.location.href='bookings.php?success=1';</script>";
             exit();
         } else {
             if ($conn->errno === 1452) $error = "User/Event does not exist.";

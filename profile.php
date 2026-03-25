@@ -4,7 +4,11 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+    ?>
+    <script>
+        window.location.href="login.php";
+    </script>
+    <?php
     exit();
 }
 

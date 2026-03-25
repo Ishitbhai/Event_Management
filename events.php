@@ -49,6 +49,20 @@ $user_role = isset($_SESSION['user_type']) ? strtolower($_SESSION['user_type']) 
 
 <!-- <link rel="stylesheet" href="css/events.css"> -->
  <style>
+    /* Full Page Fade-In Animation */
+    .animate-full-page {
+        animation: fullPageFadeIn 1.4s cubic-bezier(0.6,0,0.4,1);
+        -webkit-animation: fullPageFadeIn 1.4s cubic-bezier(0.6,0,0.4,1);
+    }
+    @keyframes fullPageFadeIn {
+        from { opacity: 0; transform: scale(0.98);}
+        to { opacity: 1; transform: scale(1);}
+    }
+    @-webkit-keyframes fullPageFadeIn {
+        from { opacity: 0; transform: scale(0.98);}
+        to { opacity: 1; transform: scale(1);}
+    }
+
     .events-header-banner {
     background: linear-gradient(90deg, #ffe4e1 0%, #e0eaff 100%);
     color: #342355;
@@ -126,6 +140,7 @@ $user_role = isset($_SESSION['user_type']) ? strtolower($_SESSION['user_type']) 
         font-size: 1rem;
     }
 }
+/* --- Modified to make the box zoom (hover) slower --- */
 .event-card {
     border-radius: 0.92rem;
     overflow:hidden;
@@ -133,7 +148,8 @@ $user_role = isset($_SESSION['user_type']) ? strtolower($_SESSION['user_type']) 
     box-shadow: 0 2px 18px #c4d7fa28;
     display: flex;
     flex-direction: column;
-    transition: box-shadow 0.2s, transform 0.13s;
+    /* transition: box-shadow 0.2s, transform 0.13s; (old) */
+    transition: box-shadow 0.5s cubic-bezier(0.42, 0, 0.21, 1), transform 0.5s cubic-bezier(0.42, 0, 0.21, 1);
     cursor: pointer;
     animation:fadeIn 0.64s;
     min-height: 100%;
@@ -244,44 +260,95 @@ $user_role = isset($_SESSION['user_type']) ? strtolower($_SESSION['user_type']) 
  </style>
     
 
-<div class="container-fluid px-0 events-header-banner shadow animate__animated animate__fadeInDown">
-    <h1 class="mb-2 animate__fadeInDown animate__animated">🎉 Events at Aone Hub</h1>
-    <p class="animate__fadeIn animate__animated">Discover what's happening, remember remarkable past events, and see what's coming up</p>
-</div>
-<div class="container my-3">
-    <div class="d-flex justify-content-end mb-4">
-        <?php if ($user_role === 'owner' || $user_role === 'admin') : ?>
-            <a href="create_event.php" class="btn events-btn-create shadow animate__animated animate__bounceIn"><i class="bi bi-plus-circle"></i>  Create Event</a>
-        <?php endif; ?>
+<!-- Start Page Wrapper for Full Page Animation -->
+<div id="events-app-main" class="animate-full-page">
+    <div class="container-fluid px-0 events-header-banner shadow animate__animated animate__fadeInDown">
+        <h1 class="mb-2 animate__fadeInDown animate__animated">🎉 Events at Aone Hub</h1>
+        <p class="animate__fadeIn animate__animated">Discover what's happening, remember remarkable past events, and see what's coming up</p>
     </div>
-
-    <!-- Section: Ongoing & Upcoming -->
-    <div class="event-section-card mb-5 animate__animated animate__fadeInUp">
-        <div class="event-section-title border-bottom pb-2 mb-4">
-            <span>🟢 Ongoing &amp; Upcoming Events</span>
+    <div class="container my-3">
+        <div class="d-flex justify-content-end mb-4">
+            <?php if ($user_role === 'owner' || $user_role === 'admin') : ?>
+                <a href="create_event.php" class="btn events-btn-create shadow animate__animated animate__bounceIn"><i class="bi bi-plus-circle"></i>  Create Event</a>
+            <?php endif; ?>
         </div>
-        <div class="events-card-grid">
-        <?php 
-            $has_events = (count($ongoing_events) > 0 || count($upcoming_events) > 0);
-            if(!$has_events): ?>
+
+        <!-- Section: Ongoing & Upcoming -->
+        <div class="event-section-card mb-5 animate__animated animate__fadeInUp">
+            <div class="event-section-title border-bottom pb-2 mb-4">
+                <span>🟢 Ongoing &amp; Upcoming Events</span>
+            </div>
+            <div class="events-card-grid">
+            <?php 
+                $has_events = (count($ongoing_events) > 0 || count($upcoming_events) > 0);
+                if(!$has_events): ?>
+                    <div class="text-center text-secondary py-5 w-100 animate__animated animate__fadeIn">
+                        <span class="fs-5"><i class="bi bi-calendar-x"></i> No ongoing or upcoming events.</span>
+                    </div>
+                <?php else: ?>
+                    <?php 
+                    foreach([...$ongoing_events, ...$upcoming_events] as $event): 
+                        $badge = '';
+                        $badgeClass = '';
+                        if (strtolower($event['event_status'])==='ongoing') {
+                            $badge = 'Ongoing';
+                            $badgeClass = 'ongoing';
+                            $dateRow = !empty($event['event_date']) ? '<span class="event-date-row">Started: '.htmlspecialchars(date('d M Y', strtotime($event['event_date']))).'</span>' : '';
+                        } else {
+                            $badge = 'Upcoming';
+                            $badgeClass = 'upcoming';
+                            $dateRow = !empty($event['event_date']) ? '<span class="event-date-row">Coming: '.htmlspecialchars(date('d M Y', strtotime($event['event_date']))).'</span>' : '';
+                        }
+                        ?>
+                        <a href="single_event.php?event_id=<?php echo (int)$event['event_id']; ?>" class="text-decoration-none text-dark event-card animate__animated animate__fadeIn" tabindex="0">
+                            <img src="<?php
+                                    if (!empty($event['event_banner_image'])) {
+                                        $banner = $event['event_banner_image'];
+                                        if (strpos($banner, '://') === false && strpos($banner, 'images/') !== 0) {
+                                            $banner = 'images/' . $banner;
+                                        }
+                                        echo htmlspecialchars($banner);
+                                    } else {
+                                        echo "assets/default-banner.png";
+                                    };
+                                ?>"
+                                class="event-card-image" alt="Banner">
+                            <div class="event-card-body">
+                                <div class="event-title-row">
+                                    <span class="event-title"><?php echo htmlspecialchars($event['event_title']); ?></span>
+                                    <span class="event-badge <?php echo $badgeClass; ?>"><?php echo $badge; ?></span>
+                                </div>
+                                <?php echo $dateRow; ?>
+                                <div class="event-description"><?php echo !empty($event['event_description']) ? htmlspecialchars($event['event_description']) : ''; ?></div>
+                                <div class="event-status-row mb-1">
+                                    <span><strong>Status:</strong> <?php echo htmlspecialchars($event['event_status']); ?></span>
+                                </div>
+                                <div class="event-card-footer">
+                                    <?php 
+                                        if (!empty($event['event_gallery_images'])) {
+                                            echo render_gallery($event['event_gallery_images']);
+                                        }
+                                    ?>
+                                </div>
+                            </div>
+                        </a>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Section: Past Events -->
+        <div class="event-section-card animate__animated animate__fadeInUp">
+            <div class="event-section-title border-bottom pb-2 mb-4">
+                <span>🕰️ Past Events</span>
+            </div>
+            <div class="events-card-grid">
+            <?php if(count($past_events) == 0): ?>
                 <div class="text-center text-secondary py-5 w-100 animate__animated animate__fadeIn">
-                    <span class="fs-5"><i class="bi bi-calendar-x"></i> No ongoing or upcoming events.</span>
+                    <span class="fs-5"><i class="bi bi-emoji-frown"></i> No past events.</span>
                 </div>
             <?php else: ?>
-                <?php 
-                foreach([...$ongoing_events, ...$upcoming_events] as $event): 
-                    $badge = '';
-                    $badgeClass = '';
-                    if (strtolower($event['event_status'])==='ongoing') {
-                        $badge = 'Ongoing';
-                        $badgeClass = 'ongoing';
-                        $dateRow = !empty($event['event_date']) ? '<span class="event-date-row">Started: '.htmlspecialchars(date('d M Y', strtotime($event['event_date']))).'</span>' : '';
-                    } else {
-                        $badge = 'Upcoming';
-                        $badgeClass = 'upcoming';
-                        $dateRow = !empty($event['event_date']) ? '<span class="event-date-row">Coming: '.htmlspecialchars(date('d M Y', strtotime($event['event_date']))).'</span>' : '';
-                    }
-                    ?>
+                <?php foreach($past_events as $event): ?>
                     <a href="single_event.php?event_id=<?php echo (int)$event['event_id']; ?>" class="text-decoration-none text-dark event-card animate__animated animate__fadeIn" tabindex="0">
                         <img src="<?php
                                 if (!empty($event['event_banner_image'])) {
@@ -298,15 +365,17 @@ $user_role = isset($_SESSION['user_type']) ? strtolower($_SESSION['user_type']) 
                         <div class="event-card-body">
                             <div class="event-title-row">
                                 <span class="event-title"><?php echo htmlspecialchars($event['event_title']); ?></span>
-                                <span class="event-badge <?php echo $badgeClass; ?>"><?php echo $badge; ?></span>
+                                <span class="event-badge past">Past</span>
                             </div>
-                            <?php echo $dateRow; ?>
+                            <?php if (!empty($event['event_date'])): ?>
+                                <span class="event-date-row">Date: <?php echo htmlspecialchars(date('d M Y', strtotime($event['event_date']))); ?></span>
+                            <?php endif; ?>
                             <div class="event-description"><?php echo !empty($event['event_description']) ? htmlspecialchars($event['event_description']) : ''; ?></div>
                             <div class="event-status-row mb-1">
                                 <span><strong>Status:</strong> <?php echo htmlspecialchars($event['event_status']); ?></span>
                             </div>
                             <div class="event-card-footer">
-                                <?php 
+                                <?php
                                     if (!empty($event['event_gallery_images'])) {
                                         echo render_gallery($event['event_gallery_images']);
                                     }
@@ -316,60 +385,12 @@ $user_role = isset($_SESSION['user_type']) ? strtolower($_SESSION['user_type']) 
                     </a>
                 <?php endforeach; ?>
             <?php endif; ?>
-        </div>
-    </div>
-
-    <!-- Section: Past Events -->
-    <div class="event-section-card animate__animated animate__fadeInUp">
-        <div class="event-section-title border-bottom pb-2 mb-4">
-            <span>🕰️ Past Events</span>
-        </div>
-        <div class="events-card-grid">
-        <?php if(count($past_events) == 0): ?>
-            <div class="text-center text-secondary py-5 w-100 animate__animated animate__fadeIn">
-                <span class="fs-5"><i class="bi bi-emoji-frown"></i> No past events.</span>
             </div>
-        <?php else: ?>
-            <?php foreach($past_events as $event): ?>
-                <a href="single_event.php?event_id=<?php echo (int)$event['event_id']; ?>" class="text-decoration-none text-dark event-card animate__animated animate__fadeIn" tabindex="0">
-                    <img src="<?php
-                            if (!empty($event['event_banner_image'])) {
-                                $banner = $event['event_banner_image'];
-                                if (strpos($banner, '://') === false && strpos($banner, 'images/') !== 0) {
-                                    $banner = 'images/' . $banner;
-                                }
-                                echo htmlspecialchars($banner);
-                            } else {
-                                echo "assets/default-banner.png";
-                            };
-                        ?>"
-                        class="event-card-image" alt="Banner">
-                    <div class="event-card-body">
-                        <div class="event-title-row">
-                            <span class="event-title"><?php echo htmlspecialchars($event['event_title']); ?></span>
-                            <span class="event-badge past">Past</span>
-                        </div>
-                        <?php if (!empty($event['event_date'])): ?>
-                            <span class="event-date-row">Date: <?php echo htmlspecialchars(date('d M Y', strtotime($event['event_date']))); ?></span>
-                        <?php endif; ?>
-                        <div class="event-description"><?php echo !empty($event['event_description']) ? htmlspecialchars($event['event_description']) : ''; ?></div>
-                        <div class="event-status-row mb-1">
-                            <span><strong>Status:</strong> <?php echo htmlspecialchars($event['event_status']); ?></span>
-                        </div>
-                        <div class="event-card-footer">
-                            <?php
-                                if (!empty($event['event_gallery_images'])) {
-                                    echo render_gallery($event['event_gallery_images']);
-                                }
-                            ?>
-                        </div>
-                    </div>
-                </a>
-            <?php endforeach; ?>
-        <?php endif; ?>
         </div>
     </div>
 </div>
+<!-- End Page Wrapper -->
+
 <link rel="stylesheet" href="bootstrap/css/bootstrap-icons.css" />
 
 <?php

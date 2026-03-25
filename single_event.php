@@ -32,8 +32,12 @@ $event_status = isset($event['event_status']) ? strtolower($event['event_status'
 
 // Redirect to events page if event_status is draft
 if ($event_status === 'draft') {
-    header('Location: events.php');
-    exit();
+    ?>
+    <script>
+        window.location.href = 'events.php';
+    </script>
+    <?php
+    exit(); 
 }
 
 $is_completed_event   = $event_status === "completed";

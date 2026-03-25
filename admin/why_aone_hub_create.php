@@ -6,7 +6,11 @@ require('sidebar.php');
 
 // Only admins allowed
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== 1) {
-    header("Location: login.php");
+    ?>
+    <script>
+        window.location.href = 'login.php';
+    </script>
+    <?php
     exit();
 }
 
@@ -38,7 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt) {
             $stmt->bind_param("ss", $title, $description);
             if ($stmt->execute() && $stmt->affected_rows === 1) {
-                header("Location: services.php?why_aone_hub_created=1");
+                ?>
+                <script>
+                    window.location.href = "services.php?why_aone_hub_created=1";
+                </script>
+                <?php
                 exit();
             } else {
                 $errors[] = "Failed to create entry. Please try again.";

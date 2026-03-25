@@ -5,7 +5,11 @@ require('sidebar.php');
 
 // Only allow admin access
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== 1) {
-    header("Location: login.php");
+    ?>
+    <script>
+        window.location.href = 'login.php';
+    </script>
+    <?php
     exit();
 }
 
@@ -46,7 +50,11 @@ if (isset($_GET['delete_id']) && is_numeric($_GET['delete_id'])) {
     $stmt->bind_param("i", $del_id);
     $stmt->execute();
     $stmt->close();
-    header("Location: reviews.php?msg=deleted");
+    ?>
+    <script>
+        window.location.href = 'reviews.php?msg=deleted';
+    </script>
+    <?php
     exit();
 }
 

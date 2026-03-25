@@ -287,7 +287,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($event_ok && $booking_ok) {
                 $conn->commit();
                 // Redirect to payment.php with event_id, event_price can be retrieved there if needed
-                header("Location: payment.php?event_id=" . urlencode($event_id));
+                ?>
+                <script>
+                    window.location.href = 'payment.php?event_id=<?= urlencode($event_id) ?>';
+                </script>
+                <?php
                 exit();
             } else {
                 $conn->rollback();

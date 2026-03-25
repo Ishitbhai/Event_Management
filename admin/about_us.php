@@ -5,7 +5,11 @@ require('sidebar.php');
 
 // Only admins allowed
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== 1) {
-    header("Location: login.php");
+    ?>
+    <script>
+        window.location.href = 'login.php';
+    </script>
+    <?php
     exit();
 }
 
@@ -184,7 +188,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST['ajax_delete_image']))
             );
             if ($stmt->execute()) {
                 $success = true;
-                header("Location: about_us.php?success=1");
+                ?>
+                <script>
+                    window.location.href = "about_us.php?success=1";
+                </script>
+                <?php
                 exit;
             } else {
                 $errors[] = "Failed to update. Please try again.";

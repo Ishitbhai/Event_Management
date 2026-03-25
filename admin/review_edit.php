@@ -5,7 +5,11 @@ require('sidebar.php');
 
 // Only admins allowed
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== 1) {
-    header("Location: login.php");
+    ?>
+    <script>
+        window.location.href = 'login.php';
+    </script>
+    <?php
     exit();
 }
 
@@ -114,7 +118,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("iiisi", $user_id, $event_id, $review_rating, $review_review, $review_id);
         if ($stmt->execute()) {
             $success = true;
-            header("Location: reviews.php?msg=updated");
+            ?>
+            <script>
+                window.location = 'reviews.php?msg=updated';
+            </script>
+            <?php
             exit;
         } else {
             $errors['db'] = "Failed to update review.";

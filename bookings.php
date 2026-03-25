@@ -4,7 +4,11 @@ require_once('header.php');
 require_once('database/db_connect.php');
 
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+    ?>
+    <script>
+        window.location.href="login.php";
+    </script>
+    <?php
     exit();
 }
 
@@ -32,7 +36,11 @@ if (
         $update_stmt->close();
     }
     $check_stmt->close();
-    header("Location: " . $_SERVER['PHP_SELF']);
+    ?>
+    <script>
+        window.location.href = "<?php echo $_SERVER['PHP_SELF']; ?>";
+    </script>
+    <?php
     exit();
 }
 
@@ -43,7 +51,11 @@ $user_stmt->execute();
 $user_result = $user_stmt->get_result();
 if ($user_result->num_rows < 1) {
     session_destroy();
-    header("Location: login.php");
+    ?>
+    <script>
+        window.location.href="login.php";
+    </script>
+    <?php
     exit();
 }
 $user_row = $user_result->fetch_assoc();

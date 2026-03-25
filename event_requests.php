@@ -5,7 +5,11 @@ require_once('database/db_connect.php');
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+    ?>
+    <script>
+        window.location.href="login.php";
+    </script>
+    <?php
     exit();
 }
 $user_id = $_SESSION['user_id'];
@@ -19,14 +23,22 @@ $user_row = $user_rs->fetch_assoc();
 $user_q->close();
 
 if (!$user_row || !in_array($user_row['user_type'], ['owner', 'admin'])) {
-    header("Location: events.php");
+    ?>
+    <script>
+        window.location.href="events.php";
+    </script>
+    <?php
     exit();
 }
 $user_type = $user_row['user_type'];
 
 $event_id = isset($_GET['event_id']) ? intval($_GET['event_id']) : 0;
 if (!$event_id) {
-    header("Location: events.php");
+    ?>
+    <script>
+        window.location.href="events.php";
+    </script>
+    <?php
     exit();
 }
 
@@ -39,7 +51,11 @@ $event = $event_rs->fetch_assoc();
 $event_q->close();
 
 if (!$event) {
-    header("Location: events.php");
+    ?>
+    <script>
+        window.location.href="events.php";
+    </script>
+    <?php
     exit();
 }
 
@@ -66,7 +82,11 @@ if ($user_type === 'owner') {
     }
 }
 if ($forbidden) {
-    header("Location: events.php");
+    ?>
+    <script>
+        window.location.href="events.php";
+    </script>
+    <?php
     exit();
 }
 

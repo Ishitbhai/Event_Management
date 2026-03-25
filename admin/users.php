@@ -17,7 +17,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['dropdown_update'])) {
             $stmt->close();
         }
     }
-    header("Location: ".$_SERVER['PHP_SELF']);
+    ?>
+    <script>
+        window.location.href = "<?php echo $_SERVER['PHP_SELF']; ?>";
+    </script>
+    <?php
     exit();
 }
 

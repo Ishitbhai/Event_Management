@@ -1,7 +1,10 @@
 <?php
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== 1) {
-    header('Location: login.php');
-    exit();
+    ?>
+    <script>
+        window.location.href = 'login.php';
+    </script>
+    <?php
 }
 require_once('../database/db_connect.php');
 

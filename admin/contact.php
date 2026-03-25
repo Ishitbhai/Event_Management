@@ -4,7 +4,11 @@ require_once('sidebar.php');
 
 // Only admins allowed
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== 1) {
-    header("Location: login.php");
+    ?>
+    <script>
+        window.location.href = 'login.php';
+    </script>
+    <?php
     exit();
 }
 
@@ -884,7 +888,7 @@ body { overflow-x: hidden; }
         <table class="contact-table">
             <thead>
                 <tr>
-                    <th>#</th>
+                    <th>Sr No</th>
                     <th>Full Name</th>
                     <th>Email</th>
                     <th>Subject</th>

@@ -5,7 +5,11 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 require_once 'database/db_connect.php';
 if (isset($_SESSION['user_id'])) {
-    header("Location: index.php");
+    ?>
+    <script>
+        window.location.href="index.php";
+    </script>
+    <?php
     exit();
 }
 
@@ -28,7 +32,7 @@ $error = "";
 $login_success = false;
 
 // AJAX login support
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['ajax_login'])) {
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['ajax_headlogin'])) {
     header("Content-Type: application/json");
     $user_email = isset($_POST['user_email']) ? trim($_POST['user_email']) : '';
     $user_password = isset($_POST['user_password']) ? $_POST['user_password'] : '';
@@ -118,13 +122,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !isset($_POST['ajax_login'])) {
                     $_SESSION['user_name'] = $user['user_name'];
                     $_SESSION['user_email'] = $user['user_email'];
                     $_SESSION['user_type'] = $user['user_type'];
-                    if (isset($user['user_type']) && $user['user_type'] === 'admin') {  
+                    if (isset($user['user_type']) && $user['user_type'] == 'admin') {  
                         $_SESSION['admin_username'] = $user['user_email'];
                         $_SESSION['admin_user_name'] = $user['user_name'];
                     }
 
-                    // Redirect to main page or dashboard
-                    header("Location: index.php");
+                    
+                    ?>
+                    <script>
+                        window.location.href="index.php";
+                    </script>
+                    <?php
                     exit;
                 } else {
                     $error = "Incorrect password.";
@@ -590,56 +598,5 @@ textarea.error {
 
 <!-- Add Bootstrap JS and dependencies at the end -->
 <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-    var loginForm = document.getElementById("loginForm");
-    if (loginForm) {
-        loginForm.addEventListener('submit', function(e){
-            // Fallback for browsers with no JS: allow normal submit
-            if (window.FormData) {
-                e.preventDefault();
-
-                // Hide any previous errors
-                var ajaxError = document.getElementById('ajax-error-message');
-                if (ajaxError) {
-                    ajaxError.classList.add('d-none');
-                    ajaxError.innerText = "";
-                }
-
-                var btn = document.getElementById('loginBtn');
-                if(btn) btn.disabled = true;
-
-                var formData = new FormData(loginForm);
-                formData.append('ajax_login', '1');
-                fetch(window.location.href, {
-                    method: "POST",
-                    body: formData,
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (btn) btn.disabled = false;
-                    if (data.success) {
-                        // Redirect if successful
-                        window.location = data.redirect;
-                    } else if (data.error) {
-                        // Show error without refreshing
-                        if (ajaxError) {
-                            ajaxError.classList.remove('d-none');
-                            ajaxError.innerText = data.error;
-                        }
-                    }
-                })
-                .catch(function(){
-                    if (btn) btn.disabled = false;
-                    if (ajaxError) {
-                        ajaxError.classList.remove('d-none');
-                        ajaxError.innerText = "An error occurred. Please try again.";
-                    }
-                });
-            }
-        });
-    }
-});
-</script>
 </body>
 </html>

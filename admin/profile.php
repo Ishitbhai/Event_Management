@@ -3,7 +3,11 @@ session_start();
 
 // Check if the admin is logged in
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== 1 || !isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+    ?>
+    <script>
+        window.location.href = 'login.php';
+    </script>
+    <?php
     exit();
 }
 

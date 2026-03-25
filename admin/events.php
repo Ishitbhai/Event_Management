@@ -3,7 +3,11 @@ session_start();
 require_once('sidebar.php');
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
+    ?>
+    <script>
+        window.location.href = 'login.php';
+    </script>
+    <?php
     exit();
 }
 require_once('../database/db_connect.php');

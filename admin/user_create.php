@@ -94,7 +94,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->execute()) {
             // Instead of displaying success here, redirect to users.php and store success in session
             $_SESSION['success_message'] = "User created successfully!";
-            header("Location: users.php");
+            ?>
+            <script>
+                window.location.href = 'users.php';
+            </script>
+            <?php
             exit;
         } else {
             $error = "Error: Could not create user. Please try again.";

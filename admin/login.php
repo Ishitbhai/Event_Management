@@ -3,7 +3,11 @@ session_start();
 
 // If admin is already logged in, redirect to index
 if (isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === 1) {
-    header('Location: index.php');
+    ?>
+    <script>
+        window.location.href = 'login.php';
+    </script>
+    <?php
     exit();
 }
  
@@ -33,7 +37,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_email'] = $row['user_email'];
                 $_SESSION['user_id'] = $row['user_id'];
                 $_SESSION['user_type'] = $row['user_type'];
-                header('Location: index.php');
+                ?>
+                <script>
+                    window.location.href = 'index.php';
+                </script>
+                <?php
                 exit();
             } else {
                 $error = "Invalid email or password.";

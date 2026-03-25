@@ -2,8 +2,11 @@
 session_start();
 require_once('sidebar.php');
 
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
+if (!isset($_SESSION['user_id'])) {    ?>
+    <script>
+        window.location.href = 'login.php';
+    </script>
+    <?php
     exit();
 }
 require_once('../database/db_connect.php');
@@ -50,7 +53,7 @@ if (
             $stmt->close();
             $success_message = "Booking deleted successfully.";
             // Redirect to this page to avoid reposting
-            header('Location: '.$_SERVER['PHP_SELF'].(isset($_POST['page']) ? '?page='.intval($_POST['page']) : ''));
+            echo "<script>window.location.href = '" . $_SERVER['PHP_SELF'] . (isset($_POST['page']) ? '?page=' . intval($_POST['page']) : '') . "';</script>";
             exit();
         } else {
             $error_message = "Failed to delete booking.";
@@ -135,7 +138,7 @@ if (
                 }
             }
             // After successful update, redirect.
-            header('Location: '.$_SERVER['PHP_SELF'].(isset($_POST['page']) ? '?page='.intval($_POST['page']) : ''));
+            echo '<script>window.location.href="'.$_SERVER['PHP_SELF'].(isset($_POST['page']) ? '?page='.intval($_POST['page']) : '').'";</script>';
             exit();
         }
     }

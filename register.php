@@ -11,7 +11,11 @@ if (session_status() == PHP_SESSION_NONE) {
 
 // Redirect to index page if user already logged in
 if (isset($_SESSION['user_id'])) {
-    header("Location: index.php");
+    ?>
+    <script>
+        window.location.href="index.php";
+    </script>
+    <?php
     exit();
 }
 
