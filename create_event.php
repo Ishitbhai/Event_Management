@@ -6,18 +6,38 @@ include 'database/db_connect.php';
 date_default_timezone_set('Asia/Kolkata');
 mysqli_query($conn, "SET time_zone = '+05:30'");
 
-/* SESSION CHECK */
+
+
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+    ?>
+    <script>
+        window.location.href="login.php";
+    </script>
+    <?php
     exit();
 }
+else{
+    $user_role = isset($_SESSION['user_type']) ? strtolower($_SESSION['user_type']) : '';
 
-/* FETCH CATEGORIES */
+    if ($user_role !== 'owner' && $user_role !== 'admin') {
+        ?>
+        <script>
+            window.location.href="events.php";
+        </script>
+        <?php
+        exit();
+    }
+    
+}
+
+/* FETCH CATEGORIES (also get price_per_hour for each category) */
 $category_query = "SELECT * FROM category";
 $category_res = mysqli_query($conn, $category_query);
 $categories = [];
+$category_price_per_hour_map = [];
 while ($row = mysqli_fetch_assoc($category_res)) {
     $categories[] = $row;
+    $category_price_per_hour_map[$row['category_id']] = $row['category_price_per_hour'];
 }
 
 $errors = [];
@@ -26,6 +46,7 @@ $success = false;
 /* INIT VARIABLES */
 $title = $description = $category_id = $start_datetime = $end_datetime = $reg_deadline = '';
 $event_seats = $persons = 0;
+$event_price = 0.0;
 
 /* HELPER FUNCTION TO FIX HTML5 DATETIME LOCAL */
 function fix_datetime_local($dt_local) {
@@ -48,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $end_datetime   = $_POST['end_datetime'];
     $reg_deadline   = $_POST['reg_deadline'];
     $event_seats  = (int)$_POST['event_seats'];
-    $persons      = (int)$_POST['persons'];
+    $persons      = (int)$_POST['persons']; 
 
     /* REQUIRED FIELDS CHECK */
     if (empty($title) || empty($description) || empty($category_id) ||
@@ -84,11 +105,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = "Registration deadline cannot be in the past.";
     }
 
-    /* CATEGORY SEAT LIMIT */
-    $cat_stmt = mysqli_prepare($conn, "SELECT category_seats FROM category WHERE category_id = ?");
+    /* CATEGORY SEAT AND PRICE CHECK */
+    $cat_stmt = mysqli_prepare($conn, "SELECT category_seats, category_price_per_hour FROM category WHERE category_id = ?");
     mysqli_stmt_bind_param($cat_stmt, "i", $category_id);
     mysqli_stmt_execute($cat_stmt);
-    mysqli_stmt_bind_result($cat_stmt, $category_max_seats);
+    mysqli_stmt_bind_result($cat_stmt, $category_max_seats, $price_per_hour);
     mysqli_stmt_fetch($cat_stmt);
     mysqli_stmt_close($cat_stmt);
 
@@ -101,6 +122,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $available_seats = $event_seats - $persons;
+
+    // Calculate price (price_per_hour * hours)
+    $event_price = 0.0;
+    if (!empty($price_per_hour) && $event_start_datetime && $event_end_datetime) {
+        $start = strtotime($event_start_datetime);
+        $end = strtotime($event_end_datetime);
+        $hours = max(1, ceil(($end - $start) / 3600)); // Minimum 1 hour, round up
+        $event_price = $price_per_hour * $hours;
+    }
 
     /* EVENT TIME CONFLICT CHECK */
     if (empty($errors)) {
@@ -135,33 +165,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $banner_path = '';
     $gallery_paths = [];
 
+    // Banner image upload check for path in filename
     if (!empty($_FILES['banner_image']['name'])) {
-        $ext = strtolower(pathinfo($_FILES['banner_image']['name'], PATHINFO_EXTENSION));
+        // Check if path is included in the uploaded banner image filename
+        $file_name = $_FILES['banner_image']['name'];
+        if (strpos($file_name, '/') !== false || strpos($file_name, '\\') !== false) {
+            $errors[] = "Invalid banner image: the file name must not contain a path.";
+        }
+        $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
         if (!in_array($ext, ['jpg','jpeg','png','gif','webp'])) {
             $errors[] = "Invalid banner image format.";
         } else {
-            $banner_path = 'images/banner_' . uniqid() . '.' . $ext;
-            move_uploaded_file($_FILES['banner_image']['tmp_name'], $banner_path);
+            // Store in 'images/' but only save filename in DB
+            $banner_filename = 'banner_' . uniqid() . '.' . $ext;
+            $banner_storage_path = 'images/' . $banner_filename;
+            if (!is_dir('images')) {
+                mkdir('images', 0755, true);
+            }
+            if (!move_uploaded_file($_FILES['banner_image']['tmp_name'], $banner_storage_path)) {
+                $errors[] = "Failed to upload banner image.";
+            } else {
+                $banner_path = $banner_filename; // Only filename saved to DB
+            }
         }
     } else {
         $errors[] = "Banner image is required.";
     }
 
+    // Gallery images upload check for path in filenames
     if (!empty($_FILES['gallery_images']['name'][0])) {
         foreach ($_FILES['gallery_images']['tmp_name'] as $i => $tmp) {
-            $ext = strtolower(pathinfo($_FILES['gallery_images']['name'][$i], PATHINFO_EXTENSION));
+            $gallery_file_name = $_FILES['gallery_images']['name'][$i];
+            // Check if path is included in the uploaded gallery image filename
+            if (strpos($gallery_file_name, '/') !== false || strpos($gallery_file_name, '\\') !== false) {
+                $errors[] = "Invalid gallery image: file name must not contain a path.";
+                continue;
+            }
+            $ext = strtolower(pathinfo($gallery_file_name, PATHINFO_EXTENSION));
             if (in_array($ext, ['jpg','jpeg','png','gif','webp'])) {
-                $path = 'images/gallery_' . uniqid() . '.' . $ext;
-                move_uploaded_file($tmp, $path);
-                $gallery_paths[] = $path;
+                $gallery_filename = 'gallery_' . uniqid() . '.' . $ext;
+                $gallery_storage_path = 'images/' . $gallery_filename;
+                if (!is_dir('images')) {
+                    mkdir('images', 0755, true);
+                }
+                if (!move_uploaded_file($tmp, $gallery_storage_path)) {
+                    $errors[] = "Failed to upload one of the gallery images.";
+                    continue;
+                }
+                $gallery_paths[] = $gallery_filename; // Only filename saved to DB
             }
         }
     }
 
     $gallery_csv = implode(',', $gallery_paths);
 
-    /* INSERT EVENT */
+    /* INSERT EVENT AND OWNER'S BOOKINGS */
     if (empty($errors)) {
+        $conn->autocommit(false); // Start transaction
+
+        // 1. Insert into events (now adding event_price)
         $stmt = mysqli_prepare(
             $conn,
             "INSERT INTO events (
@@ -176,13 +238,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 event_available_seats,
                 event_banner_image,
                 event_gallery_images,
-                event_registration_deadline
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                event_registration_deadline,
+                event_price
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         );
 
         mysqli_stmt_bind_param(
             $stmt,
-            "issssssiiiss",   // <-- change 'ississiiisss' to 'issssssiiiss'
+            "issssssiisssd",
             $owner_id,
             $title,
             $description,
@@ -194,26 +257,233 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $available_seats,
             $banner_path,
             $gallery_csv,
-            $event_reg_deadline
+            $event_reg_deadline,
+            $event_price
         );
 
-//         echo '<pre>';
-// var_dump($_POST['end_datetime']);
-// var_dump($event_end_datetime);
-// exit;
+        $event_ok = false;
+        $booking_ok = false;
 
         if (mysqli_stmt_execute($stmt)) {
-            $success = true;
+            $event_ok = true;
+            $event_id = mysqli_insert_id($conn);
+
+            // 2. Insert booking record (for the owner and family persons) with booking_status='approved'
+            $booking_stmt = mysqli_prepare(
+                $conn,
+                "INSERT INTO bookings (event_id, user_id, persons, booking_status) VALUES (?, ?, ?, ?)"
+            );
+            $booking_status = 'approved';
+            mysqli_stmt_bind_param($booking_stmt, "iiis", $event_id, $owner_id, $persons, $booking_status);
+
+            if (mysqli_stmt_execute($booking_stmt)) {
+                $booking_ok = true;
+            } else {
+                $errors[] = "Booking insertion failed: " . mysqli_error($conn);
+            }
+            mysqli_stmt_close($booking_stmt);
+
+            // If event and booking insertion succeeded, redirect to payment
+            if ($event_ok && $booking_ok) {
+                $conn->commit();
+                // Redirect to payment.php with event_id, event_price can be retrieved there if needed
+                ?>
+                <script>
+                    window.location.href = 'payment.php?event_id=<?= urlencode($event_id) ?>';
+                </script>
+                <?php
+                exit();
+            } else {
+                $conn->rollback();
+            }
+            $conn->autocommit(true);
+
         } else {
             $errors[] = "Database error: " . mysqli_error($conn);
+            mysqli_stmt_close($stmt);
         }
-        mysqli_stmt_close($stmt);
     }
 }
 ?>
 
 
-<link rel="stylesheet" href="css/create_event.css">
+<!-- <link rel="stylesheet" href="css/create_event.css"> -->
+
+<style>
+    .create-container-centered {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 18px 0 rgba(19, 70, 157, 0.15);
+    margin: 30px auto 32px auto;
+    max-width: 650px;
+    padding: 30px 32px 26px 32px;
+}
+/* Table layout and cells */ 
+.form-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 14px;
+}
+.form-table td {
+    padding-bottom: 0;
+}
+/* Labels and fields */
+.form-label {
+    display: block;
+    font-weight: 500;
+    color: #184675;
+    margin-bottom: 7px;
+    letter-spacing: .01em;
+}
+.input-text, .input-number, .input-area, .input-select, .input-file {
+    width: 100%;
+    font-size: 1.09em;
+    border-radius: 4px;
+    padding: 8px 10px;
+    border: 1px solid #b6cbdb;
+    transition: border-color 0.15s;
+    background: #f8fcff;
+    color: #142c42;
+    margin-bottom: 4px;
+}
+.input-text:focus, .input-number:focus, .input-area:focus, .input-select:focus {
+    border-color: #2494f5;
+    outline: none;
+    background: #f2f9ff;
+}
+.input-invalid,
+.input-invalid:focus {
+    border-color: #ce3030 !important;
+    background: #fff3f3 !important;
+}
+.input-file {
+    padding: 6px 10px 4px 0;
+    background: transparent;
+    border: none;
+}
+.input-file:focus {
+    outline: 1px dotted #549dc7;
+}
+/* Buttons */
+.create-event-btn {
+    background: linear-gradient(90deg, #2494f5 0%, #1e73be 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 36px;
+    font-size: 1.12em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+    box-shadow: 0 3px 10px 0 rgba(36,148,245,0.11), 0 1.5px 5px 0 rgba(25, 85, 144, 0.05);
+    text-decoration: none !important;
+    outline: none;
+    letter-spacing: 0.03em;
+    display: inline-block;
+}
+.create-event-btn:hover,
+.create-event-btn:focus {
+    background: linear-gradient(90deg, #176ab0 0%, #105688 100%);
+    color: #fff;
+    transform: translateY(-2px) scale(1.025);
+    box-shadow: 0 6px 20px 0 rgba(36,148,245,0.14), 0 2.5px 8px 0 rgba(25, 85, 144, 0.13);
+    text-decoration: none !important;
+}
+.back-btn {
+    background: transparent;
+    color: #2173cb;
+    border: 1px solid #b6cbdb;
+    margin-bottom: 12px;
+    font-weight: 500;
+    font-size: 1em;
+    padding: 8px 20px;
+    transition: color 0.13s, border 0.13s;
+    text-decoration: none !important;
+}
+.back-btn:hover {
+    color: #101b2d;
+    border-color: #2978c9;
+    background: #ecf6fe;
+    text-decoration: none !important;
+}
+.outside-back-btn-wrapper {
+    padding: 25px 0 16px 2px;
+    max-width: 650px;
+    margin: 0 auto;
+}
+.msg-error {
+    background: #ffecf0;
+    border: 1px solid #fc8d99;
+    color: #a21d37;
+    border-radius: 5px;
+    padding: 14px 20px 9px 18px;
+    font-weight: 500;
+    margin-bottom: 26px;
+    font-size: 1.02em;
+}
+.msg-success {
+    background: #e9fcee;
+    border: 1px solid #6bdea7;
+    color: #15895f;
+    border-radius: 6px;
+    padding: 23px 28px 16px 20px;
+    font-size: 1.08em;
+    margin: 19px 0 9px 0;
+    text-align: center;
+}
+.field-error {
+    color: #ce3030;
+    font-size: .99em;
+    display: block;
+    margin-top: 0px;
+    margin-bottom: 5px;
+    min-height: 16px;
+}
+.event-code-span {
+    display: inline-block;
+    font-family: "Fira Mono", "SFMono-Regular", monospace;
+    font-size: 1.37em;
+    color: #145280;
+    padding: 3px 13px 3px 13px;
+    background: #e2f0ff;
+    border: 1px dashed #2494f5;
+    border-radius: 6px;
+    letter-spacing: 0.09em;
+    margin-top: 5px;
+    margin-bottom: 2px;
+    font-weight: bold;
+}
+.code-note {
+    color: #7f7f7f;
+    font-size: .98em;
+    margin-top: 7px;
+    margin-bottom: 6px;
+}
+@media (max-width: 755px) {
+    .create-container-centered {
+        padding: 10px 5vw 12px 5vw;
+        max-width: 98vw;
+    }
+    .outside-back-btn-wrapper { max-width: 97vw; padding:16px 0 10px 0;}
+    .create-event-btn {
+        padding: 11px 10vw;
+        font-size: 1.03em;
+    }
+}
+@media (max-width: 530px) {
+    .create-container-centered {
+        padding: 0 2vw 4vw 2vw;
+        box-shadow: none;
+        font-size: 99%;
+    }
+    .form-label, .code-note { font-size: 97%; }
+    .create-event-btn {
+        padding: 11px 0;
+        width: 100%;
+        font-size: 99%;
+    }
+}
+</style>
 
 <div style="position:relative; max-width:860px; margin:0 auto;">
     <div class="outside-back-btn-wrapper">
@@ -225,13 +495,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php foreach ($errors as $err) echo htmlspecialchars($err).'<br>'; ?>
             </div>
         <?php endif; ?>
-        <?php if ($success): ?>
-            <div class="msg-success">
-                <h3 style="margin-top:2px;">Event Created Successfully!</h3>
-                <p>We will inform you when the event is approved.</p>
-                <a href="events.php" class="create-event-btn" style="width:auto;display:inline-block;margin-top:13px;">View Events</a>
-            </div>
-        <?php else: ?>
+        <?php // Remove the after-success UI because we redirect on real success ?>
+        <?php if (!$success): ?>
         <form method="post" enctype="multipart/form-data" id="create-event-form" autocomplete="off" novalidate>
             <input type="hidden" name="owner_id" value="<?php echo $_SESSION['user_id']; ?>">
             <table class="form-table">
@@ -252,11 +517,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <tr>
                     <td>
                         <label class="form-label" for="category_id">Category</label>
-                        <select name="category_id" id="category_id" required class="input-select" onchange="updateMaxSeats()">
+                        <select name="category_id" id="category_id" required class="input-select" onchange="updateMaxSeatsAndPrice()">
                             <option value="">Select Category</option>
                             <?php foreach ($categories as $cat): ?>
                                 <option value="<?php echo $cat['category_id']; ?>"
                                     data-max-seats="<?php echo $cat['category_seats']; ?>"
+                                    data-price-per-hour="<?php echo isset($cat['category_price_per_hour']) ? htmlspecialchars($cat['category_price_per_hour']) : 0; ?>"
                                     <?php if (isset($category_id) && $category_id == $cat['category_id']) echo ' selected'; ?>>
                                     <?php echo htmlspecialchars($cat['category_name']); ?>
                                 </option>
@@ -361,6 +627,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </tr>
                 <tr>
                     <td>
+                        <label class="form-label" for="event_price">Event Price (calculated):</label>
+                        <input type="text" name="event_price" id="event_price" readonly value="<?php echo isset($event_price) ? htmlspecialchars(number_format($event_price, 2)) : '0.00'; ?>" class="input-text" style="background:#f6f6f6;">
+                    </td>
+                </tr>
+                <tr>
+                    <td>
                         <button type="submit" class="create-event-btn">Create Event</button>
                     </td>
                 </tr>
@@ -370,13 +642,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="js/jquery-4.0.0.min.js"></script>
 <script>
-    function updateMaxSeats() {
+    function updateMaxSeatsAndPrice() {
         var sel = document.getElementById('category_id');
         var i = sel.selectedIndex;
         var option = sel.options[i];
         var maxSeats = option.getAttribute('data-max-seats');
+        var pricePerHour = parseFloat(option.getAttribute('data-price-per-hour')) || 0;
         var maxSpan = document.getElementById('max-seats-caption');
         var eventSeatsInput = document.getElementById('event_seats_input');
         var personsInput = document.getElementById('persons-input');
@@ -393,16 +666,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             personsInput.value = '';
             document.getElementById('available-seats-span').textContent = '-';
         } else {
-            // recalculate available seats
             var available = parseInt(eventSeatsInput.value) - (parseInt(personsInput.value) || 0);
             document.getElementById('available-seats-span').textContent = (available >= 0 ? available : 0);
             personsInput.setAttribute('max', eventSeatsInput.value);
         }
+        // Also recalculate price if possible
+        updateEventPrice();
+    }
+
+    function updateEventPrice() {
+        var categorySel = document.getElementById('category_id');
+        var catOption = categorySel.options[categorySel.selectedIndex];
+        var pricePerHour = parseFloat(catOption.getAttribute('data-price-per-hour')) || 0;
+        var startVal = document.getElementById('start_datetime').value;
+        var endVal = document.getElementById('end_datetime').value;
+        var priceInput = document.getElementById('event_price');
+        if (!priceInput) return;
+        if (startVal && endVal && pricePerHour) {
+            var start = new Date(startVal);
+            var end = new Date(endVal);
+            var diffMs = end - start;
+            var hours = Math.ceil(diffMs / (1000 * 60 * 60));
+            if (hours < 1) hours = 1;
+            var amount = hours * pricePerHour;
+            priceInput.value = amount.toFixed(2);
+        } else {
+            priceInput.value = "0.00";
+        }
     }
 
     document.getElementById('category_id').addEventListener('change', function(){
-        updateMaxSeats();
+        updateMaxSeatsAndPrice();
     });
+
+    document.getElementById('start_datetime').addEventListener('change', updateEventPrice);
+    document.getElementById('end_datetime').addEventListener('change', updateEventPrice);
 
     document.getElementById('event_seats_input').addEventListener('input', function(){
         var max = this.getAttribute('max');
@@ -489,6 +787,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $(this).removeClass("input-invalid");
             }
             $('#end_datetime').trigger('blur');
+            updateEventPrice();
         });
         $('#end_datetime').on('change blur', function() {
             var s = $('#start_datetime').val();
@@ -503,6 +802,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $('#end_datetime-error').hide();
                 $(this).removeClass("input-invalid");
             }
+            updateEventPrice();
         });
 
         $('#event_seats_input').on('input blur', function() {
@@ -558,6 +858,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $('#banner_image-error').text("Invalid image format. Allowed: jpg, jpeg, png, gif, webp.").show();
                 $(this).addClass("input-invalid");
             }
+            // Check for path inclusion in file name (should not have / or \)
+            else if (files[0].name.indexOf('/') !== -1 || files[0].name.indexOf('\\') !== -1) {
+                $('#banner_image-error').text("Invalid image name: must not contain a path.").show();
+                $(this).addClass("input-invalid");
+            }
             else {
                 $('#banner_image-error').hide();
                 $(this).removeClass("input-invalid");
@@ -571,9 +876,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     valid = false;
                     break;
                 }
+                // Check for path inclusion in file name
+                if (files[i].name.indexOf('/') !== -1 || files[i].name.indexOf('\\') !== -1) {
+                    valid = false;
+                    break;
+                }
             }
             if (!valid) {
-                $('#gallery_images-error').text("Invalid image format in gallery. Allowed: jpg, jpeg, png, gif, webp.").show();
+                $('#gallery_images-error').text("Invalid image in gallery (bad name or format). Name must not contain a path. Allowed: jpg, jpeg, png, gif, webp.").show();
                 $(this).addClass("input-invalid");
             } else {
                 $('#gallery_images-error').hide();
@@ -619,6 +929,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 e.preventDefault();
             }
         });
+
+        // Init on load
+        updateMaxSeatsAndPrice();
+        updateEventPrice();
     });
 
 </script>
