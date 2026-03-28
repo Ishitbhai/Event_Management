@@ -414,15 +414,6 @@ body {
 
 </style>
   
-<?php
-                
-    echo $_SESSION['is_admin'];
-    echo $_SESSION['admin_username'];
-    echo "<br>";
-    echo $_SESSION['user_id'];
-    
-
-?>
 <div class="profile-container">
     <div class="profile-header">
         <?php
