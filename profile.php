@@ -413,6 +413,16 @@ body {
 ::placeholder { color: #b7cadb; }
 
 </style>
+  
+<?php
+                
+    echo $_SESSION['is_admin'];
+    echo $_SESSION['admin_username'];
+    echo "<br>";
+    echo $_SESSION['user_id'];
+    
+
+?>
 <div class="profile-container">
     <div class="profile-header">
         <?php
@@ -429,6 +439,7 @@ body {
         <h2><?php echo h($user['user_name']) ?: 'Your'; ?> Profile</h2>
     </div>
     <?php if ($update_msg) echo $update_msg; ?>
+    
     <form method="post" autocomplete="off" enctype="multipart/form-data">
         <?php foreach ($db_fields as $field): ?>
             <?php if ($field === "profile_picture") continue; // Show separately below ?>

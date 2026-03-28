@@ -1,8 +1,8 @@
 <?php
 // Start session and include DB connection
-if (session_status() == PHP_SESSION_NONE) {
+// if (session_status() == PHP_SESSION_NONE) {
     session_start();
-}
+// }
 require_once 'database/db_connect.php';
 if (isset($_SESSION['user_id'])) {
     ?>
@@ -31,15 +31,23 @@ if (isset($_SESSION['login_email'])) {
 $error = "";
 $login_success = false;
 
-// AJAX login support
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['ajax_headlogin'])) {
-    header("Content-Type: application/json");
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $is_ajax = isset($_POST['ajax_headlogin']); 
+    if ($is_ajax) {
+        header("Content-Type: application/json");
+    }
+
     $user_email = isset($_POST['user_email']) ? trim($_POST['user_email']) : '';
     $user_password = isset($_POST['user_password']) ? $_POST['user_password'] : '';
 
     if (empty($user_email) || empty($user_password)) {
-        echo json_encode(['success' => false, 'error' => "Please enter both email and password."]);
-        exit;
+        if ($is_ajax) {
+            echo json_encode(['success' => false, 'error' => "Please enter both email and password."]);
+            exit;
+        } else {
+            $error = "Please enter both email and password.";
+        }
     } else {
         $stmt = $conn->prepare("SELECT user_id, user_name, user_type, user_email, user_password, user_status FROM users WHERE user_email = ? LIMIT 1");
         $stmt->bind_param("s", $user_email);
@@ -59,7 +67,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['ajax_headlogin'])) {
                     $update_stmt->execute();
                     $update_stmt->close();
 
-                    // Set session variables for all users
+                    // Set session variables
+                    $_SESSION['is_admin'] = 0;
                     $_SESSION['user_id'] = $user['user_id'];
                     $_SESSION['user_name'] = $user['user_name'];
                     $_SESSION['user_email'] = $user['user_email'];
@@ -70,82 +79,47 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['ajax_headlogin'])) {
                         $_SESSION['is_admin'] = 1;
                         $_SESSION['admin_username'] = $user['user_email'];
                         $_SESSION['admin_user_name'] = $user['user_name'];
-                        // user_id is already set above, as required
                     }
 
-                    echo json_encode(['success' => true, 'redirect' => 'index.php']);
-                    exit;
+                    if ($is_ajax) {
+                        echo json_encode(['success' => true, 'redirect' => 'index.php']);
+                        exit;
+                    } else {
+                        ?>
+                        <script>
+                            window.location.href="index.php";
+                        </script>
+                        <?php
+                        // exit;
+                    }
                 } else {
-                    echo json_encode(['success' => false, 'error' => "Incorrect password."]);
-                    exit;
+                    if ($is_ajax) {
+                        echo json_encode(['success' => false, 'error' => "Incorrect password."]);
+                        exit;
+                    } else {
+                        $error = "Incorrect password.";
+                    }
                 }
             } else {
-                echo json_encode(['success' => false, 'error' => "Account not verified. Please check your email for the activation link."]);
+                if ($is_ajax) {
+                    echo json_encode(['success' => false, 'error' => "Account not verified. Please check your email for the activation link."]);
+                    exit;
+                } else {
+                    $error = "Account not verified. Please check your email for the activation link.";
+                }
+            }
+        } else {
+            if ($is_ajax) {
+                echo json_encode(['success' => false, 'error' => "No user found with that email address."]);
                 exit;
-            }
-        } else {
-            echo json_encode(['success' => false, 'error' => "No user found with that email address."]);
-            exit;
-        }
-        $stmt->close();
-    }
-}
-
-// For normal (non-AJAX) fallback, keep server rendered error, but don't redirect if there is an error
-if ($_SERVER["REQUEST_METHOD"] == "POST" && !isset($_POST['ajax_login'])) {
-    $user_email = isset($_POST['user_email']) ? trim($_POST['user_email']) : '';
-    $user_password = isset($_POST['user_password']) ? $_POST['user_password'] : '';
-
-    if (empty($user_email) || empty($user_password)) {
-        $error = "Please enter both email and password.";
-    } else {
-        $stmt = $conn->prepare("SELECT user_id, user_name,user_type, user_email, user_password, user_status FROM users WHERE user_email = ? LIMIT 1");
-        $stmt->bind_param("s", $user_email);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        if ($result && $result->num_rows == 1) {
-            $user = $result->fetch_assoc();
-
-            // Check if user's status is 'active'
-            if (isset($user['user_status']) && strtolower($user['user_status']) === 'active') {
-                // Verify password (hashed in DB)
-                if (password_verify($user_password, $user['user_password'])) {
-                    // Set last login to current timestamp
-                    $update_stmt = $conn->prepare("UPDATE users SET last_login = NOW() WHERE user_id = ?");
-                    $update_stmt->bind_param("i", $user['user_id']);
-                    $update_stmt->execute();
-                    $update_stmt->close();
-
-                    // Set session variables
-                    $_SESSION['user_id'] = $user['user_id'];
-                    $_SESSION['user_name'] = $user['user_name'];
-                    $_SESSION['user_email'] = $user['user_email'];
-                    $_SESSION['user_type'] = $user['user_type'];
-                    if (isset($user['user_type']) && $user['user_type'] == 'admin') {  
-                        $_SESSION['admin_username'] = $user['user_email'];
-                        $_SESSION['admin_user_name'] = $user['user_name'];
-                    }
-
-                    
-                    ?>
-                    <script>
-                        window.location.href="index.php";
-                    </script>
-                    <?php
-                    exit;
-                } else {
-                    $error = "Incorrect password.";
-                }
             } else {
-                $error = "Account not verified. Please check your email for the activation link.";
+                $error = "No user found with that email address.";
             }
-        } else {
-            $error = "No user found with that email address.";
         }
         $stmt->close();
     }
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="en">

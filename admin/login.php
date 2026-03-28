@@ -5,12 +5,14 @@ session_start();
 if (isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === 1) {
     ?>
     <script>
-        window.location.href = 'login.php';
+        window.location.href = 'index.php';
     </script>
     <?php
     exit();
 }
  
+// echo $_SESSION['is_admin'];
+
 require_once('../database/db_connect.php'); // update the path if needed
 
 $error = '';
