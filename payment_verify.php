@@ -156,17 +156,34 @@ if (!empty($pending['coupon_id'])) {
     mysqli_stmt_close($cu);
 }
 
-// Auto-generate coupon if event price > 10000
+// Auto-generate unique coupon if event price > 10000
+$generated_coupon = null;
 if ($event_price > 10000) {
-    $new_code    = strtoupper(substr(md5(uniqid($owner_id . $event_id, true)), 0, 10));
-    $valid_till  = date('Y-m-d H:i:s', strtotime('+1 year'));
+    // Generate unique code
+    do {
+        $new_code = strtoupper(substr(bin2hex(random_bytes(6)), 0, 10));
+        $chk = mysqli_prepare($conn, "SELECT coupon_id FROM coupons WHERE coupon_code = ? LIMIT 1");
+        mysqli_stmt_bind_param($chk, 's', $new_code);
+        mysqli_stmt_execute($chk);
+        mysqli_stmt_store_result($chk);
+        $exists = mysqli_stmt_num_rows($chk) > 0;
+        mysqli_stmt_close($chk);
+    } while ($exists);
+
+    $valid_till   = date('Y-m-d H:i:s', strtotime('+1 month'));
     $gen_discount = 10;
     $gc = mysqli_prepare($conn,
         "INSERT INTO coupons (coupon_code, coupon_from_event_id, coupon_user_id, coupon_discount, coupon_valid_till)
          VALUES (?, ?, ?, ?, ?)"
     );
     mysqli_stmt_bind_param($gc, 'siiis', $new_code, $event_id, $owner_id, $gen_discount, $valid_till);
-    mysqli_stmt_execute($gc);
+    if (mysqli_stmt_execute($gc)) {
+        $generated_coupon = [
+            'code'       => $new_code,
+            'discount'   => $gen_discount,
+            'valid_till' => $valid_till,
+        ];
+    }
     mysqli_stmt_close($gc);
 }
 
@@ -178,8 +195,12 @@ unset(
     $_SESSION['razorpay_legacy_checkout']
 );
 
+if ($generated_coupon) {
+    $_SESSION['new_coupon_generated'] = $generated_coupon;
+}
+
 echo json_encode([
     'success'  => true,
     'event_id' => $event_id,
-    'redirect' => 'events.php?payment=success&event_id=' . (int) $event_id,
+    'redirect' => 'payment_success.php?event_id=' . (int) $event_id,
 ]);
