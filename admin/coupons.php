@@ -3,7 +3,6 @@ require_once("../database/db_connect.php");
 session_start();
 require('sidebar.php');
 
-// Only admins allowed
 if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== 1) {
     ?>
     <script>
@@ -11,6 +10,16 @@ if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== 1) {
     </script>
     <?php
     exit();
+}
+
+// Handle delete
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
+    $del_id = (int)$_POST['delete_id'];
+    $d = $conn->prepare("DELETE FROM coupons WHERE coupon_id = ?");
+    $d->bind_param('i', $del_id);
+    $d->execute();
+    $d->close();
+    echo '<script>window.location.href="coupons.php";</script>'; exit();
 }
 
 function esc($str) {
@@ -416,11 +425,10 @@ table.event-table {
                             </button>
                         </a>
 
-                        <a class="delete-link" href="coupon_delete.php?id=<?= $row['coupon_id']; ?>">
-                            <button class="delete-btn" type="button">
-                                Delete
-                            </button>
-                        </a>
+                        <form method="post" style="display:inline" onsubmit="return confirm('Delete this coupon?')">
+                            <input type="hidden" name="delete_id" value="<?= (int)$row['coupon_id'] ?>">
+                            <button type="submit" class="delete-btn">Delete</button>
+                        </form>
                     </td>
                 </tr>
                 <?php endwhile; ?>
