@@ -1,1072 +1,286 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment - Event Management</title>
-    <!-- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">     -->
-    <link rel="stylesheet" href="bootstrap/css/all.min.css" />
+<?php
+include 'header.php';
+require_once __DIR__ . '/database/db_connect.php';
 
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        
-        .payment-wrapper {
-            width: 100%;
-            max-width: 1200px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            background: rgba(255, 255, 255, 0.98);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            backdrop-filter: blur(10px);
-        }
-        
-        .event-section {
-            border-right: 1px solid #e5e7eb;
-            padding-right: 30px;
-        }
-        
-        .payment-section {
-            padding-left: 30px;
-        }
-        
-        .section-title {
-            font-size: 28px;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 30px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            position: relative;
-        }
-        
-        .section-title::after {
-            content: '';
-            flex: 1;
-            height: 2px;
-            background: linear-gradient(90deg, #667eea, transparent);
-            margin-left: 20px;
-        }
-        
-        .section-title i {
-            color: #667eea;
-            font-size: 24px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .event-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
-            padding: 30px;
-            color: white;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 
-                0 10px 40px rgba(102, 126, 234, 0.3),
-                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-        }
-        
-        .event-card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: shimmer 3s ease-in-out infinite;
-        }
-        
-        .event-card::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 100px;
-            background: linear-gradient(180deg, transparent, rgba(0,0,0,0.1));
-        }
-        
-        @keyframes shimmer {
-            0%, 100% { transform: rotate(0deg); }
-            50% { transform: rotate(180deg); }
-        }
-        
-        .event-header {
-            position: relative;
-            z-index: 1;
-        }
-        
-        .event-title {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 20px;
-        }
-        
-        .event-details {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        
-        .event-detail-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 16px;
-        }
-        
-        .event-detail-item i {
-            width: 20px;
-            text-align: center;
-            opacity: 0.9;
-        }
-        
-        .event-badge {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            margin-top: 20px;
-        }
-        
-        .payment-methods {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        
-        .payment-method {
-            border: 2px solid #e5e7eb;
-            border-radius: 16px;
-            padding: 24px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            background: white;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        }
-        
-        .payment-method::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            opacity: 0;
-            transition: opacity 0.4s ease;
-            z-index: 0;
-        }
-        
-        .payment-method::after {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
-            border-radius: 16px;
-            opacity: 0;
-            transition: opacity 0.4s ease;
-            z-index: -1;
-        }
-        
-        .payment-method:hover {
-            transform: translateY(-4px) scale(1.02);
-            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.15);
-        }
-        
-        .payment-method.selected {
-            border-color: #667eea;
-            color: white;
-            transform: translateY(-2px) scale(1.02);
-        }
-        
-        .payment-method.selected::before {
-            opacity: 1;
-        }
-        
-        .payment-method.selected::after {
-            opacity: 1;
-        }
-        
-        .payment-method-content {
-            position: relative;
-            z-index: 1;
-        }
-        
-        .payment-method i {
-            font-size: 36px;
-            margin-bottom: 12px;
-            display: block;
-            transition: transform 0.3s ease;
-        }
-        
-        .payment-method:hover i {
-            transform: scale(1.1);
-        }
-        
-        .payment-method span {
-            font-weight: 600;
-            font-size: 15px;
-            letter-spacing: 0.5px;
-        }
-        
-        .payment-details {
-            background: #f9fafb;
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 25px;
-            min-height: 200px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #374151;
-            font-size: 14px;
-        }
-        
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 16px 18px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 16px;
-            font-family: 'Inter', sans-serif;
-            transition: all 0.3s ease;
-            background: white;
-            position: relative;
-        }
-        
-        .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 
-                0 0 0 4px rgba(102, 126, 234, 0.1),
-                0 4px 12px rgba(102, 126, 234, 0.1);
-            transform: translateY(-1px);
-        }
-        
-        .form-group input::placeholder {
-            color: #9ca3af;
-            font-weight: 400;
-        }
-        
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-        
-        .price-section {
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 25px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 
-                0 4px 12px rgba(0, 0, 0, 0.05),
-                0 0 0 1px rgba(255, 255, 255, 0.5) inset;
-        }
-        
-        .price-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
-            background-size: 200% 100%;
-            animation: gradientMove 3s ease-in-out infinite;
-        }
-        
-        .price-label {
-            font-size: 14px;
-            color: #64748b;
-            margin-bottom: 8px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-        
-        .price-amount {
-            font-size: 36px;
-            font-weight: 800;
-            color: #1e293b;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            position: relative;
-        }
-        
-        .pay-button {
-            width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 16px;
-            padding: 20px;
-            font-size: 18px;
-            font-weight: 700;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .pay-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.6s ease;
-        }
-        
-        .pay-button::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
-            opacity: 0;
-            transition: opacity 0.4s ease;
-            border-radius: 16px;
-        }
-        
-        .pay-button:hover::before {
-            left: 100%;
-        }
-        
-        .pay-button:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 16px 32px rgba(102, 126, 234, 0.4);
-        }
-        
-        .pay-button:active {
-            transform: translateY(-1px) scale(1.01);
-        }
-        
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-            margin-top: 20px;
-            transition: color 0.3s ease;
-        }
-        
-        .back-link:hover {
-            color: #764ba2;
-        }
-        
-        .security-badge {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 24px;
-            color: #64748b;
-            font-size: 13px;
-            font-weight: 500;
-            padding: 12px 20px;
-            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-            border: 1px solid #bbf7d0;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-        }
-        
-        .security-badge:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
-        }
-        
-        .security-badge i {
-            color: #10b981;
-            font-size: 16px;
-        }
-        
-        .verify-button {
-            width: 100%;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            padding: 16px;
-            font-size: 16px;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .verify-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s ease;
-        }
-        
-        .verify-button:hover::before {
-            left: 100%;
-        }
-        
-        .verify-button:hover {
-            transform: translateY(-2px) scale(1.02);
-            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
-        }
-        
-        .verify-button:disabled {
-            background: linear-gradient(135deg, #9ca3af, #6b7280);
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        
-        .verify-button:disabled::before {
-            display: none;
-        }
-        
-        .upi-verified {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 18px;
-            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-            border: 2px solid #10b981;
-            border-radius: 12px;
-            color: #065f46;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .upi-verified::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #10b981, #059669);
-        }
-        
-        .upi-verified i {
-            color: #10b981;
-            font-size: 20px;
-        }
-        
-        .upi-loading {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid #f3f4f6;
-            border-radius: 50%;
-            border-top-color: #10b981;
-            animation: spin 1s ease-in-out infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+date_default_timezone_set('Asia/Kolkata');
+mysqli_query($conn, "SET time_zone = '+05:30'");
 
-        #payment-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            backdrop-filter: blur(5px);
-        }
-        
-        .payment-modal {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: modalSlideIn 0.3s ease-out;
-        }
-        
-        @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: scale(0.8) translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-        
-        .payment-modal-content h3 {
-            color: #1f2937;
-            font-size: 24px;
-            font-weight: 700;
-            margin: 20px 0 10px;
-        }
-        
-        .payment-modal-content p {
-            color: #6b7280;
-            font-size: 16px;
-            margin: 0;
-        }
-        
-        .payment-icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-        }
-        
-        .payment-icon.success {
-            background: linear-gradient(135deg, #10b981, #059669);
-        }
-        
-        .payment-icon i {
-            font-size: 40px;
-            color: white;
-        }
-        
-        .payment-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s linear infinite;
-        }
-        
-        .payment-loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s linear infinite;
-            margin-right: 8px;
-        }
-        
+if (!isset($_SESSION['user_id'])) { ?>
+    <script>window.location.href="login.php";</script>
+<?php exit; }
 
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: white;
-            padding: 16px 20px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            z-index: 9998;
-            animation: slideInRight 0.3s ease-out;
-            min-width: 300px;
-        }
-        
-        .notification.error {
-            border-left: 4px solid #ef4444;
-        }
-        
-        .notification.success {
-            border-left: 4px solid #10b981;
-        }
-        
-        .notification i {
-            font-size: 20px;
-        }
-        
-        .notification.error i {
-            color: #ef4444;
-        }
-        
-        .notification.success i {
-            color: #10b981;
-        }
-        
-        .notification span {
-            color: #1f2937;
-            font-weight: 500;
-        }
-        
-        @keyframes slideInRight {
-            from {
-                opacity: 0;
-                transform: translateX(100px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .payment-wrapper {
-                grid-template-columns: 1fr;
-                padding: 20px;
-                gap: 20px;
-            }
-            
-            .event-section, .payment-section {
-                border: none;
-                padding: 0;
-            }
-            
-            .payment-methods {
-                grid-template-columns: 1fr;
-            }
-            
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-</head>
-<body>
+$user_role = isset($_SESSION['user_type']) ? strtolower($_SESSION['user_type']) : '';
+if ($user_role !== 'owner' && $user_role !== 'admin') { ?>
+    <script>window.location.href="events.php";</script>
+<?php exit; }
 
-<div class="payment-wrapper">
+if (empty($_SESSION['pending_event_checkout'])
+    || (int)($_SESSION['pending_event_checkout']['owner_id'] ?? 0) !== (int)$_SESSION['user_id']) { ?>
+    <script>window.location.href="create_event.php";</script>
+<?php exit; }
 
+$pending     = $_SESSION['pending_event_checkout'];
+$category_id = (int)($pending['category_id'] ?? 0);
+
+$category_name = '';
+if ($category_id > 0) {
+    $cs = mysqli_prepare($conn, 'SELECT category_name FROM category WHERE category_id = ? LIMIT 1');
+    mysqli_stmt_bind_param($cs, 'i', $category_id);
+    mysqli_stmt_execute($cs);
+    mysqli_stmt_bind_result($cs, $category_name);
+    mysqli_stmt_fetch($cs);
+    mysqli_stmt_close($cs);
+}
+
+$user_email = $user_name = '';
+$uid = (int)$_SESSION['user_id'];
+$us = mysqli_prepare($conn, 'SELECT user_email, user_name FROM users WHERE user_id = ? LIMIT 1');
+mysqli_stmt_bind_param($us, 'i', $uid);
+mysqli_stmt_execute($us);
+mysqli_stmt_bind_result($us, $user_email, $user_name);
+mysqli_stmt_fetch($us);
+mysqli_stmt_close($us);
+
+$title       = $pending['title'] ?? '';
+$start_label = ($t = strtotime($pending['event_start_time'] ?? '')) ? date('d M Y, h:i A', $t) : '';
+$end_label   = ($t = strtotime($pending['event_end_time']   ?? '')) ? date('d M Y, h:i A', $t) : '';
+$price_float = (float)($pending['event_price_float'] ?? 0);
+$price_fmt   = number_format($price_float, 2, '.', '');
+$event_seats = (int)($pending['event_seats'] ?? 0);
+
+$cfg    = require __DIR__ . '/config/razorpay_config.php';
+$key_id = trim((string)($cfg['key_id'] ?? ''));
+$secret = trim((string)($cfg['key_secret'] ?? ''));
+$has_key = $key_id !== '';
+?>
+<link rel="stylesheet" href="bootstrap/css/all.min.css"/>
+<style>
+.pay-page-wrap{max-width:1100px;margin:24px auto 48px;padding:0 16px}
+.payment-wrapper{display:grid;grid-template-columns:1fr 1fr;gap:28px;background:#fff;border-radius:20px;padding:36px;box-shadow:0 20px 60px rgba(0,0,0,.12)}
+.event-section{border-right:1px solid #e5e7eb;padding-right:24px}
+.payment-section{padding-left:8px}
+.section-title{font-size:22px;font-weight:700;color:#1f2937;margin-bottom:22px;display:flex;align-items:center;gap:10px}
+.section-title i{color:#667eea}
+.event-card{background:linear-gradient(135deg,#667eea,#764ba2);border-radius:16px;padding:26px;color:#fff;box-shadow:0 10px 40px rgba(102,126,234,.25)}
+.event-title{font-size:20px;font-weight:700;margin-bottom:16px}
+.event-details{display:flex;flex-direction:column;gap:12px;font-size:15px}
+.event-detail-item{display:flex;align-items:flex-start;gap:10px}
+.event-detail-item i{width:20px;text-align:center;margin-top:2px}
+.price-section{background:linear-gradient(135deg,#f8fafc,#e2e8f0);border-radius:14px;padding:22px;margin-bottom:22px;text-align:center}
+.price-label{font-size:13px;color:#64748b;text-transform:uppercase;letter-spacing:.06em}
+.price-amount{font-size:32px;font-weight:800;color:#1e293b;margin-top:6px}
+.original-price{font-size:15px;color:#94a3b8;text-decoration:line-through;margin-top:2px}
+.discount-badge{font-size:13px;color:#10b981;margin-top:4px;display:none}
+.pay-btn{width:100%;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:14px;padding:16px 20px;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(102,126,234,.35);transition:transform .15s,box-shadow .15s}
+.pay-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 28px rgba(102,126,234,.45)}
+.pay-btn:disabled{opacity:.65;cursor:not-allowed}
+.pay-hint{font-size:13px;color:#64748b;margin-top:14px;line-height:1.5}
+.err-box{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;padding:12px 14px;border-radius:10px;font-size:14px;margin-bottom:16px;display:none}
+.back-link{display:inline-flex;align-items:center;gap:8px;color:#667eea;text-decoration:none;font-weight:600;margin-top:18px}
+.back-link:hover{color:#764ba2}
+.security-badge{display:flex;align-items:center;gap:10px;margin-top:20px;color:#64748b;font-size:13px;padding:12px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px}
+.security-badge i{color:#10b981}
+.coupon-wrap{margin-bottom:18px}
+.coupon-wrap label{font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px}
+.coupon-row{display:flex;gap:8px}
+.coupon-row input{flex:1;padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;font-size:14px;text-transform:uppercase;outline:none}
+.coupon-row input:focus{border-color:#667eea}
+.coupon-row button{padding:10px 16px;background:#667eea;color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px}
+.coupon-row button:disabled{opacity:.6;cursor:not-allowed}
+.coupon-msg{font-size:13px;margin-top:6px;min-height:18px}
+@media(max-width:768px){.payment-wrapper{grid-template-columns:1fr;padding:22px}.event-section{border:none;padding-right:0}}
+</style>
+
+<div class="pay-page-wrap">
+  <div class="payment-wrapper">
+
+    <!-- LEFT: event details -->
     <div class="event-section">
-        <h2 class="section-title">
-            <i class="fas fa-calendar-check"></i>
-            Event Details
-        </h2>
-        
-        <div class="event-card">
-            <div class="event-header">
-                <h3 class="event-title">Tech Conference 2024</h3>
-                
-                <div class="event-details">
-                    <div class="event-detail-item">
-                        <i class="fas fa-tag"></i>
-                        <span>Technology</span>
-                    </div>
-                    <div class="event-detail-item">
-                        <i class="fas fa-clock"></i>
-                        <span>25 Dec 2024, 10:00 AM</span>
-                    </div>
-                    <div class="event-detail-item">
-                        <i class="fas fa-clock"></i>
-                        <span>25 Dec 2024, 06:00 PM</span>
-                    </div>
-                    <div class="event-detail-item">
-                        <i class="fas fa-users"></i>
-                        <span>100 Seats Available</span>
-                    </div>
-                    <div class="event-detail-item">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <span>Convention Center</span>
-                    </div>
-                </div>
-                
-                <div class="event-badge">
-                    <i class="fas fa-star"></i> Premium Event
-                </div>
-            </div>
+      <h2 class="section-title"><i class="fas fa-calendar-check"></i> Event Details</h2>
+      <div class="event-card">
+        <h3 class="event-title"><?php echo htmlspecialchars($title); ?></h3>
+        <div class="event-details">
+          <div class="event-detail-item"><i class="fas fa-tag"></i><span><?php echo $category_name !== '' ? htmlspecialchars($category_name) : '—'; ?></span></div>
+          <div class="event-detail-item"><i class="fas fa-play-circle"></i><span>Starts: <?php echo htmlspecialchars($start_label); ?></span></div>
+          <div class="event-detail-item"><i class="fas fa-stop-circle"></i><span>Ends: <?php echo htmlspecialchars($end_label); ?></span></div>
+          <div class="event-detail-item"><i class="fas fa-users"></i><span><?php echo $event_seats; ?> seats</span></div>
         </div>
-        
-        <div class="security-badge">
-            <i class="fas fa-shield-alt"></i>
-            <span>Secure Payment Powered by SSL</span>
-        </div>
+      </div>
+      <div class="security-badge">
+        <i class="fas fa-shield-alt"></i>
+        <span><?php echo $secret !== '' ? 'Razorpay Test Checkout — no real money charged.' : 'Razorpay Checkout (test mode) — use test card/UPI details.'; ?></span>
+      </div>
     </div>
-    
-  
-    <div class="payment-section">
-        <h2 class="section-title">
-            <i class="fas fa-credit-card"></i>
-            Payment Information
-        </h2>
-        
-        <div class="price-section">
-            <div class="price-label">Total Amount</div>
-            <div class="price-amount">₹500</div>
-        </div>
-        
-        <form method="POST" action="process_payment.php">
-            <input type="hidden" name="event_id" value="1">
-            <input type="hidden" name="payment_method" id="payment_method" required>
-            
-          
-            <div class="payment-methods">
-                <div class="payment-method" onclick="selectPaymentMethod(this, 'credit_card')">
-                    <div class="payment-method-content">
-                        <i class="fas fa-credit-card"></i>
-                        <span>Credit Card</span>
-                    </div>
-                </div>
-                <div class="payment-method" onclick="selectPaymentMethod(this, 'debit_card')">
-                    <div class="payment-method-content">
-                        <i class="fas fa-credit-card"></i>
-                        <span>Debit Card</span>
-                    </div>
-                </div>
-                <div class="payment-method" onclick="selectPaymentMethod(this, 'upi')">
-                    <div class="payment-method-content">
-                        <i class="fas fa-mobile-alt"></i>
-                        <span>UPI</span>
-                    </div>
-                </div>
-                <div class="payment-method" onclick="selectPaymentMethod(this, 'net_banking')">
-                    <div class="payment-method-content">
-                        <i class="fas fa-university"></i>
-                        <span>Net Banking</span>
-                    </div>
-                </div>
-            </div>
-            
-     
-            <div class="payment-details">
-               
-                <div id="card_details" style="display: none;">
-                    <div class="form-group">
-                        <label>Card Number</label>
-                        <input type="text" name="card_number" placeholder="1234 5678 9012 3456" maxlength="19">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Cardholder Name</label>
-                        <input type="text" name="cardholder_name" placeholder="John Doe">
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Expiry Date</label>
-                            <input type="text" name="expiry_date" placeholder="MM/YY" maxlength="5">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>CVV</label>
-                            <input type="text" name="cvv" placeholder="123" maxlength="3">
-                        </div>
-                    </div>
-                </div>
-                
-                     <div id="upi_details" style="display: none;">
-                    <div class="form-group">
-                        <label>UPI ID</label>
-                        <input type="text" name="upi_id" id="upi_id" placeholder="yourname@upi" onblur="validateUPI()">
-                        <small id="upi_error" style="color: #ef4444; display: none; font-size: 12px; margin-top: 5px;">Please enter a valid UPI ID</small>
-                    </div>
-                    
-                    <div class="form-group" id="upi_verify_section" style="display: none;">
-                        <button type="button" class="verify-button" onclick="verifyUPI()">
-                            <i class="fas fa-check-circle"></i> Verify UPI ID
-                        </button>
-                        <div id="upi_verify_result" style="margin-top: 10px; font-size: 14px;"></div>
-                    </div>
-                    
-                    <div class="form-group" id="upi_verified_section" style="display: none;">
-                        <div class="upi-verified">
-                            <i class="fas fa-check-circle" style="color: #10b981;"></i>
-                            <span>UPI ID Verified Successfully</span>
-                            <div id="verified_upi_name" style="font-weight: 600; color: #1f2937; margin-top: 5px;"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                
-                <div id="net_banking_details" style="display: none;">
-                    <div class="form-group">
-                        <label>Select Bank</label>
-                        <select name="bank_name">
-                            <option value="">Select your bank</option>
-                            <option value="sbi">State Bank of India</option>
-                            <option value="hdfc">HDFC Bank</option>
-                            <option value="icici">ICICI Bank</option>
-                            <option value="pnb">Punjab National Bank</option>
-                            <option value="axis">Axis Bank</option>
-                            <option value="kotak">Kotak Mahindra Bank</option>
-                        </select>
-                    </div>
-                </div>
-                
 
-                <div id="default_message" style="text-align: center; color: #6b7280; padding: 40px;">
-                    <i class="fas fa-hand-pointer" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i>
-                    <p>Select a payment method to continue</p>
-                </div>
-            </div>
-            
-            <button type="submit" class="pay-button" onclick="processPayment(event)">
-                <i class="fas fa-lock"></i> Proceed to Pay ₹500
-            </button>
-        </form>
-        
-        <a href="create_event.php" class="back-link">
-            <i class="fas fa-arrow-left"></i>
-            Back to Event Creation
-        </a>
+    <!-- RIGHT: payment -->
+    <div class="payment-section">
+      <h2 class="section-title"><i class="fas fa-credit-card"></i> Pay Listing Fee</h2>
+
+      <div id="pay-err" class="err-box"></div>
+
+      <?php if (!$has_key): ?>
+        <div class="err-box" style="display:block">
+          Razorpay Key ID is not configured. Add it in <code>config/razorpay_config.php</code>.
+        </div>
+      <?php else: ?>
+
+        <!-- Coupon -->
+        <div class="coupon-wrap">
+          <label>Have a coupon code?</label>
+          <div class="coupon-row">
+            <input type="text" id="coupon-input" placeholder="Enter coupon code">
+            <button type="button" id="apply-coupon-btn">Apply</button>
+          </div>
+          <div class="coupon-msg" id="coupon-msg"></div>
+        </div>
+
+        <!-- Price -->
+        <div class="price-section">
+          <div class="price-label">Total</div>
+          <div class="price-amount" id="display-price">₹<?php echo htmlspecialchars($price_fmt); ?></div>
+          <div class="original-price" id="original-price" style="display:none">₹<?php echo htmlspecialchars($price_fmt); ?></div>
+          <div class="discount-badge" id="discount-badge"></div>
+        </div>
+
+        <p class="pay-hint">The Razorpay Checkout window will open. Use test card/UPI details — no real money is charged. Your event is saved only after successful payment.</p>
+
+        <button type="button" class="pay-btn" id="rzp-button">
+          <i class="fas fa-lock"></i> Pay with Razorpay
+        </button>
+
+      <?php endif; ?>
+
+      <a href="create_event.php" class="back-link">
+        <i class="fas fa-arrow-left"></i> Back to edit event details
+      </a>
     </div>
+
+  </div>
 </div>
 
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
-function selectPaymentMethod(element, method) {
-    document.querySelectorAll('.payment-method').forEach(el => {
-        el.classList.remove('selected');
+(function () {
+    var btn    = document.getElementById('rzp-button');
+    var errBox = document.getElementById('pay-err');
+    if (!btn) return;
+
+    var userEmail = <?php echo json_encode($user_email); ?>;
+    var userName  = <?php echo json_encode($user_name); ?>;
+
+    function showErr(msg) { errBox.textContent = msg; errBox.style.display = 'block'; }
+    function hideErr()    { errBox.style.display = 'none'; }
+
+    function doVerify(payload) {
+        btn.disabled = true;
+        fetch('payment_verify.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (vr) {
+            if (!vr.ok || vr.j.error) { showErr(vr.j.error || 'Verification failed.'); btn.disabled = false; return; }
+            window.location.href = vr.j.redirect || 'events.php';
+        })
+        .catch(function () { showErr('Network error during verification.'); btn.disabled = false; });
+    }
+
+    btn.addEventListener('click', function () {
+        hideErr();
+        btn.disabled = true;
+        fetch('razorpay_create_order.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (res) {
+            if (!res.ok || res.j.error) { showErr(res.j.error || 'Could not start payment.'); btn.disabled = false; return; }
+            var d = res.j;
+
+            var options = {
+                key:         d.key_id,
+                amount:      d.amount,
+                currency:    d.currency || 'INR',
+                name:        'Aone Hub',
+                description: 'Event listing fee',
+                prefill:     { email: userEmail, name: userName },
+                theme:       { color: '#667eea' },
+                modal: {
+                    ondismiss: function () {
+                        btn.disabled = false;
+                        window.location.href = 'create_event.php?payment=cancelled';
+                    }
+                }
+            };
+
+            if (d.keyonly) {
+                // Key-only: no order_id, Razorpay returns only payment_id
+                options.handler = function (response) {
+                    doVerify({ razorpay_payment_id: response.razorpay_payment_id });
+                };
+            } else {
+                // Both keys: order_id + signature verification
+                options.order_id = d.order_id;
+                options.handler  = function (response) {
+                    doVerify({
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_order_id:   response.razorpay_order_id,
+                        razorpay_signature:  response.razorpay_signature
+                    });
+                };
+            }
+
+            var rzp = new Razorpay(options);
+            rzp.on('payment.failed', function () {
+                showErr('Payment failed. You can try again.');
+                btn.disabled = false;
+            });
+            rzp.open();
+            btn.disabled = false;
+        })
+        .catch(function () { showErr('Network error. Try again.'); btn.disabled = false; });
     });
 
-    element.classList.add('selected');
-    
-
-    document.getElementById('payment_method').value = method;
-
-    document.getElementById('card_details').style.display = 'none';
-    document.getElementById('upi_details').style.display = 'none';
-    document.getElementById('net_banking_details').style.display = 'none';
-    document.getElementById('default_message').style.display = 'none';
-    
-    if (method === 'credit_card' || method === 'debit_card') {
-        document.getElementById('card_details').style.display = 'block';
-    } else if (method === 'upi') {
-        document.getElementById('upi_details').style.display = 'block';
-    } else if (method === 'net_banking') {
-        document.getElementById('net_banking_details').style.display = 'block';
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    const cardNumberInput = document.querySelector('input[name="card_number"]');
-    if (cardNumberInput) {
-        cardNumberInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\s/g, '');
-            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
-            e.target.value = formattedValue;
+    // Coupon
+    var couponBtn = document.getElementById('apply-coupon-btn');
+    if (couponBtn) {
+        couponBtn.addEventListener('click', function () {
+            var code   = document.getElementById('coupon-input').value.trim();
+            var msgEl  = document.getElementById('coupon-msg');
+            if (!code) { msgEl.style.color = '#b91c1c'; msgEl.textContent = 'Enter a coupon code.'; return; }
+            couponBtn.disabled = true;
+            fetch('apply_coupon.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ coupon_code: code })
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.error) {
+                    msgEl.style.color = '#b91c1c';
+                    msgEl.textContent = d.error;
+                    couponBtn.disabled = false;
+                    return;
+                }
+                msgEl.style.color   = '#10b981';
+                msgEl.textContent   = 'Coupon applied! ' + d.discount + '% off';
+                document.getElementById('display-price').textContent  = '₹' + d.new_price;
+                var orig = document.getElementById('original-price');
+                orig.style.display = 'block';
+                var badge = document.getElementById('discount-badge');
+                badge.textContent   = d.discount + '% discount applied';
+                badge.style.display = 'block';
+                document.getElementById('coupon-input').disabled = true;
+                couponBtn.disabled = true;
+            })
+            .catch(function () { msgEl.style.color = '#b91c1c'; msgEl.textContent = 'Network error.'; couponBtn.disabled = false; });
         });
     }
-
-    const expiryInput = document.querySelector('input[name="expiry_date"]');
-    if (expiryInput) {
-        expiryInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length >= 2) {
-                value = value.slice(0, 2) + '/' + value.slice(2, 4);
-            }
-            e.target.value = value;
-        });
-    }
-
-    const cvvInput = document.querySelector('input[name="cvv"]');
-    if (cvvInput) {
-        cvvInput.addEventListener('input', function(e) {
-            e.target.value = e.target.value.replace(/\D/g, '');
-        });
-    }
-});
-
-function validateUPI() {
-    const upiId = document.getElementById('upi_id').value.trim();
-    const upiError = document.getElementById('upi_error');
-    const upiVerifySection = document.getElementById('upi_verify_section');
-    const upiVerifiedSection = document.getElementById('upi_verified_section');
-    
-    upiError.style.display = 'none';
-    upiVerifySection.style.display = 'none';
-    upiVerifiedSection.style.display = 'none';
-    
-    const upiRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/;
-    
-    if (upiId === '') {
-        return false;
-    }
-    
-    if (!upiRegex.test(upiId)) {
-        upiError.style.display = 'block';
-        return false;
-    }
-    
-    upiVerifySection.style.display = 'block';
-    return true;
-}
-
-function verifyUPI() {
-    const upiId = document.getElementById('upi_id').value.trim();
-    const verifyButton = document.querySelector('.verify-button');
-    const verifyResult = document.getElementById('upi_verify_result');
-    const upiVerifySection = document.getElementById('upi_verify_section');
-    const upiVerifiedSection = document.getElementById('upi_verified_section');
-    const verifiedUpiName = document.getElementById('verified_upi_name');
-    
-    verifyButton.disabled = true;
-    verifyButton.innerHTML = '<div class="upi-loading"></div> Verifying...';
-    verifyResult.innerHTML = '';
-
-    setTimeout(() => {
-        const isValidUPI = Math.random() > 0.2; 
-        
-        if (isValidUPI) {
-         
-            verifyResult.innerHTML = '<div style="color: #10b981;"><i class="fas fa-check-circle"></i> UPI ID verified successfully!</div>';
-            
-           
-            const mockNames = ['Rahul Sharma', 'Priya Patel', 'Amit Kumar', 'Sneha Reddy', 'Vikram Singh'];
-            const randomName = mockNames[Math.floor(Math.random() * mockNames.length)];
-            verifiedUpiName.textContent = randomName;
-            
-            setTimeout(() => {
-                upiVerifySection.style.display = 'none';
-                upiVerifiedSection.style.display = 'block';
-            }, 1000);
-        } else {
-            
-            verifyResult.innerHTML = '<div style="color: #ef4444;"><i class="fas fa-exclamation-circle"></i> UPI ID not found. Please check and try again.</div>';
-            verifyButton.disabled = false;
-            verifyButton.innerHTML = '<i class="fas fa-check-circle"></i> Verify UPI ID';
-        }
-    }, 2000); 
-}
-
-
-function processPayment(event) {
-    event.preventDefault();
-    
-    const payButton = document.querySelector('.pay-button');
-    const paymentMethod = document.getElementById('payment_method').value;
-    
-    if (!paymentMethod) {
-        showNotification('Please select a payment method', 'error');
-        return;
-    }
-    
-    if (paymentMethod === 'upi') {
-        const upiVerifiedSection = document.getElementById('upi_verified_section');
-        if (upiVerifiedSection.style.display === 'none') {
-            showNotification('Please verify your UPI ID first', 'error');
-            return;
-        }
-    }
-    
-    payButton.disabled = true;
-    payButton.innerHTML = '<div class="payment-loading"></div> Processing Payment...';
-    
-    showPaymentOverlay();
-    
-    setTimeout(() => {
-        updatePaymentOverlay('Payment Successful!', 'success');
-        
-        setTimeout(() => {
-            window.location.href = 'index.php';
-        }, 2000);
-    }, 3000);
-}
-
-function showPaymentOverlay() {
-    const overlay = document.createElement('div');
-    overlay.id = 'payment-overlay';
-    overlay.innerHTML = `
-        <div class="payment-modal">
-            <div class="payment-modal-content">
-                <div class="payment-icon">
-                    <div class="payment-spinner"></div>
-                </div>
-                <h3>Processing Payment</h3>
-                <p>Please wait while we process your payment...</p>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(overlay);
-}
-
-function updatePaymentOverlay(message, type) {
-    const overlay = document.getElementById('payment-overlay');
-    const modalContent = overlay.querySelector('.payment-modal-content');
-    
-    if (type === 'success') {
-        modalContent.innerHTML = `
-            <div class="payment-icon success">
-                <i class="fas fa-check-circle"></i>
-            </div>
-            <h3>${message}</h3>
-            <p>Redirecting to home page...</p>
-        `;
-    }
-}
-
-function showNotification(message, type) {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-        <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
-        <span>${message}</span>
-    `;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
-}
+})();
 </script>
 
-</body>
-</html>
-        
+<?php include 'footer.php'; ?>
