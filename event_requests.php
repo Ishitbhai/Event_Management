@@ -296,6 +296,17 @@ while ($row = $rs->fetch_assoc()) {
     $bookings[] = $row;
 }
 $stmt->close();
+
+// Fetch coupon for this event (generated from this event)
+$event_coupon = null;
+$cq = $conn->prepare("SELECT coupon_code, coupon_discount, coupon_is_used, coupon_valid_till, coupon_applied_to_event_id FROM coupons WHERE coupon_from_event_id = ? LIMIT 1");
+$cq->bind_param('i', $event_id);
+$cq->execute();
+$cr = $cq->get_result();
+if ($cr->num_rows > 0) {
+    $event_coupon = $cr->fetch_assoc();
+}
+$cq->close();
 ?>
 
 <!-- Bootstrap 5 CDN -->
@@ -612,6 +623,31 @@ input[type="file"]::file-selector-button {
                 <span class="bi bi-images"></span> Manage Images
             </button>
         </div>
+
+        <?php if ($event_coupon): ?>
+        <div class="mt-4 p-4 rounded-4" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">
+            <div style="font-size:13px;text-transform:uppercase;letter-spacing:.08em;opacity:.85;margin-bottom:6px;">🎟 Reward Coupon Generated for This Event</div>
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                <div style="font-size:26px;font-weight:900;letter-spacing:.15em;font-family:monospace;background:rgba(255,255,255,.18);border-radius:8px;padding:6px 18px;border:2px dashed rgba(255,255,255,.5);">
+                    <?php echo htmlspecialchars($event_coupon['coupon_code']); ?>
+                </div>
+                <div>
+                    <div style="font-size:15px;font-weight:700;"><?php echo (int)$event_coupon['coupon_discount']; ?>% Discount</div>
+                    <div style="font-size:13px;opacity:.9;">Valid till: <?php echo date('d M Y', strtotime($event_coupon['coupon_valid_till'])); ?></div>
+                </div>
+                <div>
+                    <?php if ($event_coupon['coupon_is_used'] === '1'): ?>
+                        <span style="background:#ef4444;border-radius:20px;padding:4px 14px;font-size:13px;font-weight:700;">Used</span>
+                        <?php if ($event_coupon['coupon_applied_to_event_id']): ?>
+                            <div style="font-size:12px;opacity:.85;margin-top:4px;">Applied to Event #<?php echo (int)$event_coupon['coupon_applied_to_event_id']; ?></div>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <span style="background:#10b981;border-radius:20px;padding:4px 14px;font-size:13px;font-weight:700;">Not Used</span>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 

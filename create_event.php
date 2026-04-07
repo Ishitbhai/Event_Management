@@ -14,7 +14,7 @@ if (!isset($_SESSION['user_id'])) {
         window.location.href="login.php";
     </script>
     <?php
-    exit();
+    exit(); 
 }
 else{
     $user_role = isset($_SESSION['user_type']) ? strtolower($_SESSION['user_type']) : '';
@@ -47,6 +47,30 @@ $success = false;
 $title = $description = $category_id = $start_datetime = $end_datetime = $reg_deadline = '';
 $event_seats = $persons = 0;
 $event_price = 0.0;
+$banner_existing = '';
+$gallery_existing = '';
+$payment_notice = '';
+
+if (isset($_GET['payment']) && $_GET['payment'] === 'cancelled') {
+    $payment_notice = 'Payment was cancelled or not completed. Your details and uploaded images are kept below — you can review and continue to payment when ready.';
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' && isset($_SESSION['pending_event_checkout'])) {
+    $pe = $_SESSION['pending_event_checkout'];
+    if ((int) ($pe['owner_id'] ?? 0) === (int) $_SESSION['user_id']) {
+        $title = $pe['title'] ?? '';
+        $description = $pe['description'] ?? '';
+        $category_id = isset($pe['category_id']) ? (int) $pe['category_id'] : 0;
+        $start_datetime = $pe['start_datetime'] ?? '';
+        $end_datetime = $pe['end_datetime'] ?? '';
+        $reg_deadline = $pe['reg_deadline'] ?? '';
+        $event_seats = isset($pe['event_seats']) ? (int) $pe['event_seats'] : 0;
+        $persons = isset($pe['persons']) ? (int) $pe['persons'] : 0;
+        $event_price = isset($pe['event_price_float']) ? (float) $pe['event_price_float'] : 0.0;
+        $banner_existing = $pe['banner_path'] ?? '';
+        $gallery_existing = $pe['gallery_csv'] ?? '';
+    }
+}
 
 /* HELPER FUNCTION TO FIX HTML5 DATETIME LOCAL */
 function fix_datetime_local($dt_local) {
@@ -59,6 +83,11 @@ function fix_datetime_local($dt_local) {
 
 /* FORM SUBMISSION */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    $prev_pending = null;
+    if (isset($_SESSION['pending_event_checkout']) && (int) ($_SESSION['pending_event_checkout']['owner_id'] ?? 0) === (int) $_SESSION['user_id']) {
+        $prev_pending = $_SESSION['pending_event_checkout'];
+    }
 
     /* BASIC INPUTS */
     $owner_id     = $_SESSION['user_id'];
@@ -161,146 +190,120 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         mysqli_stmt_close($conflict_stmt);
     }
 
-    /* IMAGE UPLOADS */
-    $banner_path = '';
-    $gallery_paths = [];
+    /* IMAGE UPLOADS — only after validation; DB row is created only after Razorpay payment succeeds */
+    if (empty($errors)) {
+        $banner_path = '';
+        $gallery_paths = [];
 
-    // Banner image upload check for path in filename
-    if (!empty($_FILES['banner_image']['name'])) {
-        // Check if path is included in the uploaded banner image filename
-        $file_name = $_FILES['banner_image']['name'];
-        if (strpos($file_name, '/') !== false || strpos($file_name, '\\') !== false) {
-            $errors[] = "Invalid banner image: the file name must not contain a path.";
-        }
-        $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-        if (!in_array($ext, ['jpg','jpeg','png','gif','webp'])) {
-            $errors[] = "Invalid banner image format.";
-        } else {
-            // Store in 'images/' but only save filename in DB
-            $banner_filename = 'banner_' . uniqid() . '.' . $ext;
-            $banner_storage_path = 'images/' . $banner_filename;
-            if (!is_dir('images')) {
-                mkdir('images', 0755, true);
+        if (!empty($_FILES['banner_image']['name'])) {
+            $file_name = $_FILES['banner_image']['name'];
+            if (strpos($file_name, '/') !== false || strpos($file_name, '\\') !== false) {
+                $errors[] = "Invalid banner image: the file name must not contain a path.";
             }
-            if (!move_uploaded_file($_FILES['banner_image']['tmp_name'], $banner_storage_path)) {
-                $errors[] = "Failed to upload banner image.";
+            $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+            if (!in_array($ext, ['jpg','jpeg','png','gif','webp'])) {
+                $errors[] = "Invalid banner image format.";
             } else {
-                $banner_path = $banner_filename; // Only filename saved to DB
-            }
-        }
-    } else {
-        $errors[] = "Banner image is required.";
-    }
-
-    // Gallery images upload check for path in filenames
-    if (!empty($_FILES['gallery_images']['name'][0])) {
-        foreach ($_FILES['gallery_images']['tmp_name'] as $i => $tmp) {
-            $gallery_file_name = $_FILES['gallery_images']['name'][$i];
-            // Check if path is included in the uploaded gallery image filename
-            if (strpos($gallery_file_name, '/') !== false || strpos($gallery_file_name, '\\') !== false) {
-                $errors[] = "Invalid gallery image: file name must not contain a path.";
-                continue;
-            }
-            $ext = strtolower(pathinfo($gallery_file_name, PATHINFO_EXTENSION));
-            if (in_array($ext, ['jpg','jpeg','png','gif','webp'])) {
-                $gallery_filename = 'gallery_' . uniqid() . '.' . $ext;
-                $gallery_storage_path = 'images/' . $gallery_filename;
+                $banner_filename = 'banner_' . uniqid() . '.' . $ext;
+                $banner_storage_path = 'images/' . $banner_filename;
                 if (!is_dir('images')) {
                     mkdir('images', 0755, true);
                 }
-                if (!move_uploaded_file($tmp, $gallery_storage_path)) {
-                    $errors[] = "Failed to upload one of the gallery images.";
-                    continue;
+                if (!move_uploaded_file($_FILES['banner_image']['tmp_name'], $banner_storage_path)) {
+                    $errors[] = "Failed to upload banner image.";
+                } else {
+                    $banner_path = $banner_filename;
                 }
-                $gallery_paths[] = $gallery_filename; // Only filename saved to DB
+            }
+        } elseif ($prev_pending && !empty($prev_pending['banner_path'])) {
+            $bf = $prev_pending['banner_path'];
+            if (preg_match('/^[a-zA-Z0-9._-]+$/', $bf) && is_file('images/' . $bf)) {
+                $banner_path = $bf;
+            } else {
+                $errors[] = "Banner image is required.";
+            }
+        } else {
+            $errors[] = "Banner image is required.";
+        }
+
+        if (empty($errors)) {
+            if (!empty($_FILES['gallery_images']['name'][0])) {
+                foreach ($_FILES['gallery_images']['tmp_name'] as $i => $tmp) {
+                    $gallery_file_name = $_FILES['gallery_images']['name'][$i];
+                    if (strpos($gallery_file_name, '/') !== false || strpos($gallery_file_name, '\\') !== false) {
+                        $errors[] = "Invalid gallery image: file name must not contain a path.";
+                        continue;
+                    }
+                    $ext = strtolower(pathinfo($gallery_file_name, PATHINFO_EXTENSION));
+                    if (in_array($ext, ['jpg','jpeg','png','gif','webp'])) {
+                        $gallery_filename = 'gallery_' . uniqid() . '.' . $ext;
+                        $gallery_storage_path = 'images/' . $gallery_filename;
+                        if (!is_dir('images')) {
+                            mkdir('images', 0755, true);
+                        }
+                        if (!move_uploaded_file($tmp, $gallery_storage_path)) {
+                            $errors[] = "Failed to upload one of the gallery images.";
+                            continue;
+                        }
+                        $gallery_paths[] = $gallery_filename;
+                    }
+                }
+            } elseif ($prev_pending && !empty($prev_pending['gallery_csv'])) {
+                foreach (array_filter(array_map('trim', explode(',', $prev_pending['gallery_csv']))) as $gf) {
+                    if (!preg_match('/^[a-zA-Z0-9._-]+$/', $gf) || !is_file('images/' . $gf)) {
+                        $errors[] = "Saved gallery images are missing. Please upload the gallery again.";
+                        break;
+                    }
+                    $gallery_paths[] = $gf;
+                }
             }
         }
+
+        if (empty($errors)) {
+            $gallery_csv = implode(',', $gallery_paths);
+            $event_price_int = max(1, (int) round($event_price));
+            $amount_paise = max(100, $event_price_int * 100);
+
+            $_SESSION['pending_event_checkout'] = [
+                'owner_id' => (int) $owner_id,
+                'title' => $title,
+                'description' => $description,
+                'category_id' => $category_id,
+                'start_datetime' => $start_datetime,
+                'end_datetime' => $end_datetime,
+                'reg_deadline' => $reg_deadline,
+                'event_seats' => $event_seats,
+                'persons' => $persons,
+                'event_date' => $event_date,
+                'event_start_time' => $event_start_datetime,
+                'event_end_time' => $event_end_datetime,
+                'event_reg_deadline' => $event_reg_deadline,
+                'available_seats' => $available_seats,
+                'banner_path' => $banner_path,
+                'gallery_csv' => $gallery_csv,
+                'event_price_float' => $event_price,
+                'event_price_int' => $event_price_int,
+                'amount_paise' => $amount_paise,
+            ];
+
+            ?>
+            <script>
+                window.location.href="payment.php"; 
+            </script>
+            <?php
+            exit;
+        }
     }
+}
 
-    $gallery_csv = implode(',', $gallery_paths);
-
-    /* INSERT EVENT AND OWNER'S BOOKINGS */
-    if (empty($errors)) {
-        $conn->autocommit(false); // Start transaction
-
-        // 1. Insert into events (now adding event_price)
-        $stmt = mysqli_prepare(
-            $conn,
-            "INSERT INTO events (
-                owner_id,
-                event_title,
-                event_description,
-                event_category,
-                event_date,
-                event_start_time,
-                event_end_time,
-                event_seats,
-                event_available_seats,
-                event_banner_image,
-                event_gallery_images,
-                event_registration_deadline,
-                event_price
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        );
-
-        mysqli_stmt_bind_param(
-            $stmt,
-            "issssssiisssd",
-            $owner_id,
-            $title,
-            $description,
-            $category_id,
-            $event_date,
-            $event_start_datetime,
-            $event_end_datetime,
-            $event_seats,
-            $available_seats,
-            $banner_path,
-            $gallery_csv,
-            $event_reg_deadline,
-            $event_price
-        );
-
-        $event_ok = false;
-        $booking_ok = false;
-
-        if (mysqli_stmt_execute($stmt)) {
-            $event_ok = true;
-            $event_id = mysqli_insert_id($conn);
-
-            // 2. Insert booking record (for the owner and family persons) with booking_status='approved'
-            $booking_stmt = mysqli_prepare(
-                $conn,
-                "INSERT INTO bookings (event_id, user_id, persons, booking_status) VALUES (?, ?, ?, ?)"
-            );
-            $booking_status = 'approved';
-            mysqli_stmt_bind_param($booking_stmt, "iiis", $event_id, $owner_id, $persons, $booking_status);
-
-            if (mysqli_stmt_execute($booking_stmt)) {
-                $booking_ok = true;
-            } else {
-                $errors[] = "Booking insertion failed: " . mysqli_error($conn);
-            }
-            mysqli_stmt_close($booking_stmt);
-
-            // If event and booking insertion succeeded, redirect to payment
-            if ($event_ok && $booking_ok) {
-                $conn->commit();
-                // Redirect to payment.php with event_id, event_price can be retrieved there if needed
-                ?>
-                <script>
-                    window.location.href = 'payment.php?event_id=<?= urlencode($event_id) ?>';
-                </script>
-                <?php
-                exit();
-            } else {
-                $conn->rollback();
-            }
-            $conn->autocommit(true);
-
-        } else {
-            $errors[] = "Database error: " . mysqli_error($conn);
-            mysqli_stmt_close($stmt);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($errors) && isset($_SESSION['pending_event_checkout'])) {
+    $pe = $_SESSION['pending_event_checkout'];
+    if ((int) ($pe['owner_id'] ?? 0) === (int) $_SESSION['user_id']) {
+        if (empty($_FILES['banner_image']['name']) && !empty($pe['banner_path'])) {
+            $banner_existing = $pe['banner_path'];
+        }
+        if (empty($_FILES['gallery_images']['name'][0]) && !empty($pe['gallery_csv'])) {
+            $gallery_existing = $pe['gallery_csv'];
         }
     }
 }
@@ -490,6 +493,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <a href="events.php" class="create-event-btn back-btn">&#8592; Back to Events</a>
     </div>
     <div class="create-container-centered">
+        <?php if (!empty($payment_notice)): ?>
+            <div class="msg-error" style="background:#fff8e6;border-color:#f0c14b;color:#5c4a00;">
+                <?php echo htmlspecialchars($payment_notice); ?>
+            </div>
+        <?php endif; ?>
         <?php if (!empty($errors)): ?>
             <div class="msg-error">
                 <?php foreach ($errors as $err) echo htmlspecialchars($err).'<br>'; ?>
@@ -607,13 +615,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <tr>
                     <td>
                         <label class="form-label" for="banner_image">Banner Image</label>
-                        <input type="file" name="banner_image" id="banner_image" accept=".jpg,.jpeg,.png,.gif,.webp" required class="input-file">
+                        <?php if (!empty($banner_existing)): ?>
+                            <p style="font-size:0.96em;color:#15895f;margin:0 0 8px 0;">Using saved banner: <strong><?php echo htmlspecialchars($banner_existing); ?></strong> — upload a new file only if you want to replace it.</p>
+                        <?php endif; ?>
+                        <input type="file" name="banner_image" id="banner_image" accept=".jpg,.jpeg,.png,.gif,.webp" <?php echo empty($banner_existing) ? 'required' : ''; ?> class="input-file">
                         <label id="banner_image-error" class="field-error" style="display:none;"></label>
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <label class="form-label" for="gallery_images">Gallery Images <span style="font-size:.97em;color:#6ca3f7;">(JPG/PNG/GIF/WEBP, multiple allowed)</span></label>
+                        <?php if (!empty($gallery_existing)): ?>
+                            <p style="font-size:0.96em;color:#15895f;margin:0 0 8px 0;"><?php echo count(array_filter(array_map('trim', explode(',', $gallery_existing)))); ?> saved gallery image(s) — add new files only to replace.</p>
+                        <?php endif; ?>
                         <input type="file" name="gallery_images[]" id="gallery_images" accept=".jpg,.jpeg,.png,.gif,.webp" multiple class="input-file">
                         <label id="gallery_images-error" class="field-error" style="display:none;"></label>
                     </td>
@@ -644,6 +658,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <script src="js/jquery-4.0.0.min.js"></script>
 <script>
+    var hasStoredBanner = <?php echo !empty($banner_existing) ? 'true' : 'false'; ?>;
     function updateMaxSeatsAndPrice() {
         var sel = document.getElementById('category_id');
         var i = sel.selectedIndex;
@@ -731,6 +746,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $(document).ready(function(){
         function isValidImg(filename) {
             return (/\.(jpe?g|png|gif|webp)$/i).test(filename);
+        }
+
+        if (hasStoredBanner) {
+            $('#banner_image').removeClass('input-invalid');
+            $('#banner_image-error').hide();
         }
 
         $('#title').on('input blur', function() {
@@ -851,6 +871,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $('#banner_image').on('change blur', function() {
             var files = this.files;
             if (!files || files.length === 0) {
+                if (hasStoredBanner) {
+                    $('#banner_image-error').hide();
+                    $(this).removeClass("input-invalid");
+                    return;
+                }
                 $('#banner_image-error').text("Please select a banner image.").show();
                 $(this).addClass("input-invalid");
             }
