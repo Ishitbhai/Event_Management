@@ -29,7 +29,7 @@ return [
     'use_legacy_checkout_without_order' => true,
 
     // PASTE YOUR TEST KEY ID HERE (starts with rzp_test_)
-    'key_id'     => 'rzp_test_KGwT3XcJybhKgu',
+    'key_id'     => 'KEY',
 
     // Leave empty to use key_id-only checkout (no server verification)
     'key_secret' => '',
